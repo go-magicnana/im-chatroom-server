@@ -1,0 +1,1 @@
+2022-06-27 15:56:48.281 INFO zaplog/zaplog.go:117 dudu-broker/zaplog.Infof appName 192.168.1.1 8080 xxxxx span - www.baidu.com这是一个描述 [binggo]
