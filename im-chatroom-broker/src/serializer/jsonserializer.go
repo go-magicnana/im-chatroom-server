@@ -39,39 +39,8 @@ func (j JsonSerializer) EncodePacket(packet *protocol.Packet, c *context.Context
 }
 
 func (j JsonSerializer) DecodePacket(bytes []byte, c *context.Context) (*protocol.Packet, error) {
-
-	//var version = make([]byte,1)
-	//versionLength,versionE := c.Conn.Read(version)
-	//
-	//if versionLength != 1 || versionE!=nil{
-	//	return nil,versionE
-	//}
-	//
-	//
-	//e:=binary.Read(c.Conn, binary.BigEndian, &version) //没有写入时，这里阻塞，写入后这里有值
-	//if e!=nil {
-	//	return nil,e
-	//}
-	//
-	//
-	//var length uint32
-	//e = binary.Read(c.Conn, binary.BigEndian, &length)
-	//if e!=nil {
-	//	return nil,e
-	//}
-	//
-	//body := make([]uint8, length)
-	//size,e2:=io.ReadFull(c.Conn, body)
-	//
-	//fmt.Println(size)
-	//if e2!=nil {
-	//	return nil,e
-	//}
-
 	message := protocol.Packet{}
-
 	e := json.Unmarshal(bytes, &message)
-
 	return &message, e
 }
 
