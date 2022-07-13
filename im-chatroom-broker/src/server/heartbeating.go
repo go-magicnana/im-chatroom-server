@@ -1,13 +1,14 @@
 package server
 
 import (
+	"im-chatroom-broker/context"
 	"time"
 )
 
 //HeartBeating, determine if client send a message within set time by GravelChannel
 // 心跳计时，根据GravelChannel判断Client是否在设定时间内发来信息
 
-func HeartBeating(context *Context, readerChannel chan byte, timeout int) {
+func HeartBeating(context *context.Context, readerChannel chan byte, timeout int) {
 	select {
 	case _ = <-readerChannel:
 		//Log(context.Conn.RemoteAddr().String(), "get message, keeping heartbeating...")

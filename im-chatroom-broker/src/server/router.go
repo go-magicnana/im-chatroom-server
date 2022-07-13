@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"im-chatroom-broker/context"
 )
 
 /*
@@ -61,7 +62,7 @@ func Route(pred interface{} ,controller Controller) {
 }
 
 
-func TaskDeliver(postdata []byte,context *Context){
+func TaskDeliver(postdata []byte,context *context.Context){
 	for _ ,v := range routers{
 		pred := v[0]
 		act := v[1]
@@ -104,7 +105,7 @@ func init() {
 	var echo EchoController
 	routers = make([][2]interface{} ,0 , 20)
 	Route(func(entry Msg)bool{
-		if entry.Meta["meta"]=="test"{
+		if entry.Meta["meta"]=="training"{
 			return true}
 		return  false
 	},&echo)

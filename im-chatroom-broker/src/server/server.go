@@ -4,8 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
-	"encoding/json"
+	"errors"
+	"fmt"
+	context2 "im-chatroom-broker/context"
+	"im-chatroom-broker/handler"
 	"im-chatroom-broker/protocol"
+	"im-chatroom-broker/serializer"
 	"im-chatroom-broker/util"
 	"io"
 	"net"
@@ -15,33 +19,35 @@ import (
 
 var counter = 100
 
-var wg sync.WaitGroup
+//var wg sync.WaitGroup
+
+var conns sync.Map
 
 func Start() {
 
-	userMap.Store("user1", "101")
-	userMap.Store("user2", "102")
-	userMap.Store("user3", "103")
-	userMap.Store("user4", "104")
-	userMap.Store("user5", "105")
-	userMap.Store("user6", "106")
-	userMap.Store("user7", "107")
+	//zaplog.InitLogger()
+	//zaplog.Infof("Start ...")
 
-	wg.Add(1)
+	//wg.Add(1)
 
 	addr := ":33121"
 
 	ctx := context.Background()
 
-	go goListen(ctx, addr)
+	//go goListen(ctx, addr)
+	listen(ctx, addr)
 
-	wg.Wait()
+	//wg.Wait()
+	//zaplog.Infof("Exit")
+
 }
 
-func goListen(ctx context.Context, addr string) {
+func listen(ctx context.Context, addr string) {
 
-	netListen, _ := net.Listen("tcp", addr)
+	netListen, err := net.Listen("tcp", addr)
 	defer netListen.Close()
+
+	util.Panic(err)
 
 	ip, e := util.ExternalIP()
 	if e != nil {
@@ -59,10 +65,13 @@ func goListen(ctx context.Context, addr string) {
 		case <-ctx.Done():
 			return
 		default:
+
+			fmt.Println(util.CurrentSecond(),"Accept 等待客户端连接")
 			conn, err := netListen.Accept()
 			if err != nil {
 				util.Panic(err)
 			}
+
 			//if s.readDDL != 0 {
 			//	_ = conn.SetReadDeadline(time.Now().Add(s.readDDL))
 			//}
@@ -70,90 +79,149 @@ func goListen(ctx context.Context, addr string) {
 			//	_ = conn.SetWriteDeadline(time.Now().Add(s.writeDDL))
 			//}
 
-			cctx, cancelFunc := context.WithCancel(ctx)
+			readCtx, readCancel := context.WithCancel(ctx)
 
-			c := NewContext(conn.RemoteAddr().String(), address, conn, cctx, cancelFunc)
+			c := context2.NewContext(conn.RemoteAddr().String(), address, conn, readCtx, readCancel)
 
 			//setDirtyConnection(c)
 
-			go goRead(c)
+			go read(c)
+
+			//go printConn()
 
 			//go Read(c)
 		}
 	}
 }
 
-func goRead(c *Context) {
+func read(c *context2.Context) {
 
-	defer c.CancelFunc()
-	SetReadDeadlineOnCancel(c.Ctx, c.Conn)
+	defer c.Conn.Close()
 
-	messageIdBody := make([]uint8, 32)
-	io.ReadFull(c.Conn, messageIdBody)
+	//defer c.CancelFunc()
+	//SetReadDeadlineOnCancel(c.Ctx, c.CancelFunc, c.Conn)
 
-	var version uint8
-	binary.Read(c.Conn, binary.BigEndian, &version)
+	serializer := serializer.SingleJsonSerializer()
 
-	//var mask uint8
-	//binary.Read(c.Conn, binary.BigEndian, &mask)
+	for {
 
-	//var seq uint32
-	//binary.Read(c.Conn, binary.BigEndian, &seq)
+		fmt.Println(util.CurrentSecond(),"Read 等待客户端写入")
 
-	var cmd uint16
-	binary.Read(c.Conn, binary.BigEndian, &cmd)
+		meta := make([]byte, protocol.MetaVersionBytes+protocol.MetaLengthBytes)
+		ml, me := c.Conn.Read(meta)
 
-	var length uint32
-	binary.Read(c.Conn, binary.BigEndian, &length)
+		if me == io.EOF {
+			//c.CancelFunc()
+			break
+		}
 
-	body := make([]uint8, length)
-	io.ReadFull(c.Conn, body)
+		if me != nil {
+			continue
+		}
 
-	message := protocol.Message{}
+		if ml != protocol.MetaVersionBytes+protocol.MetaLengthBytes {
+			continue
+		}
 
-	json.Unmarshal(body, &message)
+		version := meta[0]
 
-	packet := protocol.Packet{
-		MessageId: util.B2s(messageIdBody),
-		Version:   version,
-		Command:   cmd,
-		Message:   message,
+		if version != serializer.Version() {
+			continue
+		}
+
+		length := binary.BigEndian.Uint32(meta[1:])
+		body := make([]byte, length)
+		c.Conn.Read(body)
+
+		packet, e := serializer.DecodePacket(body, c)
+
+		if e != nil || packet == nil {
+			return
+		}
+
+		fmt.Println(util.CurrentSecond(),"Read 读取客户端写入", packet)
+
+		go process(packet, c)
 	}
 
-	go process(&packet, c)
+	fmt.Println("read thread exit")
+
 }
 
-func write(p *protocol.Packet, c *Context) {
-	msg, _ := json.Marshal(p.Message)
-	buffer := bytes.NewBufferString(p.MessageId)
-	binary.Write(buffer, binary.LittleEndian, p.Version)
-	binary.Write(buffer, binary.LittleEndian, p.Command)
-	binary.Write(buffer, binary.LittleEndian, len(msg))
-	bs := append(buffer.Bytes(), msg...)
-	c.Conn.Write(bs)
+func write(p *protocol.Packet, c *context2.Context) error {
+	//SetWriteDeadlineOnCancel(c.Ctx, c.CancelFunc, c.Conn)
+
+	serializer := serializer.SingleJsonSerializer()
+
+	bs, e := serializer.EncodePacket(p, c)
+	if bs == nil {
+		return errors.New("empty packet")
+	}
+
+	if e != nil {
+		return e
+	}
+
+	buffer := new(bytes.Buffer)
+
+	binary.Write(buffer, binary.BigEndian, serializer.Version())
+
+	length := uint32(len(bs))
+	binary.Write(buffer, binary.BigEndian, length)
+
+	buffer.Write(bs)
+	_, err := c.Conn.Write(buffer.Bytes())
+
+	fmt.Println(util.CurrentSecond(),"Write 等待客户端读取", p)
+
+
+	if err!=nil {
+		return errors.New("write response error +"+err.Error())
+	}else{
+		return nil
+	}
+
 }
 
 type ReadDeadliner interface {
 	SetReadDeadline(t time.Time) error
 }
 
-func SetReadDeadlineOnCancel(ctx context.Context, d ReadDeadliner) {
+type WriteDeadliner interface {
+	SetWriteDeadline(t time.Time) error
+}
+
+func SetReadDeadlineOnCancel(ctx context.Context, cancel context.CancelFunc, d ReadDeadliner) {
 	go func() {
 		<-ctx.Done()
+		fmt.Println("receive done")
 		d.SetReadDeadline(time.Now())
 	}()
 }
 
-func process(packet *protocol.Packet, c *Context) {
-
-	switch packet.Command {
-	case protocol.CommandDefault:
-		p := protocol.NewResponseError(packet, &protocol.ErrorDefaultKey)
-		write(p, c)
-	}
+func SetWriteDeadlineOnCancel(ctx context.Context, cancel context.CancelFunc, d WriteDeadliner) {
+	go func() {
+		<-ctx.Done()
+		d.SetWriteDeadline(time.Now())
+	}()
 }
 
-func goHandle(s string, context *Context) {
+func process(packet *protocol.Packet, c *context2.Context) {
+
+	var ret *protocol.Packet = nil
+	switch packet.Header.Command {
+	case protocol.CommandDefault:
+		ret = handler.SingleDefaultHandler().Handle(packet, c)
+		break
+	case protocol.CommandSignal:
+		ret = handler.SingleSignalHandler().Handle(packet, c)
+	}
+
+	write(ret, c)
+
+}
+
+func goHandle(s string, context *context2.Context) {
 
 	//fmt.Println(strings.Contains(s,"\n"))
 	//
@@ -181,21 +249,6 @@ func goHandle(s string, context *Context) {
 	//
 	//	}
 	//}
-}
-
-var userMap sync.Map
-
-func doAuth(userId string, context *Context) {
-	SetUser(userId, context)
-}
-
-func doDeliver(userId string, content string, context *Context) {
-	channel, exist := GetUserLocal(userId)
-	if !exist {
-		context.Conn.Write(util.S2b(userId + " offline"))
-	} else {
-		channel.Conn.Write(util.S2b(content))
-	}
 }
 
 //func goConnection(context *Context) {

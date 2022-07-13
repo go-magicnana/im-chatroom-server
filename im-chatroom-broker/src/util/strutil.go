@@ -30,6 +30,10 @@ func IsEmpty(s string) bool {
 	return false
 }
 
+func IsNotEmpty(s string) bool{
+	return !IsEmpty(s)
+}
+
 func StartWith(s string, sub string) bool {
 	return strings.Index(s, sub) == 0
 }

@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	context2 "im-chatroom-broker/context"
 	"im-chatroom-broker/redis"
 	"im-chatroom-broker/util"
 	"sync"
@@ -17,11 +18,11 @@ const (
 	UserOther string = "dudu:broker:user_other"
 )
 
-func setDirtyConnection(c *Context){
+func setDirtyConnection(c *context2.Context){
 	dirty.Store(c.RemoteAddr,c)
 }
 
-func SetUser(userId string, c *Context) {
+func SetUser(userId string, c *context2.Context) {
 
 	users.Store(userId, c)
 
@@ -33,10 +34,10 @@ func SetUser(userId string, c *Context) {
 
 }
 
-func GetUserLocal(userId string) (*Context, bool) {
+func GetUserLocal(userId string) (*context2.Context, bool) {
 	ay, exist := users.Load(userId)
 	if exist {
-		return ay.(*Context), true
+		return ay.(*context2.Context), true
 	} else {
 		return nil, false
 	}
@@ -55,7 +56,7 @@ func UserLocal2String(){
 			fmt.Println("")
 			time.Sleep(time.Second)
 		}
-		wg.Done()
+		//wg.Done()
 	}()
 
 }

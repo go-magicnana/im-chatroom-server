@@ -3,13 +3,14 @@ package server
 import (
 	"encoding/binary"
 	"fmt"
+	"im-chatroom-broker/context"
 	"im-chatroom-broker/util"
 	"io"
 	"net"
 	"time"
 )
 
-func Read(c *Context) {
+func Read(c *context.Context) {
 	_ = c.Conn.SetReadDeadline(time.Now().Add(time.Second * 30))
 
 	//bs,_:=ioutil.ReadAll(c.Conn)

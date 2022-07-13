@@ -20,7 +20,7 @@ func send(conn net.Conn) {
 		session:=GetSession()
 		message := &Msg{
 			Meta:map[string]interface{}{
-			"meta":"test",
+			"meta":"training",
 			"ID":strconv.Itoa(i),
 			},
 		Content: Msg{
@@ -45,7 +45,9 @@ func GetSession() string{
 	return gs2
 }
 
+
 func Start() {
+
 	server := "localhost:33121"
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", server)
 	if err != nil {
@@ -62,6 +64,7 @@ func Start() {
 
 	fmt.Println("connect success")
 	send(conn)
+
 
 
 }

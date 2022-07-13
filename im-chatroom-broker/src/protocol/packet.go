@@ -1,6 +1,16 @@
 package protocol
 
+import (
+	"encoding/json"
+	"im-chatroom-broker/context"
+	err "im-chatroom-broker/error"
+)
+
 const (
+
+	MetaVersionBytes = 1
+	MetaLengthBytes = 4
+
 	TargetAll = 1
 	TargetOne = 2
 
@@ -37,105 +47,129 @@ const (
 	TypeGoodsNone = 6101
 )
 
-var ErrorOK = ImError{Code: 200, Message: "OK"}
-var ErrorDefault = ImError{Code: 1001, Message: "Server Error"}
-var ErrorDefaultKey = ImError{1002,"Command Not Allow"}
-
-type ImError struct {
-	Code    uint32
-	Message string
-}
-
 type Packet struct {
-	MessageId string
-	Version   uint8
-	Command   uint16
-	Message   Message
-}
-
-type Message struct {
 	Header MessageHeader
 	Body   any
+}
+
+type MessageHeader struct {
+	MessageId string `json:"messageId"`
+	Command   uint16 `json:"command"`
+	Target    uint32 `json:"target"`
+	From      User   `json:"from"`
+	To        User   `json:"to"`
+	Flow      uint8  `json:"flow"`
+	Type      uint32 `json:"type"`
+	Code      uint32 `json:"code"`
+	Message   string `json:"message"`
 }
 
 func NewResponseOK(in *Packet, body any) *Packet {
 
 	header := MessageHeader{
-		Target:  in.Message.Header.Target,
-		From:    in.Message.Header.From,
-		To:      in.Message.Header.To,
-		Type:    in.Message.Header.Type,
-		Flow:    FlowDown,
-		Code:    ErrorOK.Code,
-		Message: ErrorOK.Message,
+		MessageId: in.Header.MessageId,
+		Command:   in.Header.Command,
+		Target:    in.Header.Target,
+		From:      in.Header.From,
+		To:        in.Header.To,
+		Type:      in.Header.Type,
+		Flow:      FlowDown,
+		Code:      err.OK.Code,
+		Message:   err.OK.Message,
 	}
 
-	message := Message{
+	return &Packet{
 		Header: header,
 		Body:   body,
 	}
-
-	return &Packet{
-		MessageId: in.MessageId,
-		Version:   in.Version,
-		Command:   in.Command,
-		Message:   message,
-	}
 }
 
-func NewResponseError(in *Packet, error *ImError) *Packet {
+func NewResponseError(in *Packet, error err.Error) *Packet {
 	header := MessageHeader{
-		Target:  in.Message.Header.Target,
-		From:    in.Message.Header.From,
-		To:      in.Message.Header.To,
-		Type:    in.Message.Header.Type,
-		Flow:    FlowDown,
-		Code:    error.Code,
-		Message: error.Message,
+		MessageId: in.Header.MessageId,
+		Command:   in.Header.Command,
+		Target:    in.Header.Target,
+		From:      in.Header.From,
+		To:        in.Header.To,
+		Type:      in.Header.Type,
+		Flow:      FlowDown,
+		Code:      error.Code,
+		Message:   error.Message,
 	}
 
-	message := Message{
+	return &Packet{
 		Header: header,
 	}
-
-	return &Packet{
-		MessageId: in.MessageId,
-		Version:   in.Version,
-		Command:   in.Command,
-		Message:   message,
-	}
-}
-
-type MessageHeader struct {
-	Target  uint32 `json:"target"`
-	From    User   `json:"from"`
-	To      User   `json:"to"`
-	Flow    uint8  `json:"flow"`
-	Type    uint32 `json:"type"`
-	Code    uint32 `json:"code"`
-	Message string `json:"message"`
 }
 
 type User struct {
-	UserId   uint64 `json:"userId"`
-	UserName string `json:"userName"`
-	Avatar   string `json:"avatar"`
-	Role     uint32 `json:"role"`
+	UserId string `json:"userId"`
+	Name   string `json:"name"`
+	Avatar string `json:"avatar"`
+	Role   string `json:"role"`
+	RoomId string `json:"roomId"`
+	Broker string `json:"broker"`
 }
 
 type MessageBodySignalPing struct {
 	Current uint64 `json:"current"`
+	UserId  string `json:"userId"`
+}
+
+func JsonSignalPing(any any, c *context.Context) *MessageBodySignalPing {
+	bs, _ := json.Marshal(any)
+	ret := MessageBodySignalPing{}
+	json.Unmarshal(bs, &ret)
+	return &ret
 }
 
 type MessageBodySignalConnect struct {
 	UserId string `json:"userId"`
 	Name   string `json:"name"`
 	Avatar string `json:"avatar"`
-	Role   uint8  `json:"role"`
+	Role   string `json:"role"`
+}
+
+func JsonSignalConnect(any any, c *context.Context) *MessageBodySignalConnect {
+	bs, _ := json.Marshal(any)
+	ret := MessageBodySignalConnect{}
+	json.Unmarshal(bs, &ret)
+	return &ret
 }
 
 type MessageBodySignalDisconnect struct {
 	UserId string `json:"userId"`
+}
+
+func JsonSignalDisconnect(any any, c *context.Context) *MessageBodySignalDisconnect {
+	bs, _ := json.Marshal(any)
+	ret := MessageBodySignalDisconnect{}
+	json.Unmarshal(bs, &ret)
+	return &ret
+}
+
+type MessageBodySignalJoinRoom struct {
+	UserId string `json:"userId"`
+	RoomId string `json:"roomId"`
+}
+
+func JsonSignalJoinRoom(any any, c *context.Context) *MessageBodySignalJoinRoom {
+	bs, _ := json.Marshal(any)
+	ret := MessageBodySignalJoinRoom{}
+	json.Unmarshal(bs, &ret)
+	return &ret
+}
+
+func JsonSignalLeaveRoom(any any, c *context.Context) *MessageBodySignalLeaveRoom {
+	bs, _ := json.Marshal(any)
+	ret := MessageBodySignalLeaveRoom{}
+	json.Unmarshal(bs, &ret)
+	return &ret
+}
+
+type MessageBodySignalLeaveRoom struct {
+	UserId string `json:"userId"`
+	RoomId string `json:"roomId"`
 }
 
 type MessageBodyNoticeJoinRoom struct {
