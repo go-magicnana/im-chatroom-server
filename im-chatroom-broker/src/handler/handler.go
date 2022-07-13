@@ -1,10 +1,11 @@
 package handler
 
 import (
-	"im-chatroom-broker/context"
+	"golang.org/x/net/context"
+	context2 "im-chatroom-broker/context"
 	"im-chatroom-broker/protocol"
 )
 
 type Handler interface {
-	Handle(packet *protocol.Packet, c *context.Context) *protocol.Packet
+	Handle(ctx context.Context, c *context2.Context, packet *protocol.Packet) *protocol.Packet
 }

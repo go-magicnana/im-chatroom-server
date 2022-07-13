@@ -8,6 +8,7 @@ require (
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/robfig/cron/v3 v3.0.1
 	go.uber.org/zap v1.21.0
+	golang.org/x/net v0.0.0-20210428140749-89ef3d95e781
 	google.golang.org/protobuf v1.28.0
 	gopkg.in/yaml.v2 v2.4.0
 )

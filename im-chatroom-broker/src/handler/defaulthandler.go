@@ -1,7 +1,8 @@
 package handler
 
 import (
-	"im-chatroom-broker/context"
+	"golang.org/x/net/context"
+	context2 "im-chatroom-broker/context"
 	err "im-chatroom-broker/error"
 	"im-chatroom-broker/protocol"
 	"sync"
@@ -21,7 +22,7 @@ func SingleDefaultHandler() *DefaultHandler {
 
 type DefaultHandler struct{}
 
-func (d DefaultHandler) Handle(packet *protocol.Packet, c *context.Context) *protocol.Packet {
+func (d DefaultHandler) Handle(ctx context.Context, c *context2.Context, packet *protocol.Packet) *protocol.Packet {
 	ret := protocol.NewResponseError(packet, err.CommandNotAllow)
 	return ret
 }

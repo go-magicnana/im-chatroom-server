@@ -1,7 +1,9 @@
 package handler
 
 import (
-	"im-chatroom-broker/context"
+	"fmt"
+	"golang.org/x/net/context"
+	context2 "im-chatroom-broker/context"
 	err "im-chatroom-broker/error"
 	"im-chatroom-broker/protocol"
 	"sync"
@@ -21,7 +23,7 @@ func SingleSignalHandler() *SignalHandler {
 
 type SignalHandler struct{}
 
-func (s SignalHandler) Handle(packet *protocol.Packet, c *context.Context) *protocol.Packet {
+func (s SignalHandler) Handle(ctx context.Context, c *context2.Context, packet *protocol.Packet) *protocol.Packet {
 
 	ret := protocol.NewResponseError(packet, err.TypeNotAllow)
 
@@ -36,19 +38,19 @@ func (s SignalHandler) Handle(packet *protocol.Packet, c *context.Context) *prot
 	case protocol.TypeSignalPing:
 
 		body := protocol.JsonSignalPing(packet.Body, c)
-		return ping(packet, body, c)
+		return ping(ctx, c, packet, body)
 		break
 	case protocol.TypeSignalConnect:
 
 		a := protocol.JsonSignalConnect(packet.Body, c)
-		return connect(packet, a, c)
+		return connect(ctx, c, packet, a)
 
 		break
 	case protocol.TypeSignalDisconnect:
 		break
 	case protocol.TypeSignalJoinRoom:
 		a := protocol.JsonSignalJoinRoom(packet.Body, c)
-		return joinRoom(packet, a, c)
+		return joinRoom(ctx, c, packet, a)
 	case protocol.TypeSignalLeaveRoom:
 		break
 	}
@@ -56,29 +58,32 @@ func (s SignalHandler) Handle(packet *protocol.Packet, c *context.Context) *prot
 	return ret
 }
 
-func ping(packet *protocol.Packet, body *protocol.MessageBodySignalPing, c *context.Context) *protocol.Packet {
+func ping(ctx context.Context, c *context2.Context, packet *protocol.Packet, body *protocol.MessageBodySignalPing) *protocol.Packet {
 	user := protocol.User{
 		UserId: body.UserId,
 	}
-	SetUser(user, c)
+
+	fmt.Println(user)
+
 	return protocol.NewResponseOK(packet, nil)
 }
 
-func connect(packet *protocol.Packet, body *protocol.MessageBodySignalConnect, c *context.Context) *protocol.Packet {
+func connect(ctx context.Context, c *context2.Context, packet *protocol.Packet, body *protocol.MessageBodySignalConnect) *protocol.Packet {
 
 	user := protocol.User{
 		UserId: body.UserId,
 		Name:   body.Name,
 		Avatar: body.Avatar,
 		Role:   body.Role,
+		Broker: c.BrokerAddr,
 	}
 
-	SetUser(user, c)
+	SetUserInfo(ctx, user)
 
 	return protocol.NewResponseOK(packet, nil)
 }
 
-func joinRoom(packet *protocol.Packet, body *protocol.MessageBodySignalJoinRoom, c *context.Context) *protocol.Packet {
+func joinRoom(ctx context.Context, c *context2.Context, packet *protocol.Packet, body *protocol.MessageBodySignalJoinRoom) *protocol.Packet {
 
 	return protocol.NewResponseOK(packet, nil)
 }

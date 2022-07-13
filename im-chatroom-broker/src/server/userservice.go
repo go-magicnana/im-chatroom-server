@@ -17,10 +17,10 @@ const (
 	UserHash  string = "dudu:broker:user_hash"
 	UserOther string = "dudu:broker:user_other"
 )
-
-func setDirtyConnection(c *context2.Context){
-	dirty.Store(c.RemoteAddr,c)
-}
+//
+//func setDirtyConnection(c *context2.Context){
+//	dirty.Store(c.RemoteAddr,c)
+//}
 
 func SetUser(userId string, c *context2.Context) {
 

@@ -54,7 +54,7 @@ func listen(ctx context.Context, addr string) {
 		util.Panic(e)
 	}
 
-	address := ip.String() + addr
+	brokerAddress := ip.String() + addr
 
 	//SetBroker(ctx,1, address)
 
@@ -66,7 +66,7 @@ func listen(ctx context.Context, addr string) {
 			return
 		default:
 
-			fmt.Println(util.CurrentSecond(),"Accept 等待客户端连接")
+			fmt.Println(util.CurrentSecond(), "Accept 等待客户端连接")
 			conn, err := netListen.Accept()
 			if err != nil {
 				util.Panic(err)
@@ -79,13 +79,13 @@ func listen(ctx context.Context, addr string) {
 			//	_ = conn.SetWriteDeadline(time.Now().Add(s.writeDDL))
 			//}
 
-			readCtx, readCancel := context.WithCancel(ctx)
+			ctx, cancel := context.WithCancel(ctx)
 
-			c := context2.NewContext(conn.RemoteAddr().String(), address, conn, readCtx, readCancel)
+			c := context2.NewContext(brokerAddress, conn)
 
 			//setDirtyConnection(c)
 
-			go read(c)
+			go read(ctx, cancel, c)
 
 			//go printConn()
 
@@ -94,7 +94,11 @@ func listen(ctx context.Context, addr string) {
 	}
 }
 
-func read(c *context2.Context) {
+func catch(e error) {
+
+}
+
+func read(ctx context.Context, cancel context.CancelFunc, c *context2.Context) {
 
 	defer c.Conn.Close()
 
@@ -105,10 +109,20 @@ func read(c *context2.Context) {
 
 	for {
 
-		fmt.Println(util.CurrentSecond(),"Read 等待客户端写入")
+		fmt.Println(util.CurrentSecond(), "Read 等待客户端写入")
+
+		c.Conn.SetReadDeadline(time.Now().Add(time.Second * 10))
 
 		meta := make([]byte, protocol.MetaVersionBytes+protocol.MetaLengthBytes)
 		ml, me := c.Conn.Read(meta)
+
+		fmt.Println(me)
+
+		switch me.(type) {
+		case *net.OpError:
+			operror := me.(*net.OpError)
+			fmt.Println("operror",operror)
+		}
 
 		if me == io.EOF {
 			//c.CancelFunc()
@@ -139,9 +153,9 @@ func read(c *context2.Context) {
 			return
 		}
 
-		fmt.Println(util.CurrentSecond(),"Read 读取客户端写入", packet)
+		fmt.Println(util.CurrentSecond(), "Read 读取客户端写入", packet)
 
-		go process(packet, c)
+		go process(ctx, cancel, c, packet)
 	}
 
 	fmt.Println("read thread exit")
@@ -172,49 +186,48 @@ func write(p *protocol.Packet, c *context2.Context) error {
 	buffer.Write(bs)
 	_, err := c.Conn.Write(buffer.Bytes())
 
-	fmt.Println(util.CurrentSecond(),"Write 等待客户端读取", p)
+	fmt.Println(util.CurrentSecond(), "Write 等待客户端读取", p)
 
-
-	if err!=nil {
-		return errors.New("write response error +"+err.Error())
-	}else{
+	if err != nil {
+		return errors.New("write response error +" + err.Error())
+	} else {
 		return nil
 	}
 
 }
 
-type ReadDeadliner interface {
-	SetReadDeadline(t time.Time) error
-}
+//type ReadDeadliner interface {
+//	SetReadDeadline(t time.Time) error
+//}
+//
+//type WriteDeadliner interface {
+//	SetWriteDeadline(t time.Time) error
+//}
+//
+//func SetReadDeadlineOnCancel(ctx context.Context, cancel context.CancelFunc, d ReadDeadliner) {
+//	go func() {
+//		<-ctx.Done()
+//		fmt.Println("receive done")
+//		d.SetReadDeadline(time.Now())
+//	}()
+//}
+//
+//func SetWriteDeadlineOnCancel(ctx context.Context, cancel context.CancelFunc, d WriteDeadliner) {
+//	go func() {
+//		<-ctx.Done()
+//		d.SetWriteDeadline(time.Now())
+//	}()
+//}
 
-type WriteDeadliner interface {
-	SetWriteDeadline(t time.Time) error
-}
-
-func SetReadDeadlineOnCancel(ctx context.Context, cancel context.CancelFunc, d ReadDeadliner) {
-	go func() {
-		<-ctx.Done()
-		fmt.Println("receive done")
-		d.SetReadDeadline(time.Now())
-	}()
-}
-
-func SetWriteDeadlineOnCancel(ctx context.Context, cancel context.CancelFunc, d WriteDeadliner) {
-	go func() {
-		<-ctx.Done()
-		d.SetWriteDeadline(time.Now())
-	}()
-}
-
-func process(packet *protocol.Packet, c *context2.Context) {
+func process(ctx context.Context, cancel context.CancelFunc, c *context2.Context, packet *protocol.Packet) {
 
 	var ret *protocol.Packet = nil
 	switch packet.Header.Command {
 	case protocol.CommandDefault:
-		ret = handler.SingleDefaultHandler().Handle(packet, c)
+		ret = handler.SingleDefaultHandler().Handle(ctx, c, packet)
 		break
 	case protocol.CommandSignal:
-		ret = handler.SingleSignalHandler().Handle(packet, c)
+		ret = handler.SingleSignalHandler().Handle(ctx, c, packet)
 	}
 
 	write(ret, c)
