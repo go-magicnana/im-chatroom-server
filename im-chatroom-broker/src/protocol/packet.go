@@ -7,9 +7,8 @@ import (
 )
 
 const (
-
 	MetaVersionBytes = 1
-	MetaLengthBytes = 4
+	MetaLengthBytes  = 4
 
 	TargetAll = 1
 	TargetOne = 2
@@ -25,9 +24,9 @@ const (
 	CommandGoods   = 6
 
 	TypeSignalPing       = 2101
-	TypeSignalConnect    = 2102
-	TypeSignalDisconnect = 2103
+	TypeSignalLogin      = 2102
 	TypeSignalJoinRoom   = 2104
+	TypeSignalChangeRoom = 2104
 	TypeSignalLeaveRoom  = 2105
 
 	TypeNoticeJoinRoom    = 3101
@@ -35,8 +34,6 @@ const (
 	TypeNoticeBlockUser   = 3103
 	TypeNoticeUnblockUser = 3104
 	TypeNoticeCloseRoom   = 3105
-	TypeNoticeBlockRoom   = 3105
-	TypeNoticeUnblockRoom = 3105
 
 	TypeContentText  = 4105
 	TypeContentEmoji = 4105
@@ -123,16 +120,16 @@ func JsonSignalPing(any any, c *context.Context) *MessageBodySignalPing {
 	return &ret
 }
 
-type MessageBodySignalConnect struct {
+type MessageBodySignalLogin struct {
 	UserId string `json:"userId"`
 	Name   string `json:"name"`
 	Avatar string `json:"avatar"`
 	Role   string `json:"role"`
 }
 
-func JsonSignalConnect(any any, c *context.Context) *MessageBodySignalConnect {
+func JsonSignalLogin(any any, c *context.Context) *MessageBodySignalLogin {
 	bs, _ := json.Marshal(any)
-	ret := MessageBodySignalConnect{}
+	ret := MessageBodySignalLogin{}
 	json.Unmarshal(bs, &ret)
 	return &ret
 }

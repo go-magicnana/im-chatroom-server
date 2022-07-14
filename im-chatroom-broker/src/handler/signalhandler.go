@@ -40,13 +40,11 @@ func (s SignalHandler) Handle(ctx context.Context, c *context2.Context, packet *
 		body := protocol.JsonSignalPing(packet.Body, c)
 		return ping(ctx, c, packet, body)
 		break
-	case protocol.TypeSignalConnect:
+	case protocol.TypeSignalLogin:
 
-		a := protocol.JsonSignalConnect(packet.Body, c)
+		a := protocol.JsonSignalLogin(packet.Body, c)
 		return connect(ctx, c, packet, a)
 
-		break
-	case protocol.TypeSignalDisconnect:
 		break
 	case protocol.TypeSignalJoinRoom:
 		a := protocol.JsonSignalJoinRoom(packet.Body, c)
@@ -68,7 +66,7 @@ func ping(ctx context.Context, c *context2.Context, packet *protocol.Packet, bod
 	return protocol.NewResponseOK(packet, nil)
 }
 
-func connect(ctx context.Context, c *context2.Context, packet *protocol.Packet, body *protocol.MessageBodySignalConnect) *protocol.Packet {
+func connect(ctx context.Context, c *context2.Context, packet *protocol.Packet, body *protocol.MessageBodySignalLogin) *protocol.Packet {
 
 	user := protocol.User{
 		UserId: body.UserId,
