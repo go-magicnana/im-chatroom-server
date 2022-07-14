@@ -101,10 +101,7 @@ func catch(e error) {
 
 func read(ctx context.Context, cancel context.CancelFunc, c *context2.Context) {
 
-	defer c.Conn.Close()
-
-	//defer c.CancelFunc()
-	//SetReadDeadlineOnCancel(c.Ctx, c.CancelFunc, c.Conn)
+	defer c.Conn().Close()
 
 	serializer := serializer.SingleJsonSerializer()
 
@@ -112,21 +109,23 @@ func read(ctx context.Context, cancel context.CancelFunc, c *context2.Context) {
 
 		fmt.Println(util.CurrentSecond(), "Read 等待客户端写入")
 
-		c.Conn.SetReadDeadline(time.Now().Add(time.Second * 10))
+		c.Conn().SetReadDeadline(time.Now().Add(time.Second * 10))
 
 		meta := make([]byte, protocol.MetaVersionBytes+protocol.MetaLengthBytes)
-		ml, me := c.Conn.Read(meta)
+		ml, me := c.Conn().Read(meta)
 
 		fmt.Println(me)
 
 		switch me.(type) {
 		case *net.OpError:
-			operror := me.(*net.OpError)
-			fmt.Println("operror",operror)
+			if c.State() < context2.Login {
+				break
+			}else{
+				continue
+			}
 		}
 
 		if me == io.EOF {
-			//c.CancelFunc()
 			break
 		}
 
@@ -146,7 +145,7 @@ func read(ctx context.Context, cancel context.CancelFunc, c *context2.Context) {
 
 		length := binary.BigEndian.Uint32(meta[1:])
 		body := make([]byte, length)
-		c.Conn.Read(body)
+		c.Conn().Read(body)
 
 		packet, e := serializer.DecodePacket(body, c)
 
@@ -185,7 +184,7 @@ func write(p *protocol.Packet, c *context2.Context) error {
 	binary.Write(buffer, binary.BigEndian, length)
 
 	buffer.Write(bs)
-	_, err := c.Conn.Write(buffer.Bytes())
+	_, err := c.Conn().Write(buffer.Bytes())
 
 	fmt.Println(util.CurrentSecond(), "Write 等待客户端读取", p)
 

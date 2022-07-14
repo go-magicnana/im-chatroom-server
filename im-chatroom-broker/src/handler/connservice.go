@@ -9,9 +9,7 @@ import (
 var users sync.Map
 var dirty sync.Map
 
-func SetDirtyContext(c *context.Context) {
-	dirty.Store(c.Conn.RemoteAddr(), c)
-}
+
 
 func SetUserContext(user protocol.User, c *context.Context) {
 	users.Store(user.UserId, c)

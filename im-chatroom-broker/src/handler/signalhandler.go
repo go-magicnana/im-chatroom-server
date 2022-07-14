@@ -73,7 +73,7 @@ func connect(ctx context.Context, c *context2.Context, packet *protocol.Packet, 
 		Name:   body.Name,
 		Avatar: body.Avatar,
 		Role:   body.Role,
-		Broker: c.BrokerAddr,
+		Broker: c.Broker(),
 	}
 
 	SetUserInfo(ctx, user)
