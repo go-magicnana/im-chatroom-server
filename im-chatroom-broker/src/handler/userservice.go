@@ -34,7 +34,18 @@ func GetUserAuth(ctx context.Context, token string) (*protocol.User, error) {
 			return user, nil
 		}
 	}
+}
 
+func SetUserRoom(ctx context.Context, userId, roomId string) {
+	redis := redis.Singleton()
+	if util.IsNotEmpty(roomId) {
+		redis.HSet(ctx, UserInfo+userId, "roomId", roomId)
+	}
+}
+
+func DelUserRoom(ctx context.Context, userId string) {
+	redis := redis.Singleton()
+	redis.HDel(ctx, UserInfo+userId, "roomId")
 }
 
 func SetUserInfo(ctx context.Context, user *protocol.User) {
@@ -45,8 +56,8 @@ func SetUserInfo(ctx context.Context, user *protocol.User) {
 		redis.HSet(ctx, UserInfo+user.UserId, "name", user.Name)
 	}
 
-	if util.IsNotEmpty(user.Token){
-		redis.HSet(ctx,UserInfo+user.UserId,"token",user.Token)
+	if util.IsNotEmpty(user.Token) {
+		redis.HSet(ctx, UserInfo+user.UserId, "token", user.Token)
 	}
 
 	if util.IsNotEmpty(user.Avatar) {
@@ -60,9 +71,9 @@ func SetUserInfo(ctx context.Context, user *protocol.User) {
 	if util.IsNotEmpty(user.Broker) {
 		redis.HSet(ctx, UserInfo+user.UserId, "broker", user.Broker)
 	}
-
-	if util.IsNotEmpty(user.RoomId) {
-		redis.HSet(ctx, UserInfo+user.UserId, "roomId", user.RoomId)
-	}
 }
 
+func DelUserInfo(ctx context.Context,userId string){
+	redis := redis.Singleton()
+	redis.Del(ctx,UserInfo+userId)
+}

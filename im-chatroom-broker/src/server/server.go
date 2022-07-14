@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	context2 "im-chatroom-broker/context"
+	err "im-chatroom-broker/error"
 	"im-chatroom-broker/handler"
 	"im-chatroom-broker/protocol"
 	"im-chatroom-broker/serializer"
@@ -56,11 +57,7 @@ func listen(ctx context.Context, addr string) {
 
 	brokerAddress := ip.String() + addr
 
-	handler.SetBrokerInfo(ctx,brokerAddress)
-
-	//SetBroker(ctx,1, address)
-
-	//UserLocal2String()
+	handler.SetBrokerInstance(ctx, brokerAddress)
 
 	for {
 		select {
@@ -87,19 +84,21 @@ func listen(ctx context.Context, addr string) {
 
 			c.Connect()
 
-			//setDirtyConnection(c)
-
 			go read(ctx, cancel, c)
 
-			//go printConn()
-
-			//go Read(c)
 		}
 	}
 }
 
 func close(ctx context.Context, cancel context.CancelFunc, c *context2.Context) {
 	fmt.Println(util.CurrentSecond(), "Read 关闭线程 关闭连接")
+
+	handler.DelUserInfo(ctx, c.UserId())
+
+	handler.DelUserContext(c.UserId())
+
+	handler.DelBrokerInfo(ctx,c.Broker(),c.UserId())
+
 	c.Close()
 }
 
@@ -164,7 +163,7 @@ func read(ctx context.Context, cancel context.CancelFunc, c *context2.Context) {
 
 }
 
-func write(p *protocol.Packet, c *context2.Context) error {
+func write(ctx context.Context, cancel context.CancelFunc, c *context2.Context, p *protocol.Packet) error {
 	//SetWriteDeadlineOnCancel(c.Ctx, c.CancelFunc, c.Conn)
 
 	serializer := serializer.SingleJsonSerializer()
@@ -224,15 +223,24 @@ func write(p *protocol.Packet, c *context2.Context) error {
 func process(ctx context.Context, cancel context.CancelFunc, c *context2.Context, packet *protocol.Packet) {
 
 	var ret *protocol.Packet = nil
+	var e error = nil
 	switch packet.Header.Command {
 	case protocol.CommandDefault:
-		ret = handler.SingleDefaultHandler().Handle(ctx, c, packet)
+		ret, e = handler.SingleDefaultHandler().Handle(ctx, c, packet)
 		break
 	case protocol.CommandSignal:
-		ret, _ = handler.SingleSignalHandler().Handle(ctx, c, packet)
+		ret, e = handler.SingleSignalHandler().Handle(ctx, c, packet)
 	}
 
-	write(ret, c)
+	if ret == nil {
+		if e != nil {
+			ret = protocol.NewResponseError(packet, err.Default)
+		}
+	}
+
+	if ret != nil {
+		write(ctx, cancel, c, packet)
+	}
 
 }
 

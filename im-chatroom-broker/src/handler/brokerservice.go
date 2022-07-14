@@ -6,19 +6,21 @@ import (
 )
 
 const (
-	// BrokerInfo SET
 	BrokerInfo string = "imchatroom:brokerinfo:"
-
-
 	BrokerInstance string = "imchatroom:brokerinstance"
 )
 
-func SetUserBroker(ctx context.Context, broker, userId string) {
+func SetBrokerInfo(ctx context.Context, broker, userId string) {
 	redis := redis.Singleton()
 	redis.SAdd(ctx, BrokerInfo+broker, userId)
 }
 
-func SetBrokerInfo(ctx context.Context,broker string){
+func DelBrokerInfo(ctx context.Context,broker,userId string){
+	redis := redis.Singleton()
+	redis.SRem(ctx,BrokerInfo+broker,userId)
+}
+
+func SetBrokerInstance(ctx context.Context,broker string){
 	redis := redis.Singleton()
 	redis.SAdd(ctx,BrokerInstance,broker)
 }

@@ -2,7 +2,6 @@ package protocol
 
 import (
 	"encoding/json"
-	"im-chatroom-broker/context"
 	err "im-chatroom-broker/error"
 )
 
@@ -26,8 +25,8 @@ const (
 	TypeSignalPing       = 2101
 	TypeSignalLogin      = 2102
 	TypeSignalJoinRoom   = 2104
-	TypeSignalChangeRoom = 2104
 	TypeSignalLeaveRoom  = 2105
+	TypeSignalChangeRoom = 2106
 
 	TypeNoticeJoinRoom    = 3101
 	TypeNoticeLeaveRoom   = 3102
@@ -109,62 +108,16 @@ type User struct {
 	Broker string `json:"broker"`
 }
 
-type MessageBodySignalPing struct {
-	Current uint64 `json:"current"`
-	UserId  string `json:"userId"`
-}
-
-func JsonSignalPing(any any, c *context.Context) *MessageBodySignalPing {
-	bs, _ := json.Marshal(any)
-	ret := MessageBodySignalPing{}
-	json.Unmarshal(bs, &ret)
-	return &ret
-}
-
 type MessageBodySignalLogin struct {
 	Token string `json:"token"`
 }
 
-func JsonSignalLogin(any any, c *context.Context) *MessageBodySignalLogin {
-	bs, _ := json.Marshal(any)
-	ret := MessageBodySignalLogin{}
-	json.Unmarshal(bs, &ret)
-	return &ret
-}
-
-type MessageBodySignalDisconnect struct {
-	UserId string `json:"userId"`
-}
-
-func JsonSignalDisconnect(any any, c *context.Context) *MessageBodySignalDisconnect {
-	bs, _ := json.Marshal(any)
-	ret := MessageBodySignalDisconnect{}
-	json.Unmarshal(bs, &ret)
-	return &ret
-}
-
 type MessageBodySignalJoinRoom struct {
-	UserId string `json:"userId"`
 	RoomId string `json:"roomId"`
 }
 
-func JsonSignalJoinRoom(any any, c *context.Context) *MessageBodySignalJoinRoom {
-	bs, _ := json.Marshal(any)
-	ret := MessageBodySignalJoinRoom{}
-	json.Unmarshal(bs, &ret)
-	return &ret
-}
-
-func JsonSignalLeaveRoom(any any, c *context.Context) *MessageBodySignalLeaveRoom {
-	bs, _ := json.Marshal(any)
-	ret := MessageBodySignalLeaveRoom{}
-	json.Unmarshal(bs, &ret)
-	return &ret
-}
-
-type MessageBodySignalLeaveRoom struct {
-	UserId string `json:"userId"`
-	RoomId string `json:"roomId"`
+type MessageBodySignalChangeRoom struct {
+	RoomId string `json:"newRoomId"`
 }
 
 type MessageBodyNoticeJoinRoom struct {
@@ -214,4 +167,25 @@ type MessageBodyContentReply struct {
 	SendUserAvatar string `json:"sendUserAvatar"`
 	SendContent    string `json:"sendContent"`
 	Content        string `json:"content"`
+}
+
+func JsonSignalLogin(any any) *MessageBodySignalLogin {
+	bs, _ := json.Marshal(any)
+	ret := MessageBodySignalLogin{}
+	json.Unmarshal(bs, &ret)
+	return &ret
+}
+
+func JsonSignalJoinRoom(any any) *MessageBodySignalJoinRoom {
+	bs, _ := json.Marshal(any)
+	ret := MessageBodySignalJoinRoom{}
+	json.Unmarshal(bs, &ret)
+	return &ret
+}
+
+func JsonSignalChangeRoom(any any) *MessageBodySignalChangeRoom {
+	bs, _ := json.Marshal(any)
+	ret := MessageBodySignalChangeRoom{}
+	json.Unmarshal(bs, &ret)
+	return &ret
 }

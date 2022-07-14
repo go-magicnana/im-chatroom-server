@@ -15,15 +15,9 @@ func SetUserContext(user *protocol.User, c *context.Context) {
 	users.Store(user.UserId, c)
 }
 
-func GetUserContext(userId string) *context.Context {
-	v, f := users.Load(userId)
-
-	if f {
-		return v.(*context.Context)
-	} else {
-		return nil
-	}
-
+func DelUserContext(userId string){
+	users.Delete(userId)
 }
+
 
 //TODO ... 如果超过一段时间没有connect，就关了他

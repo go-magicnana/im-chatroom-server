@@ -2,6 +2,7 @@ package context
 
 import (
 	"go.uber.org/atomic"
+	"im-chatroom-broker/util"
 	"net"
 )
 
@@ -14,20 +15,22 @@ const (
 )
 
 type Context struct {
-	userId string
-	token  string
-	roomId *atomic.String
-	broker string
-	state  *atomic.Int32
-	conn   net.Conn
+	userId   string
+	token    string
+	roomId   *atomic.String
+	broker   string
+	conn     net.Conn
+	state    *atomic.Int32
+	pingTime *atomic.Int64
 }
 
 func NewContext(brokerAddr string, conn net.Conn) *Context {
 
 	return &Context{
-		broker: brokerAddr,
-		state:  atomic.NewInt32(Ready),
-		conn:   conn,
+		broker:   brokerAddr,
+		conn:     conn,
+		state:    atomic.NewInt32(Ready),
+		pingTime: atomic.NewInt64(0),
 	}
 }
 
@@ -62,6 +65,12 @@ func (c *Context) Connect() (int32, bool) {
 	} else {
 		return c.state.Load(), false
 	}
+}
+
+func (c *Context) Ping() (int64, bool) {
+	ret := util.CurrentSecond()
+	c.pingTime.Store(ret)
+	return ret, true
 }
 
 func (c *Context) Login(userId, token string) (int32, bool) {

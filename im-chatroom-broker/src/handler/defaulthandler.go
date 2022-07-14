@@ -22,7 +22,7 @@ func SingleDefaultHandler() *DefaultHandler {
 
 type DefaultHandler struct{}
 
-func (d DefaultHandler) Handle(ctx context.Context, c *context2.Context, packet *protocol.Packet) *protocol.Packet {
+func (d DefaultHandler) Handle(ctx context.Context, c *context2.Context, packet *protocol.Packet) (*protocol.Packet,error) {
 	ret := protocol.NewResponseError(packet, err.CommandNotAllow)
-	return ret
+	return ret,nil
 }
