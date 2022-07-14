@@ -12,11 +12,11 @@ func HeartBeating(context *context.Context, readerChannel chan byte, timeout int
 	select {
 	case _ = <-readerChannel:
 		//Log(context.Conn.RemoteAddr().String(), "get message, keeping heartbeating...")
-		context.Conn.SetDeadline(time.Now().Add(time.Duration(timeout) * time.Second))
+		context.Conn().SetDeadline(time.Now().Add(time.Duration(timeout) * time.Second))
 		break
 	case <-time.After(time.Second * 5):
 		//Log("It's really weird to get Nothing!!!")
-		context.Conn.Close()
+		context.Conn().Close()
 	}
 
 }
@@ -25,5 +25,5 @@ func GravelChannel(n []byte, mess chan byte) {
 	for _, v := range n {
 		mess <- v
 	}
-	close(mess)
+	close(nil,nil,nil)
 }

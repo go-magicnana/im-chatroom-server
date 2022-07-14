@@ -23,7 +23,6 @@ var counter = 100
 
 var conns sync.Map
 
-
 func Start() {
 
 	//zaplog.InitLogger()
@@ -57,6 +56,8 @@ func listen(ctx context.Context, addr string) {
 
 	brokerAddress := ip.String() + addr
 
+	handler.SetBrokerInfo(ctx,brokerAddress)
+
 	//SetBroker(ctx,1, address)
 
 	//UserLocal2String()
@@ -84,6 +85,8 @@ func listen(ctx context.Context, addr string) {
 
 			c := context2.NewContext(brokerAddress, conn)
 
+			c.Connect()
+
 			//setDirtyConnection(c)
 
 			go read(ctx, cancel, c)
@@ -95,13 +98,14 @@ func listen(ctx context.Context, addr string) {
 	}
 }
 
-func catch(e error) {
-
+func close(ctx context.Context, cancel context.CancelFunc, c *context2.Context) {
+	fmt.Println(util.CurrentSecond(), "Read 关闭线程 关闭连接")
+	c.Close()
 }
 
 func read(ctx context.Context, cancel context.CancelFunc, c *context2.Context) {
 
-	defer c.Conn().Close()
+	defer close(ctx, cancel, c)
 
 	serializer := serializer.SingleJsonSerializer()
 
@@ -109,7 +113,7 @@ func read(ctx context.Context, cancel context.CancelFunc, c *context2.Context) {
 
 		fmt.Println(util.CurrentSecond(), "Read 等待客户端写入")
 
-		c.Conn().SetReadDeadline(time.Now().Add(time.Second * 10))
+		c.Conn().SetReadDeadline(time.Now().Add(time.Second * 9999))
 
 		meta := make([]byte, protocol.MetaVersionBytes+protocol.MetaLengthBytes)
 		ml, me := c.Conn().Read(meta)
@@ -119,8 +123,8 @@ func read(ctx context.Context, cancel context.CancelFunc, c *context2.Context) {
 		switch me.(type) {
 		case *net.OpError:
 			if c.State() < context2.Login {
-				break
-			}else{
+				return
+			} else {
 				continue
 			}
 		}
@@ -157,8 +161,6 @@ func read(ctx context.Context, cancel context.CancelFunc, c *context2.Context) {
 
 		go process(ctx, cancel, c, packet)
 	}
-
-	fmt.Println("read thread exit")
 
 }
 
@@ -227,7 +229,7 @@ func process(ctx context.Context, cancel context.CancelFunc, c *context2.Context
 		ret = handler.SingleDefaultHandler().Handle(ctx, c, packet)
 		break
 	case protocol.CommandSignal:
-		ret = handler.SingleSignalHandler().Handle(ctx, c, packet)
+		ret, _ = handler.SingleSignalHandler().Handle(ctx, c, packet)
 	}
 
 	write(ret, c)

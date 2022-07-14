@@ -45,8 +45,8 @@ const (
 )
 
 type Packet struct {
-	Header MessageHeader
-	Body   any
+	Header MessageHeader `json:"header"`
+	Body   any           `json:"body"`
 }
 
 type MessageHeader struct {
@@ -100,6 +100,7 @@ func NewResponseError(in *Packet, error err.Error) *Packet {
 }
 
 type User struct {
+	Token  string `json:"token"`
 	UserId string `json:"userId"`
 	Name   string `json:"name"`
 	Avatar string `json:"avatar"`
@@ -121,10 +122,7 @@ func JsonSignalPing(any any, c *context.Context) *MessageBodySignalPing {
 }
 
 type MessageBodySignalLogin struct {
-	UserId string `json:"userId"`
-	Name   string `json:"name"`
-	Avatar string `json:"avatar"`
-	Role   string `json:"role"`
+	Token string `json:"token"`
 }
 
 func JsonSignalLogin(any any, c *context.Context) *MessageBodySignalLogin {

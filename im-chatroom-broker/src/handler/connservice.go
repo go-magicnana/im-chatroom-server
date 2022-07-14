@@ -11,7 +11,7 @@ var dirty sync.Map
 
 
 
-func SetUserContext(user protocol.User, c *context.Context) {
+func SetUserContext(user *protocol.User, c *context.Context) {
 	users.Store(user.UserId, c)
 }
 

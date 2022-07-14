@@ -73,7 +73,7 @@ func TaskDeliver(postdata []byte,context *context.Context){
 		}
 		if pred.(func(entermsg Msg)bool)(entermsg) {
 			result := act.(Controller).Excute(entermsg)
-			context.Conn.Write(result)
+			context.Conn().Write(result)
 			return
 		}
 	}

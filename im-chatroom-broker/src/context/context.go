@@ -6,6 +6,7 @@ import (
 )
 
 const (
+	Closed    = -1
 	Ready     = 0
 	Connected = 1
 	Login     = 2
@@ -96,4 +97,9 @@ func (c *Context) LeaveRoom() (int32, bool) {
 
 func (c *Context) ChangeRoom(roomId string) {
 	c.roomId.Store(roomId)
+}
+
+func (c *Context) Close() {
+	c.state.Store(Closed)
+	c.conn.Close()
 }

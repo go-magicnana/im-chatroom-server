@@ -23,7 +23,7 @@ func SingleSignalHandler() *SignalHandler {
 
 type SignalHandler struct{}
 
-func (s SignalHandler) Handle(ctx context.Context, c *context2.Context, packet *protocol.Packet) *protocol.Packet {
+func (s SignalHandler) Handle(ctx context.Context, c *context2.Context, packet *protocol.Packet) (*protocol.Packet, error) {
 
 	ret := protocol.NewResponseError(packet, err.TypeNotAllow)
 
@@ -38,7 +38,7 @@ func (s SignalHandler) Handle(ctx context.Context, c *context2.Context, packet *
 	case protocol.TypeSignalPing:
 
 		body := protocol.JsonSignalPing(packet.Body, c)
-		return ping(ctx, c, packet, body)
+		return ping(ctx, c, packet, body),nil
 		break
 	case protocol.TypeSignalLogin:
 
@@ -48,12 +48,12 @@ func (s SignalHandler) Handle(ctx context.Context, c *context2.Context, packet *
 		break
 	case protocol.TypeSignalJoinRoom:
 		a := protocol.JsonSignalJoinRoom(packet.Body, c)
-		return joinRoom(ctx, c, packet, a)
+		return joinRoom(ctx, c, packet, a),nil
 	case protocol.TypeSignalLeaveRoom:
 		break
 	}
 
-	return ret
+	return ret,nil
 }
 
 func ping(ctx context.Context, c *context2.Context, packet *protocol.Packet, body *protocol.MessageBodySignalPing) *protocol.Packet {
@@ -66,19 +66,27 @@ func ping(ctx context.Context, c *context2.Context, packet *protocol.Packet, bod
 	return protocol.NewResponseOK(packet, nil)
 }
 
-func connect(ctx context.Context, c *context2.Context, packet *protocol.Packet, body *protocol.MessageBodySignalLogin) *protocol.Packet {
+func connect(ctx context.Context, c *context2.Context, packet *protocol.Packet, body *protocol.MessageBodySignalLogin) (*protocol.Packet, error) {
 
-	user := protocol.User{
-		UserId: body.UserId,
-		Name:   body.Name,
-		Avatar: body.Avatar,
-		Role:   body.Role,
-		Broker: c.Broker(),
+	token := body.Token
+
+	user, e := GetUserAuth(ctx, token)
+
+	if e != nil {
+		return protocol.NewResponseError(packet, err.Unauthorized), nil
 	}
+
+	user.Broker = c.Broker()
+	user.Token = token
+	c.Login(user.UserId, user.Token)
 
 	SetUserInfo(ctx, user)
 
-	return protocol.NewResponseOK(packet, nil)
+	SetUserContext(user, c)
+
+	SetUserBroker(ctx, user.Broker, user.UserId)
+
+	return protocol.NewResponseOK(packet, nil), nil
 }
 
 func joinRoom(ctx context.Context, c *context2.Context, packet *protocol.Packet, body *protocol.MessageBodySignalJoinRoom) *protocol.Packet {

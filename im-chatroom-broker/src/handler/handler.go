@@ -7,5 +7,5 @@ import (
 )
 
 type Handler interface {
-	Handle(ctx context.Context, c *context2.Context, packet *protocol.Packet) *protocol.Packet
+	Handle(ctx context.Context, c *context2.Context, packet *protocol.Packet) (*protocol.Packet, error)
 }
