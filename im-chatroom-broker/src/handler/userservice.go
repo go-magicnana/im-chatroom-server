@@ -40,12 +40,15 @@ func SetUserRoom(ctx context.Context, userKey, roomId string) {
 	redis := redis.Singleton()
 	if util.IsNotEmpty(roomId) {
 		redis.HSet(ctx, UserInfo+userKey, "roomId", roomId)
+		redis.Expire(ctx, UserInfo+userKey, time.Second*20)
 	}
 }
 
 func SetUserLogin(ctx context.Context, userKey string, state int32) {
 	redis := redis.Singleton()
 	redis.HSet(ctx, UserInfo+userKey, "state", state)
+	redis.Expire(ctx, UserInfo+userKey, time.Second*20)
+
 }
 
 func SetUserAlive(ctx context.Context, userKey string) {
@@ -84,6 +87,9 @@ func SetUserInfo(ctx context.Context, user *protocol.User) {
 	if util.IsNotEmpty(user.Broker) {
 		redis.HSet(ctx, UserInfo+user.UserKey, "broker", user.Broker)
 	}
+
+	redis.Expire(ctx, UserInfo+user.UserKey, time.Second*20)
+
 }
 
 func DelUserInfo(ctx context.Context, userKey string) {

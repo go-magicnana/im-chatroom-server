@@ -95,7 +95,7 @@ func login(ctx context.Context, c *context2.Context, packet *protocol.Packet, bo
 
 	SetUserContext(user, c)
 
-	//SetBrokerInfo(ctx, user.Broker, user.UserKey)
+	SetBrokerCapacity(ctx, user.Broker, user.UserKey)
 
 	SetUserLogin(ctx, user.UserKey, c.State())
 

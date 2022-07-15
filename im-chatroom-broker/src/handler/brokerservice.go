@@ -12,27 +12,28 @@ import (
 
 const (
 	BrokerAlive    string = "imchatroom:brokeralive:"
+	BrokerCapacity string = "imchatroom:brokercapacity:"
 	BrokerInstance string = "imchatroom:brokerinstance"
 )
 
-//func SetBrokerInfo(ctx context.Context, broker, userId string) {
-//	redis := redis.Singleton()
-//	redis.SAdd(ctx, BrokerInfo+broker, userId)
-//}
-//
-//func DelBrokerInfo(ctx context.Context, broker, userId string) {
-//	redis := redis.Singleton()
-//	redis.SRem(ctx, BrokerInfo+broker, userId)
-//}
+func SetBrokerCapacity(ctx context.Context, broker, userKey string) {
+	redis := redis.Singleton()
+	redis.SAdd(ctx, BrokerCapacity+broker, userKey)
+}
+
+func DelBrokerCapacity(ctx context.Context, broker, userKey string) {
+	redis := redis.Singleton()
+	redis.SRem(ctx, BrokerCapacity+broker, userKey)
+}
 
 func SetBrokerInstance(ctx context.Context, broker string) {
 	redis := redis.Singleton()
 	redis.SAdd(ctx, BrokerInstance, broker)
 }
 
-func DelBrokerInstance(ctx context.Context,broker string){
+func DelBrokerInstance(ctx context.Context, broker string) {
 	redis := redis.Singleton()
-	redis.SRem(ctx,BrokerInstance,broker)
+	redis.SRem(ctx, BrokerInstance, broker)
 }
 
 func SetBrokerAlive(ctx context.Context, broker string) {
@@ -54,12 +55,12 @@ func BrokerAliveTask(ctx context.Context, broker string) {
 
 	c := cron.New()
 
-																	//0/5 * * * * ? 	每5秒钟1次
-	c.AddFunc("*/1 * * * *", func() {			//1分钟1次
+	//0/5 * * * * ? 	每5秒钟1次
+	c.AddFunc("*/1 * * * *", func() { //1分钟1次
 		SetBrokerAlive(ctx, broker)
 	})
 
-	c.AddFunc("0/30 * * * * ?",func(){
+	c.AddFunc("0/30 * * * * ?", func() {
 		ProbeBroker(ctx)
 	})
 
@@ -85,9 +86,8 @@ func ProbeBroker(ctx context.Context) {
 	for _, broker := range list {
 		ret := GetBrokerAlive(ctx, broker)
 		if util.IsEmpty(ret) {
-			DelBrokerInstance(ctx,broker)
+			DelBrokerInstance(ctx, broker)
 		}
 	}
 
 }
-

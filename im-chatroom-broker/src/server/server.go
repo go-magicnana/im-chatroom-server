@@ -59,7 +59,7 @@ func listen(ctx context.Context, addr string) {
 
 	handler.SetBrokerInstance(ctx, brokerAddress)
 
-	go handler.BrokerAliveTask(ctx,brokerAddress)
+	go handler.BrokerAliveTask(ctx, brokerAddress)
 
 	for {
 		select {
@@ -99,7 +99,7 @@ func close(ctx context.Context, cancel context.CancelFunc, c *context2.Context) 
 
 	handler.DelUserContext(c.UserKey())
 
-	//handler.DelBrokerInfo(ctx,c.Broker(),c.UserKey())
+	handler.DelBrokerCapacity(ctx, c.Broker(), c.UserKey())
 
 	c.Close()
 }
