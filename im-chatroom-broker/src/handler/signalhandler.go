@@ -72,7 +72,7 @@ func login(ctx context.Context, c *context2.Context, packet *protocol.Packet, bo
 		return protocol.NewResponseError(packet, err.Unauthorized), nil
 	}
 
-	exist, _ := GetUserInfo(ctx, user.UserId)
+	exist, _ := GetUserInfo(ctx, user.UserKey)
 
 	if exist != nil {
 		if exist.State == strconv.FormatInt(int64(context2.Login), 10) {
@@ -95,7 +95,7 @@ func login(ctx context.Context, c *context2.Context, packet *protocol.Packet, bo
 
 	//SetBrokerInfo(ctx, user.Broker, user.UserKey)
 
-	SetUserLogin(ctx, user.UserId, c.State())
+	SetUserLogin(ctx, user.UserKey, c.State())
 
 	p := protocol.NewResponseOK(packet, nil)
 

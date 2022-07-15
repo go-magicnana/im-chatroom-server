@@ -38,8 +38,8 @@ func (c *Context) UserKey() string {
 	return c.userKey
 }
 
-func (c *Context) Token() string {
-	return c.token
+func (c *Context) UserId() string {
+	return c.userId
 }
 
 func (c *Context) RoomId() string {
