@@ -9,11 +9,13 @@ const (
 	MetaVersionBytes = 1
 	MetaLengthBytes  = 4
 
-	TargetAll = 1
-	TargetOne = 2
+	TargetRoom = 1
+	TargetOne  = 2
 
-	FlowUp   = 1
-	FlowDown = 2
+	FlowUp              = 1
+	FlowDown            = 2
+	FlowDeliver         = 3
+	FlowDeliverResponse = 4
 
 	CommandDefault = 1
 	CommandSignal  = 2
@@ -61,7 +63,7 @@ type MessageHeader struct {
 	Command   uint16 `json:"command"`
 	Target    uint32 `json:"target"`
 	From      User   `json:"from"`
-	To        User   `json:"to"`
+	To        string `json:"to"`
 	Flow      uint8  `json:"flow"`
 	Type      uint32 `json:"type"`
 	Code      uint32 `json:"code"`

@@ -1,33 +1,76 @@
 package mq
 
 import (
+	"encoding/json"
 	"github.com/segmentio/kafka-go"
+	"golang.org/x/net/context"
+	context2 "im-chatroom-broker/context"
+	"im-chatroom-broker/protocol"
 	"sync"
 )
 
 var once sync.Once
 
-var deliver *kafka.Writer
-var deliverOfBroker *kafka.Writer
+var client *kafka.Writer
 
-func DeliverOfAll() *kafka.Writer {
+func deliver() *kafka.Writer {
 	once.Do(func() {
-		deliver = newKafkaWriter("xx", "imchatroom_deliver")
+		client = newKafkaWriter("xx")
 	})
-	return deliver
+	return client
 }
 
-func DeliverOfBroker(broker string) *kafka.Writer {
-	once.Do(func() {
-		deliverOfBroker = newKafkaWriter("xx", "imchatroom_"+broker)
-	})
-	return deliverOfBroker
-}
-
-func newKafkaWriter(kafkaURL, topic string) *kafka.Writer {
+func newKafkaWriter(kafkaURL string) *kafka.Writer {
 	return &kafka.Writer{
 		Addr:     kafka.TCP(kafkaURL),
-		Topic:    topic,
 		Balancer: &kafka.LeastBytes{},
+	}
+}
+
+func DeliverMessageToRoom(ctx context.Context, c *context2.Context, packet *protocol.Packet) {
+
+	val, e := json.Marshal(packet)
+
+	if e != nil {
+		return
+	}
+
+	if len(val) == 0 {
+		return
+	}
+
+	msg := kafka.Message{
+		Key:   []byte(packet.Header.To),
+		Value: val,
+		Topic: "imchatroom_deliver",
+	}
+
+	e = deliver().WriteMessages(ctx, msg)
+	if e != nil {
+		return
+	}
+}
+
+func DeliverMessageToUser(ctx context.Context, c *context2.Context, packet *protocol.Packet) {
+
+	val, e := json.Marshal(packet)
+
+	if e != nil {
+		return
+	}
+
+	if len(val) == 0 {
+		return
+	}
+
+	msg := kafka.Message{
+		Key:   []byte(packet.Header.To),
+		Value: val,
+		Topic: "imchatroom_" + c.Broker(),
+	}
+
+	e = deliver().WriteMessages(ctx, msg)
+	if e != nil {
+		return
 	}
 }
