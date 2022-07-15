@@ -117,6 +117,7 @@ type User struct {
 	Broker  string `json:"broker"`
 	Gender  string `json:"gender"`
 	State   string `json:"state"`
+	Sex     string `json:"sex"`
 }
 
 type MessageBodySignalLogin struct {

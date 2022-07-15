@@ -33,19 +33,19 @@ func Start() {
 		os.Exit(1)
 	}
 
-	fmt.Println(util.CurrentSecond(),"Connect 连接服务端")
+	fmt.Println(util.CurrentSecond(), "Connect 连接服务端")
 
 	go read(conn)
 
-	time.Sleep(time.Second*10)
+	time.Sleep(time.Second * 10)
 	sendConnect(conn)
 
 	//
-	time.Sleep(time.Second*10)
+	time.Sleep(time.Second * 10)
 	sendJoinRoom(conn)
 	//
 	//
-	time.Sleep(time.Second*10)
+	time.Sleep(time.Second * 10)
 	sendPing(conn)
 	wg.Wait()
 }
@@ -60,12 +60,10 @@ func read(conn net.Conn) {
 
 	for {
 
-
-		fmt.Println(util.CurrentSecond(),"Read waiting server")
-
+		fmt.Println(util.CurrentSecond(), "Read waiting server")
 
 		meta := make([]byte, protocol.MetaVersionBytes+protocol.MetaLengthBytes)
-		ml, me := c.Conn.Read(meta)
+		ml, me := c.Connection.Read(meta)
 
 		if me != nil {
 			continue
@@ -83,7 +81,7 @@ func read(conn net.Conn) {
 
 		length := binary.BigEndian.Uint32(meta[1:])
 		body := make([]byte, length)
-		c.Conn.Read(body)
+		c.Conn().Read(body)
 
 		packet, e := serializer.DecodePacket(body, &c)
 
@@ -91,7 +89,7 @@ func read(conn net.Conn) {
 			return
 		}
 
-		fmt.Println(util.CurrentSecond(),"Read receive server",packet)
+		fmt.Println(util.CurrentSecond(), "Read receive server", packet)
 
 	}
 
@@ -119,10 +117,9 @@ func write(packet *protocol.Packet, conn net.Conn) {
 	binary.Write(buffer, binary.BigEndian, length)
 
 	buffer.Write(bs)
-	c.Conn.Write(buffer.Bytes())
+	c.Connection.Write(buffer.Bytes())
 
-	fmt.Println(util.CurrentSecond(),"Write send server",packet)
-
+	fmt.Println(util.CurrentSecond(), "Write send server", packet)
 
 }
 
@@ -132,13 +129,13 @@ func sendConnect(conn net.Conn) {
 		MessageId: "e10adc3949ba59abbe56e057f20f883a",
 		Command:   protocol.CommandSignal,
 		Flow:      protocol.FlowUp,
-		Type:      protocol.TypeSignalConnect,
+		Type:      protocol.TypeSignalLogin,
 	}
 
-	body := protocol.MessageBodySignalConnect{
-		UserId: "1001",
-		Name:   "张三丰",
-		Avatar: "https://img1.baidu.com/it/u=2848117662,2869906655&fm=253&fmt=auto&app=138&f=JPEG?w=500&h=501",
+	body := protocol.MessageBodySignalLogin{
+		//UserId: "1001",
+		//Name:   "张三丰",
+		//Avatar: "https://img1.baidu.com/it/u=2848117662,2869906655&fm=253&fmt=auto&app=138&f=JPEG?w=500&h=501",
 	}
 
 	packet := protocol.Packet{
@@ -189,8 +186,8 @@ func sendPing(conn net.Conn) {
 
 	write(&packet, conn)
 
-	for{
-		time.Sleep(time.Second*1)
+	for {
+		time.Sleep(time.Second * 1)
 		write(&packet, conn)
 	}
 
