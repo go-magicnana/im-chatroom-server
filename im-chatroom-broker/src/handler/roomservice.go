@@ -14,16 +14,15 @@ func SetRoomUser(ctx context.Context, roomId string, userKey string) {
 	redis.SAdd(ctx, RoomInfo+roomId, userKey)
 }
 
-//func GetRoom(ctx context.Context, roomId string) (*[...]string, error){
-//	redis := redis.Singleton()
-//	cmd := redis.SCard(ctx, RoomInfo+roomId)
-//	m, e := cmd.Result()
-//	if e != nil {
-//		return nil,e
-//	}
-//	fmt.Println(m)
-//	return m,nil
-//}
+func GetRoom(ctx context.Context, roomId string) ([]string, error) {
+	redis := redis.Singleton()
+	cmd := redis.SMembers(ctx, RoomInfo+roomId)
+	m, e := cmd.Result()
+	if e != nil {
+		return nil, e
+	}
+	return m, nil
+}
 
 func DelRoomUser(ctx context.Context, roomId string, userKey string) {
 	redis := redis.Singleton()
