@@ -33,6 +33,8 @@ const (
 	TypeNoticeBlockUser   = 3103
 	TypeNoticeUnblockUser = 3104
 	TypeNoticeCloseRoom   = 3105
+	TypeNoticeBlockRoom   = 3106
+	TypeNoticeUnblockRoom = 3107
 
 	TypeContentText  = 4101
 	TypeContentEmoji = 4102
@@ -113,6 +115,7 @@ type User struct {
 	Role    string `json:"role"`
 	RoomId  string `json:"roomId"`
 	Broker  string `json:"broker"`
+	Gender  string `json:"gender"`
 	State   string `json:"state"`
 }
 
@@ -170,16 +173,20 @@ type MessageBodyContentEmoji struct {
 }
 
 type MessageBodyContentAt struct {
-	AtUserId string `json:"atUserId"`
+	AtUserKey    string `json:"atUserKey"`
+	AtUserId     string `json:"atUserId"`
+	AtUserName   string `json:"atUserName"`
+	AtUserAvatar string `json:"atUserAvatar"`
+	Content      string `json:"content"`
 }
 
 type MessageBodyContentReply struct {
-	SendMessageId  string `json:"sendMessageId"`
-	SendUserId     string `json:"sendUserId"`
-	SendUserName   string `json:"sendUserName"`
-	SendUserAvatar string `json:"sendUserAvatar"`
-	SendContent    string `json:"sendContent"`
-	Content        string `json:"content"`
+	ReplyUserKey    string `json:"replyUserKey"`
+	ReplyUserId     string `json:"replyUserId"`
+	ReplyUserName   string `json:"replyUserName"`
+	ReplyUserAvatar string `json:"replyUserAvatar"`
+	ReplyContent    string `json:"replyContent"`
+	Content         string `json:"content"`
 }
 
 func JsonSignalLogin(any any) *MessageBodySignalLogin {
@@ -199,6 +206,34 @@ func JsonSignalJoinRoom(any any) *MessageBodySignalJoinRoom {
 func JsonSignalChangeRoom(any any) *MessageBodySignalChangeRoom {
 	bs, _ := json.Marshal(any)
 	ret := MessageBodySignalChangeRoom{}
+	json.Unmarshal(bs, &ret)
+	return &ret
+}
+
+func JsonContentText(any any) *MessageBodyContentText {
+	bs, _ := json.Marshal(any)
+	ret := MessageBodyContentText{}
+	json.Unmarshal(bs, &ret)
+	return &ret
+}
+
+func JsonContentEmoji(any any) *MessageBodyContentEmoji {
+	bs, _ := json.Marshal(any)
+	ret := MessageBodyContentEmoji{}
+	json.Unmarshal(bs, &ret)
+	return &ret
+}
+
+func JsonContentAt(any any) *MessageBodyContentAt {
+	bs, _ := json.Marshal(any)
+	ret := MessageBodyContentAt{}
+	json.Unmarshal(bs, &ret)
+	return &ret
+}
+
+func JsonContentReply(any any) *MessageBodyContentReply {
+	bs, _ := json.Marshal(any)
+	ret := MessageBodyContentReply{}
 	json.Unmarshal(bs, &ret)
 	return &ret
 }

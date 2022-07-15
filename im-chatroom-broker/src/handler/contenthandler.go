@@ -10,14 +10,14 @@ import (
 
 var onceContentHandler sync.Once
 
-var contentHandler *DefaultHandler
+var contentHandler *ContentHandler
 
-func SingleContentHandler() *DefaultHandler {
+func SingleContentHandler() *ContentHandler {
 	onceDefaultHandler.Do(func() {
-		defaultHandler = &DefaultHandler{}
+		contentHandler = &ContentHandler{}
 	})
 
-	return defaultHandler
+	return contentHandler
 }
 
 type ContentHandler struct{}
@@ -33,18 +33,18 @@ func (d ContentHandler) Handle(ctx context.Context, c *context2.Context, packet 
 
 	switch packet.Header.Type {
 	case protocol.TypeContentText:
-		return ping(ctx, c, packet)
+		return text(ctx, c, packet)
 
 	case protocol.TypeContentEmoji:
 		a := protocol.JsonSignalLogin(packet.Body)
-		return login(ctx, c, packet, a)
+		return emoji(ctx, c, packet, a)
 
 	case protocol.TypeContentAt:
 		a := protocol.JsonSignalJoinRoom(packet.Body)
-		return joinRoom(ctx, c, packet, a)
+		return at(ctx, c, packet, a)
 
 	case protocol.TypeContentReply:
-		return leaveRoom(ctx, c, packet)
+		return reply(ctx, c, packet)
 
 	}
 	return ret, nil

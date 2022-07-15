@@ -232,6 +232,10 @@ func process(ctx context.Context, cancel context.CancelFunc, c *context2.Context
 		break
 	case protocol.CommandSignal:
 		ret, e = handler.SingleSignalHandler().Handle(ctx, c, packet)
+		break
+	case protocol.CommandContent:
+		ret, e = handler.SingleContentHandler().Handle(ctx, c, packet)
+		break
 	}
 
 	if ret == nil {
