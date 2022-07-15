@@ -6,6 +6,7 @@ import (
 	"im-chatroom-broker/protocol"
 	"im-chatroom-broker/redis"
 	"im-chatroom-broker/util"
+	"time"
 )
 
 const (
@@ -42,11 +43,15 @@ func SetUserRoom(ctx context.Context, userId, roomId string) {
 	}
 }
 
-func SetUserLogin(ctx context.Context,userId string,state int32){
+func SetUserLogin(ctx context.Context, userId string, state int32) {
 	redis := redis.Singleton()
-	redis.HSet(ctx,UserInfo+userId,"state",state)
+	redis.HSet(ctx, UserInfo+userId, "state", state)
 }
 
+func SetUserAlive(ctx context.Context,userId string){
+	redis := redis.Singleton()
+	redis.Expire(ctx, UserInfo+userId, time.Second*20)
+}
 func DelUserRoom(ctx context.Context, userId string) {
 	redis := redis.Singleton()
 	redis.HDel(ctx, UserInfo+userId, "roomId")
@@ -101,6 +106,6 @@ func GetUserInfo(ctx context.Context, userId string) (*protocol.User, error) {
 	user.Avatar = m["avatar"]
 	user.State = m["state"]
 
-	return user,nil
+	return user, nil
 
 }

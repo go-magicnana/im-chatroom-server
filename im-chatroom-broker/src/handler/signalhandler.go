@@ -53,6 +53,7 @@ func (s SignalHandler) Handle(ctx context.Context, c *context2.Context, packet *
 
 func ping(ctx context.Context, c *context2.Context, packet *protocol.Packet) (*protocol.Packet, error) {
 	c.Ping()
+	SetUserAlive(ctx, c.UserId())
 	return nil, nil
 }
 
@@ -90,7 +91,7 @@ func login(ctx context.Context, c *context2.Context, packet *protocol.Packet, bo
 
 	SetUserContext(user, c)
 
-	SetBrokerInfo(ctx, user.Broker, user.UserId)
+	//SetBrokerInfo(ctx, user.Broker, user.UserId)
 
 	SetUserLogin(ctx, user.UserId, c.State())
 
