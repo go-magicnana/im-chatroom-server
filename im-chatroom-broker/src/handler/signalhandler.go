@@ -72,17 +72,19 @@ func login(ctx context.Context, c *context2.Context, packet *protocol.Packet, bo
 		return protocol.NewResponseError(packet, err.Unauthorized), nil
 	}
 
+	user.UserKey = user.UserId + "/" + device
+	user.Broker = c.Broker()
+	user.Token = token
+
 	exist, _ := GetUserInfo(ctx, user.UserKey)
 
-	if exist != nil {
+	if exist != nil || util.IsNotEmpty(exist.State){
 		if exist.State == strconv.FormatInt(int64(context2.Login), 10) {
 			return protocol.NewResponseError(packet, err.AlreadyLogin), nil
 		}
 	}
 
-	user.UserKey = user.UserId + "/" + device
-	user.Broker = c.Broker()
-	user.Token = token
+
 	_, flag := c.Login(user.UserKey, user.UserId)
 
 	if !flag {

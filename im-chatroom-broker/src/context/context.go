@@ -17,7 +17,7 @@ const (
 type Context struct {
 	userKey  string
 	userId   string
-	roomId   *atomic.String
+	roomId   string
 	broker   string
 	conn     net.Conn
 	state    *atomic.Int32
@@ -43,7 +43,7 @@ func (c *Context) UserId() string {
 }
 
 func (c *Context) RoomId() string {
-	return c.roomId.String()
+	return c.roomId
 }
 
 func (c *Context) Broker() string {
@@ -87,7 +87,7 @@ func (c *Context) Login(userKey, userId string) (int32, bool) {
 func (c *Context) JoinRoom(roomId string) (int32, bool) {
 	ret := c.state.CAS(Login, JoinRoom)
 	if ret {
-		c.roomId.Store(roomId)
+		c.roomId = roomId
 		return JoinRoom, true
 	} else {
 		return c.state.Load(), false
@@ -97,7 +97,7 @@ func (c *Context) JoinRoom(roomId string) (int32, bool) {
 func (c *Context) LeaveRoom() (int32, bool) {
 	ret := c.state.CAS(JoinRoom, Login)
 	if ret {
-		c.roomId.Store("")
+		c.roomId = ""
 		return Login, true
 	} else {
 		return c.state.Load(), false
@@ -105,7 +105,7 @@ func (c *Context) LeaveRoom() (int32, bool) {
 }
 
 func (c *Context) ChangeRoom(roomId string) {
-	c.roomId.Store(roomId)
+	c.roomId = roomId
 }
 
 func (c *Context) Close() {
