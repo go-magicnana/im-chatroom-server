@@ -78,12 +78,11 @@ func login(ctx context.Context, c *context2.Context, packet *protocol.Packet, bo
 
 	exist, _ := GetUserInfo(ctx, user.UserKey)
 
-	if exist != nil || util.IsNotEmpty(exist.State){
+	if exist != nil || util.IsNotEmpty(exist.State) {
 		if exist.State == strconv.FormatInt(int64(context2.Login), 10) {
 			return protocol.NewResponseError(packet, err.AlreadyLogin), nil
 		}
 	}
-
 
 	_, flag := c.Login(user.UserKey, user.UserId)
 
@@ -116,13 +115,20 @@ func joinRoom(ctx context.Context, c *context2.Context, packet *protocol.Packet,
 
 	SetUserRoom(ctx, c.UserKey(), body.RoomId)
 
+	SetRoomUser(ctx, body.RoomId, c.UserKey())
+
 	return protocol.NewResponseOK(packet, nil), nil
 }
 
 func leaveRoom(ctx context.Context, c *context2.Context, packet *protocol.Packet) (*protocol.Packet, error) {
 
 	c.LeaveRoom()
+
+	info, _ := GetUserInfo(ctx, c.UserKey())
+	DelRoomUser(ctx, info.RoomId, c.UserKey())
+
 	DelUserRoom(ctx, c.UserKey())
+
 	return protocol.NewResponseOK(packet, nil), nil
 }
 
@@ -133,6 +139,11 @@ func changeRoom(ctx context.Context, c *context2.Context, packet *protocol.Packe
 	}
 
 	c.ChangeRoom(body.RoomId)
+
+	info, _ := GetUserInfo(ctx, c.UserKey())
+	DelRoomUser(ctx, info.RoomId, c.UserKey())
+	SetRoomUser(ctx, body.RoomId, c.UserKey())
+
 	SetUserRoom(ctx, c.UserKey(), body.RoomId)
 
 	return protocol.NewResponseOK(packet, nil), nil
