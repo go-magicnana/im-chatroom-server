@@ -1,11 +1,13 @@
 package handler
 
 import (
+	"fmt"
 	"golang.org/x/net/context"
 	context2 "im-chatroom-broker/context"
 	err "im-chatroom-broker/error"
 	"im-chatroom-broker/protocol"
 	"im-chatroom-broker/util"
+	"strconv"
 	"sync"
 )
 
@@ -68,9 +70,21 @@ func login(ctx context.Context, c *context2.Context, packet *protocol.Packet, bo
 		return protocol.NewResponseError(packet, err.Unauthorized), nil
 	}
 
+	exist, _ := GetUserInfo(ctx, user.UserId)
+
+	if exist != nil {
+		if exist.State == strconv.FormatInt(int64(context2.Login), 10) {
+			return protocol.NewResponseError(packet, err.AlreadyLogin), nil
+		}
+	}
+
 	user.Broker = c.Broker()
 	user.Token = token
-	c.Login(user.UserId, user.Token)
+	_, flag := c.Login(user.UserId, user.Token)
+
+	if !flag {
+		return protocol.NewResponseError(packet, err.AlreadyLogin), nil
+	}
 
 	SetUserInfo(ctx, user)
 
@@ -78,7 +92,13 @@ func login(ctx context.Context, c *context2.Context, packet *protocol.Packet, bo
 
 	SetBrokerInfo(ctx, user.Broker, user.UserId)
 
-	return protocol.NewResponseOK(packet, nil), nil
+	SetUserLogin(ctx, user.UserId, c.State())
+
+	p := protocol.NewResponseOK(packet, nil)
+
+	fmt.Println(p.ToString())
+
+	return p, nil
 }
 
 func joinRoom(ctx context.Context, c *context2.Context, packet *protocol.Packet, body *protocol.MessageBodySignalJoinRoom) (*protocol.Packet, error) {

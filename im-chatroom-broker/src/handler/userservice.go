@@ -15,7 +15,6 @@ const (
 
 	/*string json */
 	UserAuth string = "imchatroom:userauth:"
-	Broker   string = "imchatroom:broker:"
 )
 
 func GetUserAuth(ctx context.Context, token string) (*protocol.User, error) {
@@ -41,6 +40,11 @@ func SetUserRoom(ctx context.Context, userId, roomId string) {
 	if util.IsNotEmpty(roomId) {
 		redis.HSet(ctx, UserInfo+userId, "roomId", roomId)
 	}
+}
+
+func SetUserLogin(ctx context.Context,userId string,state int32){
+	redis := redis.Singleton()
+	redis.HSet(ctx,UserInfo+userId,"state",state)
 }
 
 func DelUserRoom(ctx context.Context, userId string) {
@@ -73,7 +77,30 @@ func SetUserInfo(ctx context.Context, user *protocol.User) {
 	}
 }
 
-func DelUserInfo(ctx context.Context,userId string){
+func DelUserInfo(ctx context.Context, userId string) {
 	redis := redis.Singleton()
-	redis.Del(ctx,UserInfo+userId)
+	redis.Del(ctx, UserInfo+userId)
+}
+
+func GetUserInfo(ctx context.Context, userId string) (*protocol.User, error) {
+	redis := redis.Singleton()
+	cmd := redis.HGetAll(ctx, UserInfo+userId)
+
+	m, e := cmd.Result()
+
+	if e != nil {
+		return nil, e
+	}
+	user := &protocol.User{}
+	user.RoomId = m["roomId"]
+	user.UserId = userId
+	user.Role = m["role"]
+	user.Token = m["token"]
+	user.Broker = m["broker"]
+	user.Name = m["name"]
+	user.Avatar = m["avatar"]
+	user.State = m["state"]
+
+	return user,nil
+
 }

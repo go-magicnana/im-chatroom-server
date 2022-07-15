@@ -37,3 +37,5 @@ func IsNotEmpty(s string) bool{
 func StartWith(s string, sub string) bool {
 	return strings.Index(s, sub) == 0
 }
+
+

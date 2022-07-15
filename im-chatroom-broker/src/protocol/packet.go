@@ -34,9 +34,10 @@ const (
 	TypeNoticeUnblockUser = 3104
 	TypeNoticeCloseRoom   = 3105
 
-	TypeContentText  = 4105
-	TypeContentEmoji = 4105
-	TypeContentReply = 4105
+	TypeContentText  = 4101
+	TypeContentEmoji = 4102
+	TypeContentAt    = 4103
+	TypeContentReply = 4104
 
 	TypeGiftNone = 5101
 
@@ -46,6 +47,11 @@ const (
 type Packet struct {
 	Header MessageHeader `json:"header"`
 	Body   any           `json:"body"`
+}
+
+func (p Packet) ToString() string {
+	bs, _ := json.Marshal(p)
+	return string(bs)
 }
 
 type MessageHeader struct {
@@ -106,6 +112,7 @@ type User struct {
 	Role   string `json:"role"`
 	RoomId string `json:"roomId"`
 	Broker string `json:"broker"`
+	State  string `json:"state"`
 }
 
 type MessageBodySignalLogin struct {
@@ -158,6 +165,10 @@ type MessageBodyContentText struct {
 
 type MessageBodyContentEmoji struct {
 	Content string `json:"content"`
+}
+
+type MessageBodyContentAt struct {
+	AtUserId string `json:"atUserId"`
 }
 
 type MessageBodyContentReply struct {

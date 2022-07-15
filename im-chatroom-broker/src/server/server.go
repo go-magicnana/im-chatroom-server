@@ -156,7 +156,7 @@ func read(ctx context.Context, cancel context.CancelFunc, c *context2.Context) {
 			return
 		}
 
-		fmt.Println(util.CurrentSecond(), "Read 读取客户端写入", packet)
+		fmt.Println(util.CurrentSecond(), "Read 读取客户端写入", packet.ToString())
 
 		go process(ctx, cancel, c, packet)
 	}
@@ -187,7 +187,7 @@ func write(ctx context.Context, cancel context.CancelFunc, c *context2.Context, 
 	buffer.Write(bs)
 	_, err := c.Conn().Write(buffer.Bytes())
 
-	fmt.Println(util.CurrentSecond(), "Write 等待客户端读取", p)
+	fmt.Println(util.CurrentSecond(), "Write 等待客户端读取", p.ToString())
 
 	if err != nil {
 		return errors.New("write response error +" + err.Error())
@@ -239,7 +239,7 @@ func process(ctx context.Context, cancel context.CancelFunc, c *context2.Context
 	}
 
 	if ret != nil {
-		write(ctx, cancel, c, packet)
+		write(ctx, cancel, c, ret)
 	}
 
 }
