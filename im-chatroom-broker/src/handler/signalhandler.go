@@ -53,7 +53,7 @@ func (s SignalHandler) Handle(ctx context.Context, c *context2.Context, packet *
 
 func ping(ctx context.Context, c *context2.Context, packet *protocol.Packet) (*protocol.Packet, error) {
 	c.Ping()
-	SetUserAlive(ctx, c.UserId())
+	SetUserAlive(ctx, c.UserKey())
 	return nil, nil
 }
 
@@ -64,6 +64,7 @@ func login(ctx context.Context, c *context2.Context, packet *protocol.Packet, bo
 	}
 
 	token := body.Token
+	device := body.Device
 
 	user, e := GetUserAuth(ctx, token)
 
@@ -79,9 +80,10 @@ func login(ctx context.Context, c *context2.Context, packet *protocol.Packet, bo
 		}
 	}
 
+	user.UserKey = user.UserId + "/" + device
 	user.Broker = c.Broker()
 	user.Token = token
-	_, flag := c.Login(user.UserId, user.Token)
+	_, flag := c.Login(user.UserKey, user.UserId)
 
 	if !flag {
 		return protocol.NewResponseError(packet, err.AlreadyLogin), nil
@@ -91,7 +93,7 @@ func login(ctx context.Context, c *context2.Context, packet *protocol.Packet, bo
 
 	SetUserContext(user, c)
 
-	//SetBrokerInfo(ctx, user.Broker, user.UserId)
+	//SetBrokerInfo(ctx, user.Broker, user.UserKey)
 
 	SetUserLogin(ctx, user.UserId, c.State())
 
@@ -110,7 +112,7 @@ func joinRoom(ctx context.Context, c *context2.Context, packet *protocol.Packet,
 
 	c.JoinRoom(body.RoomId)
 
-	SetUserRoom(ctx, c.UserId(), body.RoomId)
+	SetUserRoom(ctx, c.UserKey(), body.RoomId)
 
 	return protocol.NewResponseOK(packet, nil), nil
 }
@@ -118,7 +120,7 @@ func joinRoom(ctx context.Context, c *context2.Context, packet *protocol.Packet,
 func leaveRoom(ctx context.Context, c *context2.Context, packet *protocol.Packet) (*protocol.Packet, error) {
 
 	c.LeaveRoom()
-	DelUserRoom(ctx, c.UserId())
+	DelUserRoom(ctx, c.UserKey())
 	return protocol.NewResponseOK(packet, nil), nil
 }
 
@@ -129,7 +131,7 @@ func changeRoom(ctx context.Context, c *context2.Context, packet *protocol.Packe
 	}
 
 	c.ChangeRoom(body.RoomId)
-	SetUserRoom(ctx, c.UserId(), body.RoomId)
+	SetUserRoom(ctx, c.UserKey(), body.RoomId)
 
 	return protocol.NewResponseOK(packet, nil), nil
 }

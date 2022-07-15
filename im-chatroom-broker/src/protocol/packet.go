@@ -105,18 +105,20 @@ func NewResponseError(in *Packet, error err.Error) *Packet {
 }
 
 type User struct {
-	Token  string `json:"token"`
-	UserId string `json:"userId"`
-	Name   string `json:"name"`
-	Avatar string `json:"avatar"`
-	Role   string `json:"role"`
-	RoomId string `json:"roomId"`
-	Broker string `json:"broker"`
-	State  string `json:"state"`
+	UserKey string `json:"userKey"`
+	Token   string `json:"token"`
+	UserId  string `json:"userId"`
+	Name    string `json:"name"`
+	Avatar  string `json:"avatar"`
+	Role    string `json:"role"`
+	RoomId  string `json:"roomId"`
+	Broker  string `json:"broker"`
+	State   string `json:"state"`
 }
 
 type MessageBodySignalLogin struct {
-	Token string `json:"token"`
+	Token  string `json:"token"`
+	Device string `json:"device"`
 }
 
 type MessageBodySignalJoinRoom struct {

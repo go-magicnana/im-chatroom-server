@@ -15,8 +15,8 @@ const (
 )
 
 type Context struct {
+	userKey  string
 	userId   string
-	token    string
 	roomId   *atomic.String
 	broker   string
 	conn     net.Conn
@@ -34,8 +34,8 @@ func NewContext(brokerAddr string, conn net.Conn) *Context {
 	}
 }
 
-func (c *Context) UserId() string {
-	return c.userId
+func (c *Context) UserKey() string {
+	return c.userKey
 }
 
 func (c *Context) Token() string {
@@ -73,11 +73,11 @@ func (c *Context) Ping() (int64, bool) {
 	return ret, true
 }
 
-func (c *Context) Login(userId, token string) (int32, bool) {
+func (c *Context) Login(userKey, userId string) (int32, bool) {
 	ret := c.state.CAS(Connected, Login)
 	if ret {
+		c.userKey = userKey
 		c.userId = userId
-		c.token = token
 		return Login, true
 	} else {
 		return c.state.Load(), false

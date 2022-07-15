@@ -95,11 +95,11 @@ func listen(ctx context.Context, addr string) {
 func close(ctx context.Context, cancel context.CancelFunc, c *context2.Context) {
 	fmt.Println(util.CurrentSecond(), "Read 关闭线程 关闭连接")
 
-	handler.DelUserInfo(ctx, c.UserId())
+	handler.DelUserInfo(ctx, c.UserKey())
 
-	handler.DelUserContext(c.UserId())
+	handler.DelUserContext(c.UserKey())
 
-	//handler.DelBrokerInfo(ctx,c.Broker(),c.UserId())
+	//handler.DelBrokerInfo(ctx,c.Broker(),c.UserKey())
 
 	c.Close()
 }
@@ -255,8 +255,8 @@ func goHandle(s string, context *context2.Context) {
 	//
 	//	v,e:=userMap.Load(userId)
 	//	if e{
-	//		context.UserId = v.(string)
-	//		doAuth(context.UserId,context)
+	//		context.UserKey = v.(string)
+	//		doAuth(context.UserKey,context)
 	//	}
 	//
 	//}else{

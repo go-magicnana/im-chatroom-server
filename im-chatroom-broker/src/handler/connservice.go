@@ -9,15 +9,12 @@ import (
 var users sync.Map
 var dirty sync.Map
 
-
-
 func SetUserContext(user *protocol.User, c *context.Context) {
-	users.Store(user.UserId, c)
+	users.Store(user.UserKey, c)
 }
 
-func DelUserContext(userId string){
-	users.Delete(userId)
+func DelUserContext(userKey string) {
+	users.Delete(userKey)
 }
-
 
 //TODO ... 如果超过一段时间没有connect，就关了他
