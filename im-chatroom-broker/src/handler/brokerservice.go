@@ -26,6 +26,11 @@ func DelBrokerCapacity(ctx context.Context, broker, userKey string) {
 	redis.SRem(ctx, BrokerCapacity+broker, userKey)
 }
 
+func DelBrokerCapacityAll(ctx context.Context, broker string) {
+	redis := redis.Singleton()
+	redis.Del(ctx, BrokerCapacity+broker)
+}
+
 func SetBrokerInstance(ctx context.Context, broker string) {
 	redis := redis.Singleton()
 	redis.SAdd(ctx, BrokerInstance, broker)
@@ -87,6 +92,7 @@ func ProbeBroker(ctx context.Context) {
 		ret := GetBrokerAlive(ctx, broker)
 		if util.IsEmpty(ret) {
 			DelBrokerInstance(ctx, broker)
+			DelBrokerCapacityAll(ctx, broker)
 		}
 	}
 
