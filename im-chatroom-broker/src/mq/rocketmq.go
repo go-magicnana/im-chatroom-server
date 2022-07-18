@@ -45,12 +45,12 @@ func newRocketMqProducer() rocketmq.Producer {
 
 func Consumer() rocketmq.PushConsumer {
 	once.Do(func() {
-		mqConsumer = newRocketMqConsumer()
+		mqConsumer = NewRocketMqConsumer()
 	})
 	return mqConsumer
 }
 
-func newRocketMqConsumer() rocketmq.PushConsumer {
+func NewRocketMqConsumer() rocketmq.PushConsumer {
 	endPoint := []string{"192.168.3.242:9876"}
 	c, _ := rocketmq.NewPushConsumer(
 		consumer.WithNameServer(endPoint),

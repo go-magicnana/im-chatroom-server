@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-func TestRocketMq(t *testing.T) {
+func TestMq(t *testing.T) {
 	// 注册生产者 填入broker节点,group名称,重试次数信息
 	mqProducerClient := queue.RegisterRocketProducerMust([]string{"192.168.3.242:9876"}, "test", 1)
 
@@ -50,7 +50,7 @@ func TestRocket(t *testing.T) {
 	}
 	fmt.Println(result)
 
-	c := Consumer()
+	c := NewRocketMqConsumer()
 	c.Subscribe("imchatroom_deliver", consumer.MessageSelector{}, func(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
 		for i := range msgs {
 			fmt.Printf("subscribe callback : %v \n", msgs[i])
