@@ -33,6 +33,21 @@ func SetUserClient(ctx context.Context, userId string, userKey string) int64 {
 	return cmd.Val()
 }
 
+func GetUserClients(ctx context.Context, userId string) []string {
+	rdb := redis.Singleton()
+	cmd := rdb.HGetAll(ctx, UserClients+userId)
+
+	m := cmd.Val()
+
+	ret := make([]string, 0)
+
+	for k, _ := range m {
+		ret = append(ret,k)
+	}
+
+	return ret
+}
+
 func GetUserAuth(ctx context.Context, token string) (*protocol.UserAuth, error) {
 	redis := redis.Singleton()
 	cmd := redis.Get(ctx, UserAuth+token)
@@ -151,9 +166,9 @@ func SetUserDevice2InRoom(ctx context.Context, userKey, roomId string) {
 	}
 }
 
-func DelUserDeviceInRoom(ctx context.Context,userKey string){
+func DelUserDeviceInRoom(ctx context.Context, userKey string) {
 	redis := redis.Singleton()
-	redis.HDel(ctx,UserDevice+userKey,"roomId")
+	redis.HDel(ctx, UserDevice+userKey, "roomId")
 
 }
 

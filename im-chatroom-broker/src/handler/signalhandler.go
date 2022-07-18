@@ -89,10 +89,12 @@ func login(ctx context.Context, c *context2.Context, packet *protocol.Packet, bo
 
 	SetUserClient(ctx, user.UserId, userKey)
 
+	devices := GetUserClients(ctx, user.UserId)
+
 	userInfo := protocol.UserInfo{
 		UserId: user.UserId,
 		Token:  token,
-		Device: []string{device},
+		Device: devices,
 		Name:   user.Name,
 		Avatar: user.Avatar,
 		Gender: user.Gender,
