@@ -59,15 +59,15 @@ func (p Packet) ToString() string {
 }
 
 type MessageHeader struct {
-	MessageId string `json:"messageId"`
-	Command   uint16 `json:"command"`
-	Target    uint32 `json:"target"`
-	From      User   `json:"from"`
-	To        string `json:"to"`
-	Flow      uint8  `json:"flow"`
-	Type      uint32 `json:"type"`
-	Code      uint32 `json:"code"`
-	Message   string `json:"message"`
+	MessageId string   `json:"messageId"`
+	Command   uint16   `json:"command"`
+	Target    uint32   `json:"target"`
+	From      UserInfo `json:"from"`
+	To        string   `json:"to"`
+	Flow      uint8    `json:"flow"`
+	Type      uint32   `json:"type"`
+	Code      uint32   `json:"code"`
+	Message   string   `json:"message"`
 }
 
 func NewResponseOK(in *Packet, body any) *Packet {
@@ -108,18 +108,31 @@ func NewResponseError(in *Packet, error err.Error) *Packet {
 	}
 }
 
-type User struct {
+type UserAuth struct {
+	UserId string `json:"userId"`
+	Name   string `json:"name"`
+	Avatar string `json:"avatar"`
+	Gender string `json:"gender"`
+	Role   string `json:"role"`
+}
+
+type UserInfo struct {
+	UserId string   `json:"userId"`
+	Token  string   `json:"token"`
+	Device []string `json:"device"`
+	Name   string   `json:"name"`
+	Avatar string   `json:"avatar"`
+	Gender string   `json:"gender"`
+	Role   string   `json:"role"`
+}
+
+type UserDevice struct {
 	UserKey string `json:"userKey"`
-	Token   string `json:"token"`
 	UserId  string `json:"userId"`
-	Name    string `json:"name"`
-	Avatar  string `json:"avatar"`
-	Role    string `json:"role"`
+	Device  string `json:"device"`
+	State   string `json:"state"`
 	RoomId  string `json:"roomId"`
 	Broker  string `json:"broker"`
-	Gender  string `json:"gender"`
-	State   string `json:"state"`
-	Sex     string `json:"sex"`
 }
 
 type MessageBodySignalLogin struct {

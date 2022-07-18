@@ -48,13 +48,13 @@ func (d ContentHandler) Handle(ctx context.Context, c *context2.Context, packet 
 		a := protocol.JsonContentAt(packet.Body)
 		packet.Body = a
 
-		return at(ctx, c, packet)
+		//return at(ctx, c, packet)
 
 	case protocol.TypeContentReply:
 		a := protocol.JsonContentReply(packet.Body)
 		packet.Body = a
 
-		return reply(ctx, c, packet)
+		//return reply(ctx, c, packet)
 
 	}
 	return ret, nil

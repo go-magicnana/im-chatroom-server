@@ -21,3 +21,10 @@ func Singleton() *redis.Client {
 	return client
 }
 
+
+func NewZSetMember(score float64,member interface{}) *redis.Z{
+	return &redis.Z{
+		Score: score, Member: member,
+	}
+}
+

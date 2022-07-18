@@ -53,7 +53,6 @@ func (s SignalHandler) Handle(ctx context.Context, c *context2.Context, packet *
 
 func ping(ctx context.Context, c *context2.Context, packet *protocol.Packet) (*protocol.Packet, error) {
 	c.Ping()
-	SetUserAlive(ctx, c.UserKey())
 	return nil, nil
 }
 
@@ -72,11 +71,15 @@ func login(ctx context.Context, c *context2.Context, packet *protocol.Packet, bo
 		return protocol.NewResponseError(packet, err.Unauthorized), nil
 	}
 
-	user.UserKey = user.UserId + "/" + device
-	user.Broker = c.Broker()
-	user.Token = token
+	userKey := user.UserId + "/" + device
 
-	exist, _ := GetUserInfo(ctx, user.UserKey)
+	_, flag := c.Login(userKey, user.UserId)
+
+	if !flag {
+		return protocol.NewResponseError(packet, err.AlreadyLogin), nil
+	}
+
+	exist, _ := GetUserDevice(ctx, userKey)
 
 	if exist != nil || util.IsNotEmpty(exist.State) {
 		if exist.State == strconv.FormatInt(int64(context2.Login), 10) {
@@ -84,19 +87,30 @@ func login(ctx context.Context, c *context2.Context, packet *protocol.Packet, bo
 		}
 	}
 
-	_, flag := c.Login(user.UserKey, user.UserId)
+	SetUserClient(ctx, user.UserId, userKey)
 
-	if !flag {
-		return protocol.NewResponseError(packet, err.AlreadyLogin), nil
+	userInfo := protocol.UserInfo{
+		UserId: user.UserId,
+		Token:  token,
+		Device: []string{device},
+		Name:   user.Name,
+		Avatar: user.Avatar,
+		Gender: user.Gender,
+		Role:   user.Role,
 	}
+	SetUserInfo(ctx, userInfo)
 
-	SetUserInfo(ctx, user)
+	userDevice := protocol.UserDevice{
+		UserKey: userKey,
+		UserId:  user.UserId,
+		Device:  device,
+		Broker:  c.Broker(),
+	}
+	SetUserDevice(ctx, userDevice)
 
-	SetUserContext(user, c)
+	SetUserContext(&userDevice, c)
 
-	SetBrokerCapacity(ctx, user.Broker, user.UserKey)
-
-	SetUserLogin(ctx, user.UserKey, c.State())
+	SetBrokerCapacity(ctx, userDevice.Broker, userKey)
 
 	p := protocol.NewResponseOK(packet, nil)
 
@@ -113,7 +127,7 @@ func joinRoom(ctx context.Context, c *context2.Context, packet *protocol.Packet,
 
 	c.JoinRoom(body.RoomId)
 
-	SetUserRoom(ctx, c.UserKey(), body.RoomId)
+	SetUserDevice2InRoom(ctx, c.UserKey(), body.RoomId)
 
 	SetRoomUser(ctx, body.RoomId, c.UserKey())
 
@@ -123,11 +137,10 @@ func joinRoom(ctx context.Context, c *context2.Context, packet *protocol.Packet,
 func leaveRoom(ctx context.Context, c *context2.Context, packet *protocol.Packet) (*protocol.Packet, error) {
 
 	c.LeaveRoom()
+	userDevice, _ := GetUserDevice(ctx, c.UserKey())
+	DelUserDeviceInRoom(ctx, c.UserKey())
 
-	info, _ := GetUserInfo(ctx, c.UserKey())
-	DelRoomUser(ctx, info.RoomId, c.UserKey())
-
-	DelUserRoom(ctx, c.UserKey())
+	DelRoomUser(ctx, userDevice.RoomId, c.UserKey())
 
 	return protocol.NewResponseOK(packet, nil), nil
 }
@@ -140,11 +153,11 @@ func changeRoom(ctx context.Context, c *context2.Context, packet *protocol.Packe
 
 	c.ChangeRoom(body.RoomId)
 
-	info, _ := GetUserInfo(ctx, c.UserKey())
+	info, _ := GetUserDevice(ctx, c.UserKey())
 	DelRoomUser(ctx, info.RoomId, c.UserKey())
 	SetRoomUser(ctx, body.RoomId, c.UserKey())
 
-	SetUserRoom(ctx, c.UserKey(), body.RoomId)
+	SetUserDevice2InRoom(ctx, c.UserKey(), body.RoomId)
 
 	return protocol.NewResponseOK(packet, nil), nil
 }
