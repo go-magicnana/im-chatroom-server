@@ -17,4 +17,13 @@ func DelUserContext(userKey string) {
 	users.Delete(userKey)
 }
 
+func GetUserContext(userKey string) (*context.Context, bool) {
+	value, exist := users.Load(userKey)
+	if exist {
+		return value.(*context.Context), true
+	} else {
+		return nil, false
+	}
+}
+
 //TODO ... 如果超过一段时间没有connect，就关了他

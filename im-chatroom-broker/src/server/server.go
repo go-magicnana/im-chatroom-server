@@ -4,16 +4,21 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/apache/rocketmq-client-go/v2/consumer"
+	"github.com/apache/rocketmq-client-go/v2/primitive"
 	context2 "im-chatroom-broker/context"
 	err "im-chatroom-broker/error"
 	"im-chatroom-broker/handler"
+	"im-chatroom-broker/mq"
 	"im-chatroom-broker/protocol"
 	"im-chatroom-broker/serializer"
 	"im-chatroom-broker/util"
 	"io"
 	"net"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -61,6 +66,8 @@ func listen(ctx context.Context, addr string) {
 
 	go handler.BrokerAliveTask(ctx, brokerAddress)
 
+	go consume(ctx)
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -89,6 +96,47 @@ func listen(ctx context.Context, addr string) {
 			go read(ctx, cancel, c)
 
 		}
+	}
+}
+
+func consume(ctx context.Context) {
+	mqConsumer := mq.NewRocketMqConsumer()
+	mqConsumer.Subscribe("imchatroom_deliver", consumer.MessageSelector{},
+		func(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
+			for i := range msgs {
+				fmt.Printf("subscribe callback : %v \n", msgs[i])
+				go mqProcess(ctx, msgs[i])
+			}
+			return consumer.ConsumeSuccess, nil
+		})
+
+	mqConsumer.Start()
+}
+
+func mqProcess(ctx context.Context, ext *primitive.MessageExt) {
+	tags := ext.GetTags()
+	tagsInt, _ := strconv.Atoi(tags)
+	packet := &protocol.Packet{}
+	err := json.Unmarshal(ext.Body, packet)
+	if err != nil {
+		return
+	}
+	header := packet.Header
+	if protocol.TargetRoom == tagsInt {
+		room, _ := handler.GetRoom(ctx, header.To)
+		for i := range room {
+			userContext, exist := handler.GetUserContext(room[i])
+			if !exist {
+				continue
+			}
+			write(ctx, nil, userContext, packet)
+		}
+	} else {
+		userContext, exist := handler.GetUserContext(header.To)
+		if !exist {
+			return
+		}
+		write(ctx, nil, userContext, packet)
 	}
 }
 

@@ -11,6 +11,7 @@ import (
 	context2 "im-chatroom-broker/context"
 	"im-chatroom-broker/protocol"
 	"os"
+	"strconv"
 	"sync"
 )
 
@@ -72,7 +73,7 @@ func DeliverMessageToRoom(ctx context.Context, c *context2.Context, packet *prot
 		return
 	}
 
-	message := primitive.NewMessage("imchatroom_deliver", val).WithKeys([]string{packet.Header.To})
+	message := primitive.NewMessage("imchatroom_deliver", val).WithTag(strconv.Itoa(int(packet.Header.Target)))
 
 	result, err := Deliver().SendSync(ctx, message)
 	if err != nil {
@@ -93,7 +94,7 @@ func DeliverMessageToUser(ctx context.Context, c *context2.Context, packet *prot
 		return
 	}
 
-	msg := primitive.NewMessage("imchatroom_deliver"+c.Broker(), val).WithKeys([]string{packet.Header.To})
+	msg := primitive.NewMessage("imchatroom_deliver", val).WithTag(strconv.Itoa(int(packet.Header.Target)))
 
 	result, err := Deliver().SendSync(ctx, msg)
 	if err != nil {

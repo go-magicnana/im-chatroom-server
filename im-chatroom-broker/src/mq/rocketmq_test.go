@@ -58,4 +58,6 @@ func TestRocket(t *testing.T) {
 		return consumer.ConsumeSuccess, nil
 	})
 	c.Start()
+
+	time.Sleep(10 * time.Second)
 }
