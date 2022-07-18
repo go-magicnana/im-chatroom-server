@@ -48,19 +48,19 @@ func (d ContentHandler) Handle(ctx context.Context, c *context2.Context, packet 
 		a := protocol.JsonContentAt(packet.Body)
 		packet.Body = a
 
-		return at(ctx, c, packet, a)
+		//return at(ctx, c, packet)
 
 	case protocol.TypeContentReply:
 		a := protocol.JsonContentReply(packet.Body)
 		packet.Body = a
 
-		return reply(ctx, c, packet, a)
+		//return reply(ctx, c, packet)
 
 	}
 	return ret, nil
 }
 
-func deliver(ctx context.Context, c *context2.Context, packet *protocol.Packet) (*protocol.Packet, error) {
+func deliver(ctx context.Context,c *context2.Context,packet *protocol.Packet)(*protocol.Packet, error){
 	user, e1 := GetUserInfo(ctx, c.UserKey())
 	if e1 != nil {
 		return nil, e1
@@ -75,19 +75,23 @@ func deliver(ctx context.Context, c *context2.Context, packet *protocol.Packet) 
 		mq.DeliverMessageToUser(ctx, c, packet)
 	}
 
-	return protocol.NewResponseOK(packet, nil), nil
+	return protocol.NewResponseOK(packet,nil), nil
 }
 
 func text(ctx context.Context, c *context2.Context, packet *protocol.Packet) (*protocol.Packet, error) {
 
-	if util.IsEmpty(packet.Body.(protocol.MessageBodyContentText).Content) {
-		return nil, nil
+	if util.IsEmpty(packet.Body.(protocol.MessageBodyContentText).Content){
+		return nil,nil
 	}
 
-	return deliver(ctx, c, packet)
+	return deliver(ctx,c,packet)
 }
 
 func at(ctx context.Context, c *context2.Context, packet *protocol.Packet, body *protocol.MessageBodyContentAt) (*protocol.Packet, error) {
+
+
+
+
 
 	user, e1 := GetUserInfo(ctx, c.UserKey())
 	if e1 != nil {

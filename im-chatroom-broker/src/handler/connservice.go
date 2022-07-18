@@ -9,7 +9,7 @@ import (
 var users sync.Map
 var dirty sync.Map
 
-func SetUserContext(user *protocol.User, c *context.Context) {
+func SetUserContext(user *protocol.UserDevice, c *context.Context) {
 	users.Store(user.UserKey, c)
 }
 
