@@ -52,12 +52,7 @@ func listen(ctx context.Context, addr string) {
 
 	util.Panic(err)
 
-	ip, e := util.ExternalIP()
-	if e != nil {
-		util.Panic(e)
-	}
-
-	brokerAddress := ip.String() + addr
+	brokerAddress := util.GetBrokerIp() + addr
 
 	service.SetBrokerInstance(ctx, brokerAddress)
 
@@ -65,7 +60,7 @@ func listen(ctx context.Context, addr string) {
 
 	mq.OneDeliver().ConsumeRoom()
 
-	mq.OneDeliver().ConsumeMine(brokerAddress)
+	mq.OneDeliver().ConsumeMine()
 
 	for {
 		select {
@@ -217,7 +212,7 @@ func process(ctx context.Context, cancel context.CancelFunc, c *context2.Context
 	}
 
 	if ret != nil {
-		serializer.SingleJsonSerializer().Write(c,ret)
+		serializer.SingleJsonSerializer().Write(c, ret)
 	}
 
 }

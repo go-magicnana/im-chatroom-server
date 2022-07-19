@@ -36,10 +36,12 @@ type Deliver struct {
 	ConsumerOne  rocketmq.PushConsumer
 }
 
-func OneDeliver(broker string) Deliver {
+func OneDeliver() Deliver {
 	once.Do(func() {
 
-		MyName = broker2name(broker)
+		ip := util.GetBrokerIp()
+
+		MyName = broker2name(ip + ":33121")
 
 		room, _ := rocketmq.NewPushConsumer(
 			consumer.WithGroupName(RoomGroup),
