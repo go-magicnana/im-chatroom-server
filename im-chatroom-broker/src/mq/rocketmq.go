@@ -20,16 +20,34 @@ var once sync.Once
 
 var _mq Deliver
 
+const (
+	RoomGroup = "imchatroom_room_group"
+	RoomTopic = "imchatroom_room_topic"
+
+	OneGroup = "imchatroom_one_group_"
+	OneTopic = "imchatroom_one_topic_"
+)
+
+var MyName = ""
+
 type Deliver struct {
-	Producer rocketmq.Producer
-	Consumer rocketmq.PushConsumer
+	Producer     rocketmq.Producer
+	ConsumerRoom rocketmq.PushConsumer
+	ConsumerOne  rocketmq.PushConsumer
 }
 
-func OneDeliver() Deliver {
+func OneDeliver(broker string) Deliver {
 	once.Do(func() {
 
-		c, _ := rocketmq.NewPushConsumer(
-			consumer.WithGroupName("testGroup"),
+		MyName = broker2name(broker)
+
+		room, _ := rocketmq.NewPushConsumer(
+			consumer.WithGroupName(RoomGroup),
+			consumer.WithNsResolver(primitive.NewPassthroughResolver([]string{"192.168.3.242:9876"})),
+		)
+
+		one, _ := rocketmq.NewPushConsumer(
+			consumer.WithGroupName(OneGroup+MyName),
 			consumer.WithNsResolver(primitive.NewPassthroughResolver([]string{"192.168.3.242:9876"})),
 		)
 
@@ -41,8 +59,9 @@ func OneDeliver() Deliver {
 		p.Start()
 
 		_mq = Deliver{
-			Producer: p,
-			Consumer: c,
+			Producer:     p,
+			ConsumerRoom: room,
+			ConsumerOne:  one,
 		}
 	})
 	return _mq
@@ -62,32 +81,29 @@ func (d Deliver) Sync(topic string, body []byte) {
 
 func (d Deliver) ProduceRoom(packet *protocol.Packet) {
 	msg, _ := json.Marshal(packet)
-	d.Sync("imchatroom_push_room", msg)
+	d.Sync(RoomTopic, msg)
 }
 
 func (d Deliver) ProduceOne(broker string, packet *protocol.PacketMessage) {
 	msg, _ := json.Marshal(packet)
 
-	broker = strings.ReplaceAll(broker, ".", "_")
-	broker = strings.ReplaceAll(broker, ":", "_")
-
-	d.Sync("imchatroom_push_one_"+broker, msg)
+	d.Sync(OneTopic+broker2name(broker), msg)
 	fmt.Println(util.CurrentSecond())
 }
 
-func (d Deliver) consume(topic string, f func(context.Context, ...*primitive.MessageExt) (consumer.ConsumeResult, error)) {
-	err := d.Consumer.Subscribe(topic, consumer.MessageSelector{}, f)
-	if err != nil {
-		util.Panic(err)
-	}
-
-	d.Consumer.Start()
-}
+//func (d Deliver) consume(topic string, f func(context.Context, ...*primitive.MessageExt) (consumer.ConsumeResult, error)) {
+//	err := d.Consumer.Subscribe(topic, consumer.MessageSelector{}, f)
+//	if err != nil {
+//		util.Panic(err)
+//	}
+//
+//	d.Consumer.Start()
+//}
 
 func (d Deliver) ConsumeRoom() {
-	d.consume("imchatroom_push_room", func(c context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
+	d.ConsumerRoom.Subscribe(RoomTopic, consumer.MessageSelector{}, func(c context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
 
-		fmt.Println(util.CurrentSecond(), "Consumer 消费开始 imchatroom_push_room", msgs)
+		fmt.Println(util.CurrentSecond(), "Consumer 消费开始 ", RoomTopic, msgs)
 
 		for i := range msgs {
 
@@ -119,16 +135,15 @@ func (d Deliver) ConsumeRoom() {
 		}
 		return consumer.ConsumeSuccess, nil
 	})
+
+	d.ConsumerRoom.Start()
 }
 
-func (d Deliver) ConsumeMine(broker string) {
+func (d Deliver) ConsumeMine() {
 
-	broker = strings.ReplaceAll(broker, ".", "_")
-	broker = strings.ReplaceAll(broker, ":", "_")
+	d.ConsumerOne.Subscribe(OneTopic+MyName, consumer.MessageSelector{}, func(c context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
 
-	d.consume("imchatroom_push_one_"+broker, func(c context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
-
-		fmt.Println(util.CurrentSecond(), "Consumer 消费开始 imchatroom_push_one_"+broker, msgs)
+		fmt.Println(util.CurrentSecond(), "Consumer 消费开始 ", OneTopic+MyName, msgs)
 
 		for i := range msgs {
 			p := &protocol.PacketMessage{}
@@ -137,11 +152,17 @@ func (d Deliver) ConsumeMine(broker string) {
 			c, e := service.GetUserContext(p.UserKey)
 
 			if e {
-				//c.Push(&p.Packet)
 				serializer.SingleJsonSerializer().Write(c, &p.Packet)
 
 			}
 		}
 		return consumer.ConsumeSuccess, nil
 	})
+	d.ConsumerOne.Start()
+}
+
+func broker2name(broker string) string {
+	broker = strings.ReplaceAll(broker, ".", "_")
+	broker = strings.ReplaceAll(broker, ":", "_")
+	return broker
 }
