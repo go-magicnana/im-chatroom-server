@@ -64,7 +64,7 @@ func (d ContentHandler) Handle(ctx context.Context, c *context2.Context, packet 
 }
 
 func deliver(ctx context.Context, c *context2.Context, packet *protocol.Packet) (*protocol.Packet, error) {
-	user, e1 := service.GetUserInfo(ctx, c.UserKey())
+	user, e1 := service.GetUserInfo(ctx, c.UserId())
 	if e1 != nil {
 		return nil, e1
 	}

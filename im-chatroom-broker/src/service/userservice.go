@@ -67,8 +67,8 @@ func GetUserAuth(ctx context.Context, token string) (*protocol.UserAuth, error) 
 }
 
 func DelUserAuth(ctx context.Context, token string) {
-	redis := redis.Singleton()
-	redis.Del(ctx, UserAuth+token)
+	//redis := redis.Singleton()
+	//redis.Del(ctx, UserAuth+token)
 }
 
 func SetUserInfo(ctx context.Context, info protocol.UserInfo) {
@@ -95,7 +95,11 @@ func GetUserInfo(ctx context.Context, userId string) (*protocol.UserInfo, error)
 		return nil, err
 	}
 
-	user := &protocol.UserInfo{}
+	if len(bs)==0 {
+		return nil,nil
+	}
+
+			user := &protocol.UserInfo{}
 	e2 := json.Unmarshal(bs, user)
 	return user, e2
 }
