@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"gitee.com/zhucheer/orange/queue"
+	"github.com/apache/rocketmq-client-go/v2"
 	"github.com/apache/rocketmq-client-go/v2/consumer"
 	"github.com/apache/rocketmq-client-go/v2/primitive"
 	"golang.org/x/net/context"
+	"os"
 	"testing"
 	"time"
 )
@@ -44,18 +46,48 @@ func TestRocket(t *testing.T) {
 
 	val, _ := json.Marshal("jsonMessage")
 	message := primitive.NewMessage("imchatroom_deliver", val)
-	result, err := Deliver().SendSync(context.Background(), message)
-	if err != nil {
+	result, err11 := Deliver().SendSync(context.Background(), message)
+	if err11 != nil {
 		return
 	}
 	fmt.Println(result)
 
-	c := Consumer()
-	c.Subscribe("imchatroom_deliver", consumer.MessageSelector{}, func(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
+
+	c, _ := rocketmq.NewPushConsumer(
+		consumer.WithGroupName("testGroup"),
+		consumer.WithNsResolver(primitive.NewPassthroughResolver([]string{"192.168.3.242:9876"})),
+	)
+	err := c.Subscribe("imchatroom_deliver", consumer.MessageSelector{}, func(ctx context.Context,
+			msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
 		for i := range msgs {
-			fmt.Printf("subscribe callback : %v \n", msgs[i])
+			fmt.Printf("subscribe callback: %v \n", msgs[i])
 		}
+
 		return consumer.ConsumeSuccess, nil
 	})
-	c.Start()
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	// Note: start after subscribe
+	err = c.Start()
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(-1)
+	}
+	time.Sleep(time.Hour)
+	err = c.Shutdown()
+	if err != nil {
+		fmt.Printf("shutdown Consumer error: %s", err.Error())
+	}
+
+
+	//
+	//c := Consumer()
+	//c.Subscribe("imchatroom_deliver", consumer.MessageSelector{}, func(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
+	//	for i := range msgs {
+	//		fmt.Printf("subscribe callback : %v \n", msgs[i])
+	//	}
+	//	return consumer.ConsumeSuccess, nil
+	//})
+	//c.Start()
 }

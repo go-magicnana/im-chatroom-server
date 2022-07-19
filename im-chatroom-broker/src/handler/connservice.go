@@ -17,4 +17,9 @@ func DelUserContext(userKey string) {
 	users.Delete(userKey)
 }
 
-//TODO ... 如果超过一段时间没有connect，就关了他
+func GetUserContext(userKey string) (*context.Context, bool) {
+	v, e := users.Load(userKey)
+
+	return v.(*context.Context), e
+}
+

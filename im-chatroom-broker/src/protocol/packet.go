@@ -58,6 +58,11 @@ func (p Packet) ToString() string {
 	return string(bs)
 }
 
+type PacketMessage struct {
+	UserKey string `json:"userKey"`
+	Packet  Packet `json:"packet"`
+}
+
 type MessageHeader struct {
 	MessageId string   `json:"messageId"`
 	Command   uint16   `json:"command"`

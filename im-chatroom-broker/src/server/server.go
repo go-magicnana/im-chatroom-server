@@ -1,10 +1,8 @@
 package server
 
 import (
-	"bytes"
 	"context"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	context2 "im-chatroom-broker/context"
 	err "im-chatroom-broker/error"
@@ -165,40 +163,6 @@ func read(ctx context.Context, cancel context.CancelFunc, c *context2.Context) {
 
 }
 
-func write(ctx context.Context, cancel context.CancelFunc, c *context2.Context, p *protocol.Packet) error {
-	//SetWriteDeadlineOnCancel(c.Ctx, c.CancelFunc, c.Conn)
-
-	serializer := serializer.SingleJsonSerializer()
-
-	bs, e := serializer.EncodePacket(p, c)
-	if bs == nil {
-		return errors.New("empty packet")
-	}
-
-	if e != nil {
-		return e
-	}
-
-	buffer := new(bytes.Buffer)
-
-	binary.Write(buffer, binary.BigEndian, serializer.Version())
-
-	length := uint32(len(bs))
-	binary.Write(buffer, binary.BigEndian, length)
-
-	buffer.Write(bs)
-	_, err := c.Conn().Write(buffer.Bytes())
-
-	fmt.Println(util.CurrentSecond(), "Write 等待客户端读取", p.ToString())
-
-	if err != nil {
-		return errors.New("write response error +" + err.Error())
-	} else {
-		return nil
-	}
-
-}
-
 //type ReadDeadliner interface {
 //	SetReadDeadline(t time.Time) error
 //}
@@ -245,7 +209,7 @@ func process(ctx context.Context, cancel context.CancelFunc, c *context2.Context
 	}
 
 	if ret != nil {
-		write(ctx, cancel, c, ret)
+		Write(c, ret)
 	}
 
 }

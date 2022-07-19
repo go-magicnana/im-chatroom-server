@@ -42,7 +42,7 @@ func GetUserClients(ctx context.Context, userId string) []string {
 	ret := make([]string, 0)
 
 	for k, _ := range m {
-		ret = append(ret,k)
+		ret = append(ret, k)
 	}
 
 	return ret
@@ -157,6 +157,12 @@ func GetUserDevice(ctx context.Context, userKey string) (*protocol.UserDevice, e
 
 	return userDevice, nil
 
+}
+
+func GetUserDeviceBroker(ctx context.Context, userKey string) (string, error) {
+	redis := redis.Singleton()
+	cmd := redis.HGet(ctx, UserDevice+userKey, "broker")
+	return cmd.Val(), nil
 }
 
 func SetUserDevice2InRoom(ctx context.Context, userKey, roomId string) {

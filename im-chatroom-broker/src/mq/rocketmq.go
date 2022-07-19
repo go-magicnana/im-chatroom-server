@@ -8,96 +8,126 @@ import (
 	"github.com/apache/rocketmq-client-go/v2/primitive"
 	"github.com/apache/rocketmq-client-go/v2/producer"
 	"golang.org/x/net/context"
-	context2 "im-chatroom-broker/context"
+	"im-chatroom-broker/handler"
 	"im-chatroom-broker/protocol"
-	"os"
+	"im-chatroom-broker/util"
 	"sync"
 )
 
 var once sync.Once
+
+var _mq *Deliver
 
 var (
 	mqProducer rocketmq.Producer
 	mqConsumer rocketmq.PushConsumer
 )
 
-func Deliver() rocketmq.Producer {
+type Deliver struct {
+	Producer rocketmq.Producer
+	Consumer rocketmq.PushConsumer
+}
+
+func OneDeliver() *Deliver {
 	once.Do(func() {
-		mqProducer = newRocketMqProducer()
+
+		c, _ := rocketmq.NewPushConsumer(
+			consumer.WithGroupName("testGroup"),
+			consumer.WithNsResolver(primitive.NewPassthroughResolver([]string{"192.168.3.242:9876"})),
+		)
+
+		p, _ := rocketmq.NewProducer(
+			producer.WithNsResolver(primitive.NewPassthroughResolver([]string{"192.168.3.242:9876"})),
+			producer.WithRetry(2),
+		)
+
+		_mq = &Deliver{
+			Producer: p,
+			Consumer: c,
+		}
 	})
-	return mqProducer
+	return _mq
 }
 
-func newRocketMqProducer() rocketmq.Producer {
-	endPoint := []string{"192.168.3.242:9876"}
-	newProducer, _ := rocketmq.NewProducer(
-		producer.WithNameServer(endPoint),
-		producer.WithRetry(3),
-		producer.WithGroupName("ProducerGroupName"),
-	)
-	err := newProducer.Start()
-	if err != nil {
-		fmt.Printf("start producer error: %s", err.Error())
-		os.Exit(1)
+func (d *Deliver) Sync(topic string, body []byte) {
+
+	msg := &primitive.Message{
+		Topic: topic,
+		Body:  body,
 	}
-	return newProducer
+	res, err := d.Producer.SendSync(context.Background(), msg)
+
+	if err != nil {
+		fmt.Printf("send message error: %s\n", err)
+	} else {
+		fmt.Printf("send message success: result=%s\n", res.String())
+	}
 }
 
-func Consumer() rocketmq.PushConsumer {
-	once.Do(func() {
-		mqConsumer = newRocketMqConsumer()
+func (d *Deliver) ProduceRoom(packet *protocol.Packet) {
+	msg, _ := json.Marshal(packet)
+	d.Sync("imchatroom_push_room", msg)
+}
+
+func (d *Deliver) ProduceOne(broker string, packet *protocol.PacketMessage) {
+	msg, _ := json.Marshal(packet)
+
+	d.Sync("imchatroom_push_one_"+broker, msg)
+}
+
+func (d *Deliver) consume(topic string, f func(context.Context, ...*primitive.MessageExt) (consumer.ConsumeResult, error)) {
+	err := d.Consumer.Subscribe(topic, consumer.MessageSelector{}, f)
+	if err != nil {
+		util.Panic(err)
+	}
+	// Note: start after subscribe
+	err = d.Consumer.Start()
+	if err != nil {
+		util.Panic(err)
+	}
+}
+
+func (d *Deliver) ConsumeRoom() {
+	d.consume("imchatroom_push_room", func(c context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
+		for i := range msgs {
+
+			p := &protocol.Packet{}
+			json.Unmarshal(msgs[i].Body, p)
+
+			if p.Header.Target == protocol.TargetRoom {
+				b, e := handler.GetRoom(c, p.Header.To)
+
+				if e == nil {
+					for _, v := range b {
+						broker, _ := handler.GetUserDeviceBroker(c, v)
+
+						m := protocol.PacketMessage{
+							UserKey: v,
+							Packet:  *p,
+						}
+
+						d.produceOne("imchatroom_push_one_"+broker, &m)
+					}
+				}
+
+			}
+		}
+		return consumer.ConsumeSuccess, nil
 	})
-	return mqConsumer
 }
 
-func newRocketMqConsumer() rocketmq.PushConsumer {
-	endPoint := []string{"192.168.3.242:9876"}
-	c, _ := rocketmq.NewPushConsumer(
-		consumer.WithNameServer(endPoint),
-		consumer.WithConsumerModel(consumer.Clustering),
-		consumer.WithGroupName("ProducerGroupName"),
-	)
-	return c
-}
+func (d *Deliver) ConsumeMine(broker string) {
+	d.consume("imchatroom_push_one_"+broker, func(c context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
+		for i := range msgs {
+			p := &protocol.PacketMessage{}
+			json.Unmarshal(msgs[i].Body, p)
 
-func DeliverMessageToRoom(ctx context.Context, c *context2.Context, packet *protocol.Packet) {
+			c, e := handler.GetUserContext(p.UserKey)
 
-	val, e := json.Marshal(packet)
-
-	if e != nil {
-		return
-	}
-
-	if len(val) == 0 {
-		return
-	}
-
-	message := primitive.NewMessage("imchatroom_deliver", val).WithKeys([]string{packet.Header.To})
-
-	result, err := Deliver().SendSync(ctx, message)
-	if err != nil {
-		return
-	}
-	fmt.Println(result)
-}
-
-func DeliverMessageToUser(ctx context.Context, c *context2.Context, packet *protocol.Packet) {
-
-	val, e := json.Marshal(packet)
-
-	if e != nil {
-		return
-	}
-
-	if len(val) == 0 {
-		return
-	}
-
-	msg := primitive.NewMessage("imchatroom_deliver"+c.Broker(), val).WithKeys([]string{packet.Header.To})
-
-	result, err := Deliver().SendSync(ctx, msg)
-	if err != nil {
-		return
-	}
-	fmt.Println(result)
+			if !e {
+				c.Push(&p.Packet)
+			}
+		}
+		return consumer.ConsumeSuccess, nil
+	})
 }

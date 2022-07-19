@@ -48,7 +48,7 @@ func (d ContentHandler) Handle(ctx context.Context, c *context2.Context, packet 
 		a := protocol.JsonContentAt(packet.Body)
 		packet.Body = a
 
-		//return at(ctx, c, packet)
+		return at(ctx, c, packet)
 
 	case protocol.TypeContentReply:
 		a := protocol.JsonContentReply(packet.Body)
@@ -60,7 +60,7 @@ func (d ContentHandler) Handle(ctx context.Context, c *context2.Context, packet 
 	return ret, nil
 }
 
-func deliver(ctx context.Context,c *context2.Context,packet *protocol.Packet)(*protocol.Packet, error){
+func deliver(ctx context.Context, c *context2.Context, packet *protocol.Packet) (*protocol.Packet, error) {
 	user, e1 := GetUserInfo(ctx, c.UserKey())
 	if e1 != nil {
 		return nil, e1
@@ -70,30 +70,41 @@ func deliver(ctx context.Context,c *context2.Context,packet *protocol.Packet)(*p
 	packet.Header.Flow = protocol.FlowDeliver
 
 	if packet.Header.Target == protocol.TargetRoom {
-		mq.DeliverMessageToRoom(ctx, c, packet)
+		mq.OneDeliver().ProduceRoom(packet)
 	} else {
-		mq.DeliverMessageToUser(ctx, c, packet)
+
+		ret := GetUserClients(ctx,packet.Header.To)
+
+		for _,v:= range ret{
+			msg := &protocol.PacketMessage{
+				UserKey: v,
+				Packet:  *packet,
+			}
+
+			broker,_:=GetUserDeviceBroker(ctx,v)
+
+			mq.OneDeliver().ProduceOne(broker, msg)
+		}
+
+
+
 	}
 
-	return protocol.NewResponseOK(packet,nil), nil
+	return protocol.NewResponseOK(packet, nil), nil
 }
 
 func text(ctx context.Context, c *context2.Context, packet *protocol.Packet) (*protocol.Packet, error) {
 
-	if util.IsEmpty(packet.Body.(protocol.MessageBodyContentText).Content){
-		return nil,nil
+	if util.IsEmpty(packet.Body.(protocol.MessageBodyContentText).Content) {
+		return nil, nil
 	}
 
-	return deliver(ctx,c,packet)
+	return deliver(ctx, c, packet)
 }
 
 func at(ctx context.Context, c *context2.Context, packet *protocol.Packet, body *protocol.MessageBodyContentAt) (*protocol.Packet, error) {
 
-
-
-
-
-	user, e1 := GetUserInfo(ctx, c.UserKey())
+	user, e1 := GetUserInfo(ctx, body.AtUserId)
 	if e1 != nil {
 		return nil, e1
 	}
@@ -107,16 +118,8 @@ func at(ctx context.Context, c *context2.Context, packet *protocol.Packet, body 
 	body.AtUserName = atUser.Name
 	body.AtUserAvatar = atUser.Avatar
 
-	packet.Header.From = *user
-	packet.Header.Flow = protocol.FlowDeliver
 
-	if packet.Header.Target == protocol.TargetRoom {
-		mq.DeliverMessageToRoom(ctx, c, packet)
-	} else {
-		mq.DeliverMessageToUser(ctx, c, packet)
-	}
-
-	return nil, nil
+	return deliver(ctx,c,packet)
 }
 
 func reply(ctx context.Context, c *context2.Context, packet *protocol.Packet, body *protocol.MessageBodyContentReply) (*protocol.Packet, error) {
