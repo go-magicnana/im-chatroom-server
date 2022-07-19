@@ -37,15 +37,15 @@ func init() {
 	ip := util.GetBrokerIp()
 	MyName = broker2name(ip + ":33121")
 
-	createTopic(RoomTopic)
-	createTopic(OneTopic + MyName)
+	//createTopic(RoomTopic)
+	//createTopic(OneTopic + MyName)
 	newProducer()
 	newConsumerRoom()
 	newConsumerOne()
 }
 
-func newProducer() rocketmq.Producer {
-	p, _ := rocketmq.NewProducer(
+func newProducer() {
+	_producer, _ := rocketmq.NewProducer(
 		producer.WithNsResolver(primitive.NewPassthroughResolver([]string{EndPoint})),
 		producer.WithRetry(2),
 	)
@@ -53,15 +53,14 @@ func newProducer() rocketmq.Producer {
 	if err != nil {
 		util.Panic(err)
 	}
-	return p
 }
 
 func newConsumerRoom() {
-	c, _ := rocketmq.NewPushConsumer(
+	_consumer1, _ := rocketmq.NewPushConsumer(
 		consumer.WithGroupName(RoomGroup),
 		consumer.WithNsResolver(primitive.NewPassthroughResolver([]string{EndPoint})),
 	)
-	err := c.Subscribe(RoomTopic, consumer.MessageSelector{},
+	err := _consumer1.Subscribe(RoomTopic, consumer.MessageSelector{},
 		func(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
 
 			fmt.Println(util.CurrentSecond(), "Consumer 消费开始 ", RoomTopic, msgs)
@@ -103,7 +102,7 @@ func newConsumerRoom() {
 		util.Panic(err)
 	}
 	// Note: start after subscribe
-	err = c.Start()
+	err = _consumer1.Start()
 	if err != nil {
 		util.Panic(err)
 	}
@@ -111,11 +110,11 @@ func newConsumerRoom() {
 
 func newConsumerOne() {
 
-	c, _ := rocketmq.NewPushConsumer(
+	_consumer2, _ := rocketmq.NewPushConsumer(
 		consumer.WithGroupName(OneGroup+MyName),
 		consumer.WithNsResolver(primitive.NewPassthroughResolver([]string{EndPoint})),
 	)
-	err := c.Subscribe(OneTopic+MyName, consumer.MessageSelector{},
+	err := _consumer2.Subscribe(OneTopic+MyName, consumer.MessageSelector{},
 		func(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
 
 			fmt.Println(util.CurrentSecond(), "Consumer 消费开始 ", OneTopic+MyName, msgs)
@@ -138,7 +137,7 @@ func newConsumerOne() {
 		util.Panic(err)
 	}
 	// Note: start after subscribe
-	err = c.Start()
+	err = _consumer2.Start()
 	if err != nil {
 		util.Panic(err)
 	}

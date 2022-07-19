@@ -102,3 +102,7 @@ func TestRocket(t *testing.T) {
 	wg.Wait()
 
 }
+
+func TestMQ2(t *testing.T){
+	SendSync2Room(nil)
+}
