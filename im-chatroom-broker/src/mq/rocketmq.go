@@ -60,11 +60,8 @@ func (d *Deliver) Sync(topic string, body []byte) {
 	}
 	res, err := d.Producer.SendSync(context.Background(), msg)
 
-	if err != nil {
-		fmt.Printf("send message error: %s\n", err)
-	} else {
-		fmt.Printf("send message success: result=%s\n", res.String())
-	}
+	fmt.Println(util.CurrentSecond(), "Producer 发送完毕",topic,res,err)
+
 }
 
 func (d *Deliver) ProduceRoom(packet *protocol.Packet) {
@@ -76,6 +73,7 @@ func (d *Deliver) ProduceOne(broker string, packet *protocol.PacketMessage) {
 	msg, _ := json.Marshal(packet)
 
 	d.Sync("imchatroom_push_one_"+broker, msg)
+	fmt.Println(util.CurrentSecond())
 }
 
 func (d *Deliver) consume(topic string, f func(context.Context, ...*primitive.MessageExt) (consumer.ConsumeResult, error)) {
@@ -89,6 +87,10 @@ func (d *Deliver) consume(topic string, f func(context.Context, ...*primitive.Me
 
 func (d *Deliver) ConsumeRoom() {
 	d.consume("imchatroom_push_room", func(c context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
+
+		fmt.Println(util.CurrentSecond(), "Consumer 消费开始 imchatroom_push_room",msgs)
+
+
 		for i := range msgs {
 
 			p := &protocol.Packet{}
@@ -110,6 +112,7 @@ func (d *Deliver) ConsumeRoom() {
 				}
 
 			}
+
 		}
 		return consumer.ConsumeSuccess, nil
 	})
@@ -117,6 +120,11 @@ func (d *Deliver) ConsumeRoom() {
 
 func (d *Deliver) ConsumeMine(broker string) {
 	d.consume("imchatroom_push_one_"+broker, func(c context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
+
+		fmt.Println(util.CurrentSecond(), "Consumer 消费开始 imchatroom_push_one_"+broker,msgs)
+
+
+
 		for i := range msgs {
 			p := &protocol.PacketMessage{}
 			json.Unmarshal(msgs[i].Body, p)

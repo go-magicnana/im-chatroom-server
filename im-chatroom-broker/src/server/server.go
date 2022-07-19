@@ -63,9 +63,9 @@ func listen(ctx context.Context, addr string) {
 
 	go service.AliveTask(ctx, brokerAddress)
 
-	go mq.OneDeliver().ConsumeRoom()
+	mq.OneDeliver().ConsumeRoom()
 
-	go mq.OneDeliver().ConsumeMine(brokerAddress)
+	mq.OneDeliver().ConsumeMine(brokerAddress)
 
 	for {
 		select {

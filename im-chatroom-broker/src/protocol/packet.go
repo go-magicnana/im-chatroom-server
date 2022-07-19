@@ -23,6 +23,7 @@ const (
 	CommandContent = 4
 	CommandGift    = 5
 	CommandGoods   = 6
+	CommandCustom  = 9
 
 	TypeSignalPing       = 2101
 	TypeSignalLogin      = 2102
@@ -46,6 +47,8 @@ const (
 	TypeGiftNone = 5101
 
 	TypeGoodsNone = 6101
+
+	TypeCustomNone = 9999
 )
 
 type Packet struct {

@@ -1,6 +1,8 @@
 package mq
 
 import (
+	"im-chatroom-broker/protocol"
+	"sync"
 	"testing"
 )
 
@@ -33,63 +35,23 @@ func TestMq(t *testing.T) {
 
 }
 
-//func TestRocket(t *testing.T) {
-//
-//	val, _ := json.Marshal("jsonMessage")
-//	message := primitive.NewMessage("imchatroom_deliver", val)
-//	result, err11 := Deliver().SendSync(context.Background(), message)
-//	if err11 != nil {
-//		return
-//	}
-//	fmt.Println(result)
-//
-//<<<<<<< HEAD
-//
-//	c, _ := rocketmq.NewPushConsumer(
-//		consumer.WithGroupName("testGroup"),
-//		consumer.WithNsResolver(primitive.NewPassthroughResolver([]string{"192.168.3.242:9876"})),
-//	)
-//	err := c.Subscribe("imchatroom_deliver", consumer.MessageSelector{}, func(ctx context.Context,
-//			msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
-//=======
-//	c := NewRocketMqConsumer()
-//	c.Subscribe("imchatroom_deliver", consumer.MessageSelector{}, func(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
-//>>>>>>> ded2abccc3028f33a1e622ce850902b41be72c31
-//		for i := range msgs {
-//			fmt.Printf("subscribe callback: %v \n", msgs[i])
-//		}
-//
-//		return consumer.ConsumeSuccess, nil
-//	})
-//<<<<<<< HEAD
-//	if err != nil {
-//		fmt.Println(err.Error())
-//	}
-//	// Note: start after subscribe
-//	err = c.Start()
-//	if err != nil {
-//		fmt.Println(err.Error())
-//		os.Exit(-1)
-//	}
-//	time.Sleep(time.Hour)
-//	err = c.Shutdown()
-//	if err != nil {
-//		fmt.Printf("shutdown Consumer error: %s", err.Error())
-//	}
-//
-//
-//	//
-//	//c := Consumer()
-//	//c.Subscribe("imchatroom_deliver", consumer.MessageSelector{}, func(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
-//	//	for i := range msgs {
-//	//		fmt.Printf("subscribe callback : %v \n", msgs[i])
-//	//	}
-//	//	return consumer.ConsumeSuccess, nil
-//	//})
-//	//c.Start()
-//=======
-//	c.Start()
-//
-//	time.Sleep(10 * time.Second)
-//>>>>>>> ded2abccc3028f33a1e622ce850902b41be72c31
-//}
+func TestRocket(t *testing.T) {
+
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+
+	OneDeliver().ConsumeRoom()
+
+	p := &protocol.Packet{
+		Header: protocol.MessageHeader{
+			Command: 9,
+		},
+		Body: "JJJJJ",
+	}
+	OneDeliver().ProduceRoom(p)
+
+	wg.Wait()
+
+
+}
