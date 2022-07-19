@@ -54,6 +54,7 @@ func (s SignalHandler) Handle(ctx context.Context, c *context2.Context, packet *
 
 func ping(ctx context.Context, c *context2.Context, packet *protocol.Packet) (*protocol.Packet, error) {
 	c.Ping()
+	service.SetUserAlive(ctx,c.UserId(),c.UserKey())
 	return nil, nil
 }
 
@@ -111,6 +112,8 @@ func login(ctx context.Context, c *context2.Context, packet *protocol.Packet, bo
 	}
 	service.SetUserDevice(ctx, userDevice)
 
+	service.SetUserDevice2Login(ctx,userKey,context2.Login)
+
 	service.SetUserContext(&userDevice, c)
 
 	service.SetBrokerCapacity(ctx, userDevice.Broker, userKey)
@@ -118,6 +121,8 @@ func login(ctx context.Context, c *context2.Context, packet *protocol.Packet, bo
 	p := protocol.NewResponseOK(packet, nil)
 
 	fmt.Println(p.ToString())
+
+	service.DelUserAuth(ctx,token)
 
 	return p, nil
 }

@@ -61,7 +61,7 @@ func listen(ctx context.Context, addr string) {
 
 	service.SetBrokerInstance(ctx, brokerAddress)
 
-	go service.BrokerAliveTask(ctx, brokerAddress)
+	go service.AliveTask(ctx, brokerAddress)
 
 	go mq.OneDeliver().ConsumeRoom()
 

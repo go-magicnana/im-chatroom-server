@@ -56,7 +56,7 @@ func GetBrokerAlive(ctx context.Context, broker string) string {
 	return cmd.Val()
 }
 
-func BrokerAliveTask(ctx context.Context, broker string) {
+func AliveTask(ctx context.Context, broker string) {
 
 	c := cron.New()
 
@@ -95,5 +95,5 @@ func ProbeBroker(ctx context.Context) {
 			DelBrokerCapacityAll(ctx, broker)
 		}
 	}
-
 }
+

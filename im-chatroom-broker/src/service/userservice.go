@@ -66,6 +66,11 @@ func GetUserAuth(ctx context.Context, token string) (*protocol.UserAuth, error) 
 	}
 }
 
+func DelUserAuth(ctx context.Context, token string) {
+	redis := redis.Singleton()
+	redis.Del(ctx, UserAuth+token)
+}
+
 func SetUserInfo(ctx context.Context, info protocol.UserInfo) {
 	redis := redis.Singleton()
 
@@ -95,23 +100,12 @@ func GetUserInfo(ctx context.Context, userId string) (*protocol.UserInfo, error)
 	return user, e2
 }
 
-//func SetUserAlive(ctx context.Context, userKey string) {
-//	redis := redis.Singleton()
-//	redis.Expire(ctx, UserDevice+userKey, time.Second*20)
-//}
-//func DelUserRoom(ctx context.Context, userKey string) {
-//	redis := redis.Singleton()
-//	redis.HDel(ctx, UserDevice+userKey, "roomId")
-//}
-
-/**
-UserKey string `json:"userKey"`
-UserId  string `json:"userId"`
-Device  string `json:"device"`
-State   string `json:"state"`
-RoomId  string `json:"roomId"`
-Broker  string `json:"broker"`
-*/
+func SetUserAlive(ctx context.Context, userId,userKey string) {
+	redis := redis.Singleton()
+	redis.Expire(ctx, UserDevice+userKey, time.Second*20)
+	redis.Expire(ctx, UserInfo+userId, time.Second*20)
+	redis.Expire(ctx, UserClients+userId, time.Second*20)
+}
 
 func SetUserDevice(ctx context.Context, user protocol.UserDevice) {
 
