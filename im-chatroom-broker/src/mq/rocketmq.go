@@ -12,6 +12,7 @@ import (
 	"im-chatroom-broker/serializer"
 	"im-chatroom-broker/service"
 	"im-chatroom-broker/util"
+	"strings"
 	"sync"
 )
 
@@ -101,6 +102,11 @@ func (d *Deliver) ConsumeRoom() {
 
 				if e == nil {
 					for _, v := range b {
+
+						if p.Header.From.UserId == strings.Split(v, "/")[0] {
+							continue
+						}
+
 						broker, _ := service.GetUserDeviceBroker(c, v)
 
 						m := protocol.PacketMessage{

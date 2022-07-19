@@ -79,6 +79,11 @@ func deliver(ctx context.Context, c *context2.Context, packet *protocol.Packet) 
 		ret := service.GetUserClients(ctx, packet.Header.To)
 
 		for _, v := range ret {
+
+			if v == c.UserKey() {
+				continue
+			}
+
 			msg := &protocol.PacketMessage{
 				UserKey: v,
 				Packet:  *packet,
