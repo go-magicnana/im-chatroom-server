@@ -32,35 +32,37 @@ var _producer rocketmq.Producer
 var _consumer1 rocketmq.PushConsumer
 var _consumer2 rocketmq.PushConsumer
 
-func init() {
+func Init() {
 
 	ip := util.GetBrokerIp()
 	MyName = broker2name(ip + ":33121")
 
 	//createTopic(RoomTopic)
 	//createTopic(OneTopic + MyName)
-	newProducer()
-	newConsumerRoom()
-	newConsumerOne()
+	_producer = newProducer()
+	_consumer1 = newConsumerRoom()
+	_consumer2 = newConsumerOne()
 }
 
-func newProducer() {
-	_producer, _ := rocketmq.NewProducer(
+func newProducer() rocketmq.Producer {
+	p, _ := rocketmq.NewProducer(
 		producer.WithNsResolver(primitive.NewPassthroughResolver([]string{EndPoint})),
 		producer.WithRetry(2),
 	)
-	err := _producer.Start()
+	err := p.Start()
 	if err != nil {
 		util.Panic(err)
 	}
+
+	return p
 }
 
-func newConsumerRoom() {
-	_consumer1, _ := rocketmq.NewPushConsumer(
+func newConsumerRoom() rocketmq.PushConsumer {
+	c, _ := rocketmq.NewPushConsumer(
 		consumer.WithGroupName(RoomGroup),
 		consumer.WithNsResolver(primitive.NewPassthroughResolver([]string{EndPoint})),
 	)
-	err := _consumer1.Subscribe(RoomTopic, consumer.MessageSelector{},
+	err := c.Subscribe(RoomTopic, consumer.MessageSelector{},
 		func(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
 
 			fmt.Println(util.CurrentSecond(), "Consumer 消费开始 ", RoomTopic, msgs)
@@ -102,19 +104,21 @@ func newConsumerRoom() {
 		util.Panic(err)
 	}
 	// Note: start after subscribe
-	err = _consumer1.Start()
+	err = c.Start()
 	if err != nil {
 		util.Panic(err)
 	}
+
+	return c
 }
 
-func newConsumerOne() {
+func newConsumerOne() rocketmq.PushConsumer {
 
-	_consumer2, _ := rocketmq.NewPushConsumer(
+	c, _ := rocketmq.NewPushConsumer(
 		consumer.WithGroupName(OneGroup+MyName),
 		consumer.WithNsResolver(primitive.NewPassthroughResolver([]string{EndPoint})),
 	)
-	err := _consumer2.Subscribe(OneTopic+MyName, consumer.MessageSelector{},
+	err := c.Subscribe(OneTopic+MyName, consumer.MessageSelector{},
 		func(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
 
 			fmt.Println(util.CurrentSecond(), "Consumer 消费开始 ", OneTopic+MyName, msgs)
@@ -137,10 +141,12 @@ func newConsumerOne() {
 		util.Panic(err)
 	}
 	// Note: start after subscribe
-	err = _consumer2.Start()
+	err = c.Start()
 	if err != nil {
 		util.Panic(err)
 	}
+
+	return c
 }
 
 func createTopic(topicName string) {

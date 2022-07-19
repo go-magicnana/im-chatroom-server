@@ -7,6 +7,7 @@ import (
 	context2 "im-chatroom-broker/context"
 	err "im-chatroom-broker/error"
 	"im-chatroom-broker/handler"
+	"im-chatroom-broker/mq"
 	"im-chatroom-broker/service"
 
 	//"im-chatroom-broker/mq"
@@ -57,6 +58,7 @@ func listen(ctx context.Context, addr string) {
 
 	go service.AliveTask(ctx, brokerAddress)
 
+	mq.Init()
 
 
 	for {
