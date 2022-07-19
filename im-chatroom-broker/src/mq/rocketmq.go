@@ -42,6 +42,8 @@ func OneDeliver() *Deliver {
 			producer.WithRetry(2),
 		)
 
+		p.Start()
+
 		_mq = &Deliver{
 			Producer: p,
 			Consumer: c,
@@ -81,6 +83,8 @@ func (d *Deliver) consume(topic string, f func(context.Context, ...*primitive.Me
 	if err != nil {
 		util.Panic(err)
 	}
+
+	d.Consumer.Start()
 }
 
 func (d *Deliver) ConsumeRoom() {
