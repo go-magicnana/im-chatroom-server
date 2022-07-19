@@ -69,6 +69,10 @@ func AliveTask(ctx context.Context, broker string) {
 		ProbeBroker(ctx)
 	})
 
+	c.AddFunc("*/1 * * * *", func() {
+		ProbeConn(ctx)
+	})
+
 	c.Start()
 	fmt.Println("BrokerTask Running")
 
@@ -95,5 +99,18 @@ func ProbeBroker(ctx context.Context) {
 			DelBrokerCapacityAll(ctx, broker)
 		}
 	}
+}
+
+func ProbeConn(ctx context.Context, ){
+	RangeUserContextAll(func(key, value any) bool {
+
+		user,e := GetUserDevice(ctx,key.(string))
+
+		if e!=nil || user==nil {
+			DelUserContext(key.(string))
+		}
+
+		return true
+	})
 }
 

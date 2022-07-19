@@ -22,3 +22,7 @@ func GetUserContext(userKey string) (*context.Context, bool) {
 
 	return v.(*context.Context), e
 }
+
+func RangeUserContextAll(f func(key, value any) bool){
+	users.Range(f)
+}
