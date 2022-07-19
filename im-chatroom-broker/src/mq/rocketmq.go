@@ -61,7 +61,7 @@ func (d *Deliver) Sync(topic string, body []byte) {
 	}
 	res, err := d.Producer.SendSync(context.Background(), msg)
 
-	fmt.Println(util.CurrentSecond(), "Producer 发送完毕",topic,res,err)
+	fmt.Println(util.CurrentSecond(), "Producer 发送完毕", topic, res, err)
 
 }
 
@@ -72,6 +72,9 @@ func (d *Deliver) ProduceRoom(packet *protocol.Packet) {
 
 func (d *Deliver) ProduceOne(broker string, packet *protocol.PacketMessage) {
 	msg, _ := json.Marshal(packet)
+
+	broker = strings.ReplaceAll(broker, ".", "|")
+	broker = strings.ReplaceAll(broker, ":", "|")
 
 	d.Sync("imchatroom_push_one_"+broker, msg)
 	fmt.Println(util.CurrentSecond())
@@ -89,8 +92,7 @@ func (d *Deliver) consume(topic string, f func(context.Context, ...*primitive.Me
 func (d *Deliver) ConsumeRoom() {
 	d.consume("imchatroom_push_room", func(c context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
 
-		fmt.Println(util.CurrentSecond(), "Consumer 消费开始 imchatroom_push_room",msgs)
-
+		fmt.Println(util.CurrentSecond(), "Consumer 消费开始 imchatroom_push_room", msgs)
 
 		for i := range msgs {
 
@@ -125,11 +127,13 @@ func (d *Deliver) ConsumeRoom() {
 }
 
 func (d *Deliver) ConsumeMine(broker string) {
+
+	broker = strings.ReplaceAll(broker, ".", "|")
+	broker = strings.ReplaceAll(broker, ":", "|")
+
 	d.consume("imchatroom_push_one_"+broker, func(c context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
 
-		fmt.Println(util.CurrentSecond(), "Consumer 消费开始 imchatroom_push_one_"+broker,msgs)
-
-
+		fmt.Println(util.CurrentSecond(), "Consumer 消费开始 imchatroom_push_one_"+broker, msgs)
 
 		for i := range msgs {
 			p := &protocol.PacketMessage{}

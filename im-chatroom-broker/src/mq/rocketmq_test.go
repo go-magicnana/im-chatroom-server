@@ -41,17 +41,28 @@ func TestRocket(t *testing.T) {
 
 	wg.Add(1)
 
-	OneDeliver().ConsumeRoom()
+	//OneDeliver().ConsumeRoom()
+	//OneDeliver().ConsumeMine("192.168.3.92:33121")
 
-	p := &protocol.Packet{
-		Header: protocol.MessageHeader{
-			Command: 9,
+	//p := &protocol.Packet{
+	//	Header: protocol.MessageHeader{
+	//		Command: 9,
+	//	},
+	//	Body: "JJJJJ",
+	//}
+	//OneDeliver().ProduceRoom(p)
+
+	pac := &protocol.PacketMessage{
+		Packet: protocol.Packet{
+			Header: protocol.MessageHeader{
+				To: "106533",
+			},
+			Body: "hahaha",
 		},
-		Body: "JJJJJ",
+		UserKey: "106533/WW",
 	}
-	OneDeliver().ProduceRoom(p)
+	OneDeliver().ProduceOne("192.168.3.92:33121", pac)
 
 	wg.Wait()
-
 
 }
