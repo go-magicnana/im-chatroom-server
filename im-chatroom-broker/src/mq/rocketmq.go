@@ -9,6 +9,7 @@ import (
 	"github.com/apache/rocketmq-client-go/v2/producer"
 	"golang.org/x/net/context"
 	"im-chatroom-broker/protocol"
+	"im-chatroom-broker/serializer"
 	"im-chatroom-broker/service"
 	"im-chatroom-broker/util"
 	"sync"
@@ -116,10 +117,12 @@ func (d *Deliver) ConsumeMine(broker string) {
 			p := &protocol.PacketMessage{}
 			json.Unmarshal(msgs[i].Body, p)
 
-			_, e := service.GetUserContext(p.UserKey)
+			c, e := service.GetUserContext(p.UserKey)
 
 			if !e {
 				//c.Push(&p.Packet)
+				serializer.SingleJsonSerializer().Write(c, &p.Packet)
+
 			}
 		}
 		return consumer.ConsumeSuccess, nil

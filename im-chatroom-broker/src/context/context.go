@@ -112,7 +112,3 @@ func (c *Context) Close() {
 	c.state.Store(Closed)
 	c.conn.Close()
 }
-
-//func (c *Context) Push(p *protocol.Packet) error{
-//	return protocol.Write(c,p)
-//}
