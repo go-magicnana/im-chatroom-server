@@ -1,4 +1,4 @@
-package server
+package protocol
 
 import (
 	"bytes"
@@ -6,12 +6,11 @@ import (
 	"errors"
 	"fmt"
 	context2 "im-chatroom-broker/context"
-	"im-chatroom-broker/protocol"
 	"im-chatroom-broker/serializer"
 	"im-chatroom-broker/util"
 )
 
-func Write(c *context2.Context, p *protocol.Packet) error {
+func Write(c *context2.Context, p *Packet) error {
 	serializer := serializer.SingleJsonSerializer()
 
 	bs, e := serializer.EncodePacket(p, c)

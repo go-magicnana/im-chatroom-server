@@ -48,13 +48,13 @@ func (d ContentHandler) Handle(ctx context.Context, c *context2.Context, packet 
 		a := protocol.JsonContentAt(packet.Body)
 		packet.Body = a
 
-		return at(ctx, c, packet)
+		return at(ctx, c, packet,a)
 
 	case protocol.TypeContentReply:
 		a := protocol.JsonContentReply(packet.Body)
 		packet.Body = a
 
-		//return reply(ctx, c, packet)
+		return reply(ctx, c, packet,a)
 
 	}
 	return ret, nil
@@ -95,7 +95,7 @@ func deliver(ctx context.Context, c *context2.Context, packet *protocol.Packet) 
 
 func text(ctx context.Context, c *context2.Context, packet *protocol.Packet) (*protocol.Packet, error) {
 
-	if util.IsEmpty(packet.Body.(protocol.MessageBodyContentText).Content) {
+	if util.IsEmpty(packet.Body.(*protocol.MessageBodyContentText).Content) {
 		return nil, nil
 	}
 
@@ -104,19 +104,11 @@ func text(ctx context.Context, c *context2.Context, packet *protocol.Packet) (*p
 
 func at(ctx context.Context, c *context2.Context, packet *protocol.Packet, body *protocol.MessageBodyContentAt) (*protocol.Packet, error) {
 
-	user, e1 := GetUserInfo(ctx, body.AtUserId)
-	if e1 != nil {
-		return nil, e1
-	}
+	user,_:= GetUserInfo(ctx, body.AtUserId)
 
-	atUser, e2 := GetUserInfo(ctx, body.AtUserKey)
-	if e2 != nil {
-		return nil, e2
-	}
-
-	body.AtUserId = atUser.UserId
-	body.AtUserName = atUser.Name
-	body.AtUserAvatar = atUser.Avatar
+	body.AtUserId = user.UserId
+	body.AtUserName = user.Name
+	body.AtUserAvatar = user.Avatar
 
 
 	return deliver(ctx,c,packet)
@@ -124,12 +116,7 @@ func at(ctx context.Context, c *context2.Context, packet *protocol.Packet, body 
 
 func reply(ctx context.Context, c *context2.Context, packet *protocol.Packet, body *protocol.MessageBodyContentReply) (*protocol.Packet, error) {
 
-	user, e1 := GetUserInfo(ctx, c.UserKey())
-	if e1 != nil {
-		return nil, e1
-	}
-
-	atUser, e2 := GetUserInfo(ctx, body.ReplyUserKey)
+	atUser, e2 := GetUserInfo(ctx, body.ReplyUserId)
 	if e2 != nil {
 		return nil, e2
 	}
@@ -138,14 +125,6 @@ func reply(ctx context.Context, c *context2.Context, packet *protocol.Packet, bo
 	body.ReplyUserName = atUser.Name
 	body.ReplyUserAvatar = atUser.Avatar
 
-	packet.Header.From = *user
-	packet.Header.Flow = protocol.FlowDeliver
+	return deliver(ctx,c,packet)
 
-	if packet.Header.Target == protocol.TargetRoom {
-		mq.DeliverMessageToRoom(ctx, c, packet)
-	} else {
-		mq.DeliverMessageToUser(ctx, c, packet)
-	}
-
-	return nil, nil
 }

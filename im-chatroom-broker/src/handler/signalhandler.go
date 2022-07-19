@@ -133,7 +133,7 @@ func joinRoom(ctx context.Context, c *context2.Context, packet *protocol.Packet,
 
 	SetRoomUser(ctx, body.RoomId, c.UserKey())
 
-	return protocol.NewResponseOK(packet, nil), nil
+	return protocol.NewResponseOK(packet, body), nil
 }
 
 func leaveRoom(ctx context.Context, c *context2.Context, packet *protocol.Packet) (*protocol.Packet, error) {
@@ -161,5 +161,5 @@ func changeRoom(ctx context.Context, c *context2.Context, packet *protocol.Packe
 
 	SetUserDevice2InRoom(ctx, c.UserKey(), body.RoomId)
 
-	return protocol.NewResponseOK(packet, nil), nil
+	return protocol.NewResponseOK(packet, body), nil
 }

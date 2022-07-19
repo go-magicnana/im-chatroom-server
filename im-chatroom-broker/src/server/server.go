@@ -7,6 +7,7 @@ import (
 	context2 "im-chatroom-broker/context"
 	err "im-chatroom-broker/error"
 	"im-chatroom-broker/handler"
+	//"im-chatroom-broker/mq"
 	"im-chatroom-broker/protocol"
 	"im-chatroom-broker/serializer"
 	"im-chatroom-broker/util"
@@ -58,6 +59,10 @@ func listen(ctx context.Context, addr string) {
 	handler.SetBrokerInstance(ctx, brokerAddress)
 
 	go handler.BrokerAliveTask(ctx, brokerAddress)
+
+	//go mq.OneDeliver().ConsumeRoom()
+	//
+	//go mq.OneDeliver().ConsumeMine(brokerAddress)
 
 	for {
 		select {
@@ -209,7 +214,7 @@ func process(ctx context.Context, cancel context.CancelFunc, c *context2.Context
 	}
 
 	if ret != nil {
-		Write(c, ret)
+		protocol.Write(c, ret)
 	}
 
 }

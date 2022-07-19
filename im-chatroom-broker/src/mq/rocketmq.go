@@ -80,11 +80,6 @@ func (d *Deliver) consume(topic string, f func(context.Context, ...*primitive.Me
 	if err != nil {
 		util.Panic(err)
 	}
-	// Note: start after subscribe
-	err = d.Consumer.Start()
-	if err != nil {
-		util.Panic(err)
-	}
 }
 
 func (d *Deliver) ConsumeRoom() {
@@ -105,8 +100,7 @@ func (d *Deliver) ConsumeRoom() {
 							UserKey: v,
 							Packet:  *p,
 						}
-
-						d.produceOne("imchatroom_push_one_"+broker, &m)
+						d.ProduceOne("imchatroom_push_one_"+broker, &m)
 					}
 				}
 
@@ -122,10 +116,10 @@ func (d *Deliver) ConsumeMine(broker string) {
 			p := &protocol.PacketMessage{}
 			json.Unmarshal(msgs[i].Body, p)
 
-			c, e := handler.GetUserContext(p.UserKey)
+			_, e := handler.GetUserContext(p.UserKey)
 
 			if !e {
-				c.Push(&p.Packet)
+				//c.Push(&p.Packet)
 			}
 		}
 		return consumer.ConsumeSuccess, nil
