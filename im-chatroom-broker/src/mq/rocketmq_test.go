@@ -1,7 +1,6 @@
 package mq
 
 import (
-	"im-chatroom-broker/protocol"
 	"sync"
 	"testing"
 )
@@ -42,7 +41,7 @@ func TestRocket(t *testing.T) {
 	wg.Add(1)
 
 	//OneDeliver().ConsumeRoom()
-	//OneDeliver().ConsumeMine("192.168.3.92:33121")
+	//OneDeliver().ConsumeMine("192.168.3.87:33121")
 
 	//p := &protocol.Packet{
 	//	Header: protocol.MessageHeader{
@@ -52,16 +51,20 @@ func TestRocket(t *testing.T) {
 	//}
 	//OneDeliver().ProduceRoom(p)
 
-	pac := &protocol.PacketMessage{
-		Packet: protocol.Packet{
-			Header: protocol.MessageHeader{
-				To: "106533",
-			},
-			Body: "hahaha",
-		},
-		UserKey: "106533/WW",
-	}
-	OneDeliver().ProduceOne("192.168.3.92:33121", pac)
+	//pac := &protocol.PacketMessage{
+	//	Packet: protocol.Packet{
+	//		Header: protocol.MessageHeader{
+	//			Command: 4,
+	//			Target: 2,
+	//
+	//			To: "1066",
+	//			Flow: 1,
+	//		},
+	//		Body: "hahaha",
+	//	},
+	//	UserKey: "1066/IOS",
+	//}
+	//OneDeliver().ProduceOne("192.168.3.87:33121", pac)
 
 	wg.Wait()
 

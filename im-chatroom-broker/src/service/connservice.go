@@ -20,9 +20,13 @@ func DelUserContext(userKey string) {
 func GetUserContext(userKey string) (*context.Context, bool) {
 	v, e := users.Load(userKey)
 
-	return v.(*context.Context), e
+	if e {
+		return v.(*context.Context), e
+	} else {
+		return nil, e
+	}
 }
 
-func RangeUserContextAll(f func(key, value any) bool){
+func RangeUserContextAll(f func(key, value any) bool) {
 	users.Range(f)
 }

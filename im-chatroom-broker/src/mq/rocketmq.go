@@ -18,19 +18,14 @@ import (
 
 var once sync.Once
 
-var _mq *Deliver
-
-var (
-	mqProducer rocketmq.Producer
-	mqConsumer rocketmq.PushConsumer
-)
+var _mq Deliver
 
 type Deliver struct {
 	Producer rocketmq.Producer
 	Consumer rocketmq.PushConsumer
 }
 
-func OneDeliver() *Deliver {
+func OneDeliver() Deliver {
 	once.Do(func() {
 
 		c, _ := rocketmq.NewPushConsumer(
@@ -45,7 +40,7 @@ func OneDeliver() *Deliver {
 
 		p.Start()
 
-		_mq = &Deliver{
+		_mq = Deliver{
 			Producer: p,
 			Consumer: c,
 		}
@@ -53,7 +48,7 @@ func OneDeliver() *Deliver {
 	return _mq
 }
 
-func (d *Deliver) Sync(topic string, body []byte) {
+func (d Deliver) Sync(topic string, body []byte) {
 
 	msg := &primitive.Message{
 		Topic: topic,
@@ -65,22 +60,22 @@ func (d *Deliver) Sync(topic string, body []byte) {
 
 }
 
-func (d *Deliver) ProduceRoom(packet *protocol.Packet) {
+func (d Deliver) ProduceRoom(packet *protocol.Packet) {
 	msg, _ := json.Marshal(packet)
 	d.Sync("imchatroom_push_room", msg)
 }
 
-func (d *Deliver) ProduceOne(broker string, packet *protocol.PacketMessage) {
+func (d Deliver) ProduceOne(broker string, packet *protocol.PacketMessage) {
 	msg, _ := json.Marshal(packet)
 
-	broker = strings.ReplaceAll(broker, ".", "|")
-	broker = strings.ReplaceAll(broker, ":", "|")
+	broker = strings.ReplaceAll(broker, ".", "_")
+	broker = strings.ReplaceAll(broker, ":", "_")
 
 	d.Sync("imchatroom_push_one_"+broker, msg)
 	fmt.Println(util.CurrentSecond())
 }
 
-func (d *Deliver) consume(topic string, f func(context.Context, ...*primitive.MessageExt) (consumer.ConsumeResult, error)) {
+func (d Deliver) consume(topic string, f func(context.Context, ...*primitive.MessageExt) (consumer.ConsumeResult, error)) {
 	err := d.Consumer.Subscribe(topic, consumer.MessageSelector{}, f)
 	if err != nil {
 		util.Panic(err)
@@ -89,7 +84,7 @@ func (d *Deliver) consume(topic string, f func(context.Context, ...*primitive.Me
 	d.Consumer.Start()
 }
 
-func (d *Deliver) ConsumeRoom() {
+func (d Deliver) ConsumeRoom() {
 	d.consume("imchatroom_push_room", func(c context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
 
 		fmt.Println(util.CurrentSecond(), "Consumer 消费开始 imchatroom_push_room", msgs)
@@ -115,7 +110,7 @@ func (d *Deliver) ConsumeRoom() {
 							UserKey: v,
 							Packet:  *p,
 						}
-						d.ProduceOne("imchatroom_push_one_"+broker, &m)
+						d.ProduceOne(broker, &m)
 					}
 				}
 
@@ -126,10 +121,10 @@ func (d *Deliver) ConsumeRoom() {
 	})
 }
 
-func (d *Deliver) ConsumeMine(broker string) {
+func (d Deliver) ConsumeMine(broker string) {
 
-	broker = strings.ReplaceAll(broker, ".", "|")
-	broker = strings.ReplaceAll(broker, ":", "|")
+	broker = strings.ReplaceAll(broker, ".", "_")
+	broker = strings.ReplaceAll(broker, ":", "_")
 
 	d.consume("imchatroom_push_one_"+broker, func(c context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
 
@@ -141,7 +136,7 @@ func (d *Deliver) ConsumeMine(broker string) {
 
 			c, e := service.GetUserContext(p.UserKey)
 
-			if !e {
+			if e {
 				//c.Push(&p.Packet)
 				serializer.SingleJsonSerializer().Write(c, &p.Packet)
 
