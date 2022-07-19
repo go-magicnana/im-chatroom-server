@@ -31,7 +31,7 @@ func GetToken(ct echo.Context) error {
 	userId := ct.FormValue("userId")
 	name := ct.FormValue("name")
 	avatar := ct.FormValue("avatar")
-	sexstr := ct.FormValue("sex")
+	genderstr := ct.FormValue("gender")
 
 	if userId == "" {
 		e.Logger.Info("userId is illegal")
@@ -42,8 +42,8 @@ func GetToken(ct echo.Context) error {
 	userinfo.UserId = userId
 	userinfo.Name = name
 	userinfo.Avatar = avatar
-	sex, _ := strconv.Atoi(sexstr)
-	userinfo.Sex = sex
+	gender, _ := strconv.Atoi(genderstr)
+	userinfo.Gender = gender
 
 	timeUnix := time.Now().Unix()
 	// userToken:userId时间戳 获取md5值作为token
@@ -66,5 +66,5 @@ type UserInfo struct {
 	UserId string `json:"userId"`
 	Name   string `json:"name"`
 	Avatar string `json:"avatar"`
-	Sex    int    `json:"sex"`
+	Gender int    `json:"gender"`
 }
