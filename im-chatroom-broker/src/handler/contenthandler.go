@@ -75,7 +75,7 @@ func deliver(ctx context.Context, c *context2.Context, packet *protocol.Packet) 
 	packet.Header.Message = err.OK.Message
 
 	if packet.Header.Target == protocol.TargetRoom {
-		mq.OneDeliver().ProduceRoom(packet)
+		mq.SendSync2Room(packet)
 	} else {
 
 		ret := service.GetUserClients(ctx, packet.Header.To)
@@ -93,7 +93,7 @@ func deliver(ctx context.Context, c *context2.Context, packet *protocol.Packet) 
 
 			broker, _ := service.GetUserDeviceBroker(ctx, v)
 
-			mq.OneDeliver().ProduceOne(broker, msg)
+			mq.SendSync2One(broker, msg)
 			//fmt.Println(msg,broker)
 		}
 

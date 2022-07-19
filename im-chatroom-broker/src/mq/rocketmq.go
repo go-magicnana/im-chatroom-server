@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/apache/rocketmq-client-go/v2"
+	"github.com/apache/rocketmq-client-go/v2/admin"
 	"github.com/apache/rocketmq-client-go/v2/consumer"
 	"github.com/apache/rocketmq-client-go/v2/primitive"
 	"github.com/apache/rocketmq-client-go/v2/producer"
@@ -13,12 +14,7 @@ import (
 	"im-chatroom-broker/service"
 	"im-chatroom-broker/util"
 	"strings"
-	"sync"
 )
-
-var once sync.Once
-
-var _mq Deliver
 
 const (
 	RoomGroup = "imchatroom_room_group"
@@ -26,141 +22,163 @@ const (
 
 	OneGroup = "imchatroom_one_group_"
 	OneTopic = "imchatroom_one_topic_"
+
+	EndPoint = "192.168.3.242:9876"
 )
 
 var MyName = ""
 
-type Deliver struct {
-	Producer     rocketmq.Producer
-	ConsumerRoom rocketmq.PushConsumer
-	ConsumerOne  rocketmq.PushConsumer
+var _producer rocketmq.Producer
+var _consumer1 rocketmq.PushConsumer
+var _consumer2 rocketmq.PushConsumer
+
+func init() {
+
+	ip := util.GetBrokerIp()
+	MyName = broker2name(ip + ":33121")
+
+	createTopic(RoomTopic)
+	createTopic(OneTopic + MyName)
+	newProducer()
+	newConsumerRoom()
+	newConsumerOne()
 }
 
-func OneDeliver() Deliver {
-	once.Do(func() {
-
-		ip := util.GetBrokerIp()
-
-		MyName = broker2name(ip + ":33121")
-
-		room, _ := rocketmq.NewPushConsumer(
-			consumer.WithGroupName(RoomGroup),
-			consumer.WithNsResolver(primitive.NewPassthroughResolver([]string{"192.168.3.242:9876"})),
-		)
-
-		one, _ := rocketmq.NewPushConsumer(
-			consumer.WithGroupName(OneGroup+MyName),
-			consumer.WithNsResolver(primitive.NewPassthroughResolver([]string{"192.168.3.242:9876"})),
-		)
-
-		p, _ := rocketmq.NewProducer(
-			producer.WithNsResolver(primitive.NewPassthroughResolver([]string{"192.168.3.242:9876"})),
-			producer.WithRetry(2),
-		)
-
-		p.Start()
-
-		_mq = Deliver{
-			Producer:     p,
-			ConsumerRoom: room,
-			ConsumerOne:  one,
-		}
-	})
-	return _mq
-}
-
-func (d Deliver) Sync(topic string, body []byte) {
-
-	msg := &primitive.Message{
-		Topic: topic,
-		Body:  body,
+func newProducer() rocketmq.Producer {
+	p, _ := rocketmq.NewProducer(
+		producer.WithNsResolver(primitive.NewPassthroughResolver([]string{EndPoint})),
+		producer.WithRetry(2),
+	)
+	err := _producer.Start()
+	if err != nil {
+		util.Panic(err)
 	}
-	res, err := d.Producer.SendSync(context.Background(), msg)
-
-	fmt.Println(util.CurrentSecond(), "Producer 发送完毕", topic, res, err)
-
+	return p
 }
 
-func (d Deliver) ProduceRoom(packet *protocol.Packet) {
-	msg, _ := json.Marshal(packet)
-	d.Sync(RoomTopic, msg)
-}
+func newConsumerRoom() {
+	c, _ := rocketmq.NewPushConsumer(
+		consumer.WithGroupName(RoomGroup),
+		consumer.WithNsResolver(primitive.NewPassthroughResolver([]string{EndPoint})),
+	)
+	err := c.Subscribe(RoomTopic, consumer.MessageSelector{},
+		func(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
 
-func (d Deliver) ProduceOne(broker string, packet *protocol.PacketMessage) {
-	msg, _ := json.Marshal(packet)
+			fmt.Println(util.CurrentSecond(), "Consumer 消费开始 ", RoomTopic, msgs)
 
-	d.Sync(OneTopic+broker2name(broker), msg)
-	fmt.Println(util.CurrentSecond())
-}
+			for i := range msgs {
 
-//func (d Deliver) consume(topic string, f func(context.Context, ...*primitive.MessageExt) (consumer.ConsumeResult, error)) {
-//	err := d.Consumer.Subscribe(topic, consumer.MessageSelector{}, f)
-//	if err != nil {
-//		util.Panic(err)
-//	}
-//
-//	d.Consumer.Start()
-//}
+				p := &protocol.Packet{}
+				json.Unmarshal(msgs[i].Body, p)
 
-func (d Deliver) ConsumeRoom() {
-	d.ConsumerRoom.Subscribe(RoomTopic, consumer.MessageSelector{}, func(c context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
+				if p.Header.Target == protocol.TargetRoom {
+					b, e := service.GetRoom(ctx, p.Header.To)
 
-		fmt.Println(util.CurrentSecond(), "Consumer 消费开始 ", RoomTopic, msgs)
+					if e == nil {
+						for _, v := range b {
 
-		for i := range msgs {
+							if p.Header.From.UserId == strings.Split(v, "/")[0] {
+								continue
+							}
 
-			p := &protocol.Packet{}
-			json.Unmarshal(msgs[i].Body, p)
+							broker, _ := service.GetUserDeviceBroker(ctx, v)
 
-			if p.Header.Target == protocol.TargetRoom {
-				b, e := service.GetRoom(c, p.Header.To)
+							m := protocol.PacketMessage{
+								UserKey: v,
+								Packet:  *p,
+							}
 
-				if e == nil {
-					for _, v := range b {
+							SendSync2One(broker, &m)
 
-						if p.Header.From.UserId == strings.Split(v, "/")[0] {
-							continue
 						}
-
-						broker, _ := service.GetUserDeviceBroker(c, v)
-
-						m := protocol.PacketMessage{
-							UserKey: v,
-							Packet:  *p,
-						}
-						d.ProduceOne(broker, &m)
 					}
+
 				}
 
 			}
+			return consumer.ConsumeSuccess, nil
+		})
 
-		}
-		return consumer.ConsumeSuccess, nil
-	})
-
-	d.ConsumerRoom.Start()
+	if err != nil {
+		util.Panic(err)
+	}
+	// Note: start after subscribe
+	err = c.Start()
+	if err != nil {
+		util.Panic(err)
+	}
 }
 
-func (d Deliver) ConsumeMine() {
+func newConsumerOne() {
 
-	d.ConsumerOne.Subscribe(OneTopic+MyName, consumer.MessageSelector{}, func(c context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
+	c, _ := rocketmq.NewPushConsumer(
+		consumer.WithGroupName(OneGroup+MyName),
+		consumer.WithNsResolver(primitive.NewPassthroughResolver([]string{EndPoint})),
+	)
+	err := c.Subscribe(OneTopic+MyName, consumer.MessageSelector{},
+		func(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
 
-		fmt.Println(util.CurrentSecond(), "Consumer 消费开始 ", OneTopic+MyName, msgs)
+			fmt.Println(util.CurrentSecond(), "Consumer 消费开始 ", OneTopic+MyName, msgs)
 
-		for i := range msgs {
-			p := &protocol.PacketMessage{}
-			json.Unmarshal(msgs[i].Body, p)
+			for i := range msgs {
+				p := &protocol.PacketMessage{}
+				json.Unmarshal(msgs[i].Body, p)
 
-			c, e := service.GetUserContext(p.UserKey)
+				c, e := service.GetUserContext(p.UserKey)
 
-			if e {
-				serializer.SingleJsonSerializer().Write(c, &p.Packet)
+				if e {
+					serializer.SingleJsonSerializer().Write(c, &p.Packet)
 
+				}
 			}
-		}
-		return consumer.ConsumeSuccess, nil
-	})
-	d.ConsumerOne.Start()
+			return consumer.ConsumeSuccess, nil
+
+		})
+	if err != nil {
+		util.Panic(err)
+	}
+	// Note: start after subscribe
+	err = c.Start()
+	if err != nil {
+		util.Panic(err)
+	}
+}
+
+func createTopic(topicName string) {
+	endPoint := []string{EndPoint}
+	// 创建主题
+	testAdmin, err := admin.NewAdmin(admin.WithResolver(primitive.NewPassthroughResolver(endPoint)))
+	if err != nil {
+		fmt.Printf("connection error: %s\n", err.Error())
+	}
+	err = testAdmin.CreateTopic(context.Background(), admin.WithTopicCreate(topicName))
+	if err != nil {
+		fmt.Printf("createTopic error: %s\n", err.Error())
+	}
+}
+
+func sendSync(topic string, message []byte) {
+	msg := &primitive.Message{
+		Topic: topic,
+		Body:  message,
+	}
+	res, err := _producer.SendSync(context.Background(), msg)
+
+	if err != nil {
+		fmt.Printf("send message error: %s\n", err)
+	} else {
+		fmt.Printf("----------- send message success: result=%s\n", res.String())
+	}
+}
+
+func SendSync2One(broker string, p *protocol.PacketMessage) {
+	msg, _ := json.Marshal(p)
+	sendSync(OneTopic+broker2name(broker), msg)
+}
+
+func SendSync2Room(packet *protocol.Packet) {
+	msg, _ := json.Marshal(packet)
+	sendSync(RoomTopic, msg)
 }
 
 func broker2name(broker string) string {
