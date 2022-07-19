@@ -71,6 +71,8 @@ func deliver(ctx context.Context, c *context2.Context, packet *protocol.Packet) 
 
 	packet.Header.From = *user
 	packet.Header.Flow = protocol.FlowDeliver
+	packet.Header.Code = err.OK.Code
+	packet.Header.Message = err.OK.Message
 
 	if packet.Header.Target == protocol.TargetRoom {
 		mq.OneDeliver().ProduceRoom(packet)

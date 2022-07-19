@@ -61,6 +61,17 @@ func TestRocket(t *testing.T) {
 	//	UserKey: "106533/WW",
 	//}
 	//OneDeliver().ProduceOne("192.168.3.92:33121", pac)
+	//			Command: 4,
+	//			Target: 2,
+	//
+	//			To: "1066",
+	//			Flow: 1,
+	//		},
+	//		Body: "hahaha",
+	//	},
+	//	UserKey: "1066/IOS",
+	//}
+	//OneDeliver().ProduceOne("192.168.3.87:33121", pac)
 
 	wg.Wait()
 
