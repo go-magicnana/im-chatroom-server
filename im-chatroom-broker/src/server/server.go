@@ -7,6 +7,9 @@ import (
 	context2 "im-chatroom-broker/context"
 	err "im-chatroom-broker/error"
 	"im-chatroom-broker/handler"
+	"im-chatroom-broker/mq"
+	"im-chatroom-broker/service"
+
 	//"im-chatroom-broker/mq"
 	"im-chatroom-broker/protocol"
 	"im-chatroom-broker/serializer"
@@ -56,13 +59,13 @@ func listen(ctx context.Context, addr string) {
 
 	brokerAddress := ip.String() + addr
 
-	handler.SetBrokerInstance(ctx, brokerAddress)
+	service.SetBrokerInstance(ctx, brokerAddress)
 
-	go handler.BrokerAliveTask(ctx, brokerAddress)
+	go service.BrokerAliveTask(ctx, brokerAddress)
 
-	//go mq.OneDeliver().ConsumeRoom()
-	//
-	//go mq.OneDeliver().ConsumeMine(brokerAddress)
+	go mq.OneDeliver().ConsumeRoom()
+
+	go mq.OneDeliver().ConsumeMine(brokerAddress)
 
 	for {
 		select {
@@ -98,11 +101,11 @@ func listen(ctx context.Context, addr string) {
 func close(ctx context.Context, cancel context.CancelFunc, c *context2.Context) {
 	fmt.Println(util.CurrentSecond(), "Read 关闭线程 关闭连接")
 
-	handler.DelUserInfo(ctx, c.UserKey())
+	service.DelUserInfo(ctx, c.UserKey())
 
-	handler.DelUserContext(c.UserKey())
+	service.DelUserContext(c.UserKey())
 
-	handler.DelBrokerCapacity(ctx, c.Broker(), c.UserKey())
+	service.DelBrokerCapacity(ctx, c.Broker(), c.UserKey())
 
 	c.Close()
 }
@@ -214,7 +217,7 @@ func process(ctx context.Context, cancel context.CancelFunc, c *context2.Context
 	}
 
 	if ret != nil {
-		protocol.Write(c, ret)
+		serializer.SingleJsonSerializer().Write(c,ret)
 	}
 
 }

@@ -5,6 +5,9 @@ import (
 	context2 "im-chatroom-broker/context"
 	err "im-chatroom-broker/error"
 	"im-chatroom-broker/mq"
+	"im-chatroom-broker/service"
+
+	//"im-chatroom-broker/mq"
 	"im-chatroom-broker/protocol"
 	"im-chatroom-broker/util"
 	"sync"
@@ -48,20 +51,20 @@ func (d ContentHandler) Handle(ctx context.Context, c *context2.Context, packet 
 		a := protocol.JsonContentAt(packet.Body)
 		packet.Body = a
 
-		return at(ctx, c, packet,a)
+		return at(ctx, c, packet, a)
 
 	case protocol.TypeContentReply:
 		a := protocol.JsonContentReply(packet.Body)
 		packet.Body = a
 
-		return reply(ctx, c, packet,a)
+		return reply(ctx, c, packet, a)
 
 	}
 	return ret, nil
 }
 
 func deliver(ctx context.Context, c *context2.Context, packet *protocol.Packet) (*protocol.Packet, error) {
-	user, e1 := GetUserInfo(ctx, c.UserKey())
+	user, e1 := service.GetUserInfo(ctx, c.UserKey())
 	if e1 != nil {
 		return nil, e1
 	}
@@ -73,20 +76,19 @@ func deliver(ctx context.Context, c *context2.Context, packet *protocol.Packet) 
 		mq.OneDeliver().ProduceRoom(packet)
 	} else {
 
-		ret := GetUserClients(ctx,packet.Header.To)
+		ret := service.GetUserClients(ctx, packet.Header.To)
 
-		for _,v:= range ret{
+		for _, v := range ret {
 			msg := &protocol.PacketMessage{
 				UserKey: v,
 				Packet:  *packet,
 			}
 
-			broker,_:=GetUserDeviceBroker(ctx,v)
+			broker, _ := service.GetUserDeviceBroker(ctx, v)
 
 			mq.OneDeliver().ProduceOne(broker, msg)
+			//fmt.Println(msg,broker)
 		}
-
-
 
 	}
 
@@ -104,19 +106,18 @@ func text(ctx context.Context, c *context2.Context, packet *protocol.Packet) (*p
 
 func at(ctx context.Context, c *context2.Context, packet *protocol.Packet, body *protocol.MessageBodyContentAt) (*protocol.Packet, error) {
 
-	user,_:= GetUserInfo(ctx, body.AtUserId)
+	user, _ := service.GetUserInfo(ctx, body.AtUserId)
 
 	body.AtUserId = user.UserId
 	body.AtUserName = user.Name
 	body.AtUserAvatar = user.Avatar
 
-
-	return deliver(ctx,c,packet)
+	return deliver(ctx, c, packet)
 }
 
 func reply(ctx context.Context, c *context2.Context, packet *protocol.Packet, body *protocol.MessageBodyContentReply) (*protocol.Packet, error) {
 
-	atUser, e2 := GetUserInfo(ctx, body.ReplyUserId)
+	atUser, e2 := service.GetUserInfo(ctx, body.ReplyUserId)
 	if e2 != nil {
 		return nil, e2
 	}
@@ -125,6 +126,6 @@ func reply(ctx context.Context, c *context2.Context, packet *protocol.Packet, bo
 	body.ReplyUserName = atUser.Name
 	body.ReplyUserAvatar = atUser.Avatar
 
-	return deliver(ctx,c,packet)
+	return deliver(ctx, c, packet)
 
 }

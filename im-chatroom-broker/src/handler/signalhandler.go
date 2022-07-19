@@ -6,6 +6,7 @@ import (
 	context2 "im-chatroom-broker/context"
 	err "im-chatroom-broker/error"
 	"im-chatroom-broker/protocol"
+	"im-chatroom-broker/service"
 	"im-chatroom-broker/util"
 	"strconv"
 	"sync"
@@ -65,7 +66,7 @@ func login(ctx context.Context, c *context2.Context, packet *protocol.Packet, bo
 	token := body.Token
 	device := body.Device
 
-	user, e := GetUserAuth(ctx, token)
+	user, e := service.GetUserAuth(ctx, token)
 
 	if e != nil {
 		return protocol.NewResponseError(packet, err.Unauthorized), nil
@@ -79,7 +80,7 @@ func login(ctx context.Context, c *context2.Context, packet *protocol.Packet, bo
 		return protocol.NewResponseError(packet, err.AlreadyLogin), nil
 	}
 
-	exist, _ := GetUserDevice(ctx, userKey)
+	exist, _ := service.GetUserDevice(ctx, userKey)
 
 	if exist != nil || util.IsNotEmpty(exist.State) {
 		if exist.State == strconv.FormatInt(int64(context2.Login), 10) {
@@ -87,9 +88,9 @@ func login(ctx context.Context, c *context2.Context, packet *protocol.Packet, bo
 		}
 	}
 
-	SetUserClient(ctx, user.UserId, userKey)
+	service.SetUserClient(ctx, user.UserId, userKey)
 
-	devices := GetUserClients(ctx, user.UserId)
+	devices := service.GetUserClients(ctx, user.UserId)
 
 	userInfo := protocol.UserInfo{
 		UserId: user.UserId,
@@ -100,7 +101,7 @@ func login(ctx context.Context, c *context2.Context, packet *protocol.Packet, bo
 		Gender: user.Gender,
 		Role:   user.Role,
 	}
-	SetUserInfo(ctx, userInfo)
+	service.SetUserInfo(ctx, userInfo)
 
 	userDevice := protocol.UserDevice{
 		UserKey: userKey,
@@ -108,11 +109,11 @@ func login(ctx context.Context, c *context2.Context, packet *protocol.Packet, bo
 		Device:  device,
 		Broker:  c.Broker(),
 	}
-	SetUserDevice(ctx, userDevice)
+	service.SetUserDevice(ctx, userDevice)
 
-	SetUserContext(&userDevice, c)
+	service.SetUserContext(&userDevice, c)
 
-	SetBrokerCapacity(ctx, userDevice.Broker, userKey)
+	service.SetBrokerCapacity(ctx, userDevice.Broker, userKey)
 
 	p := protocol.NewResponseOK(packet, nil)
 
@@ -129,9 +130,9 @@ func joinRoom(ctx context.Context, c *context2.Context, packet *protocol.Packet,
 
 	c.JoinRoom(body.RoomId)
 
-	SetUserDevice2InRoom(ctx, c.UserKey(), body.RoomId)
+	service.SetUserDevice2InRoom(ctx, c.UserKey(), body.RoomId)
 
-	SetRoomUser(ctx, body.RoomId, c.UserKey())
+	service.SetRoomUser(ctx, body.RoomId, c.UserKey())
 
 	return protocol.NewResponseOK(packet, body), nil
 }
@@ -139,10 +140,10 @@ func joinRoom(ctx context.Context, c *context2.Context, packet *protocol.Packet,
 func leaveRoom(ctx context.Context, c *context2.Context, packet *protocol.Packet) (*protocol.Packet, error) {
 
 	c.LeaveRoom()
-	userDevice, _ := GetUserDevice(ctx, c.UserKey())
-	DelUserDeviceInRoom(ctx, c.UserKey())
+	userDevice, _ := service.GetUserDevice(ctx, c.UserKey())
+	service.DelUserDeviceInRoom(ctx, c.UserKey())
 
-	DelRoomUser(ctx, userDevice.RoomId, c.UserKey())
+	service.DelRoomUser(ctx, userDevice.RoomId, c.UserKey())
 
 	return protocol.NewResponseOK(packet, nil), nil
 }
@@ -155,11 +156,11 @@ func changeRoom(ctx context.Context, c *context2.Context, packet *protocol.Packe
 
 	c.ChangeRoom(body.RoomId)
 
-	info, _ := GetUserDevice(ctx, c.UserKey())
-	DelRoomUser(ctx, info.RoomId, c.UserKey())
-	SetRoomUser(ctx, body.RoomId, c.UserKey())
+	info, _ := service.GetUserDevice(ctx, c.UserKey())
+	service.DelRoomUser(ctx, info.RoomId, c.UserKey())
+	service.SetRoomUser(ctx, body.RoomId, c.UserKey())
 
-	SetUserDevice2InRoom(ctx, c.UserKey(), body.RoomId)
+	service.SetUserDevice2InRoom(ctx, c.UserKey(), body.RoomId)
 
 	return protocol.NewResponseOK(packet, body), nil
 }

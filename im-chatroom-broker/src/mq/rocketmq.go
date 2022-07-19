@@ -8,8 +8,8 @@ import (
 	"github.com/apache/rocketmq-client-go/v2/primitive"
 	"github.com/apache/rocketmq-client-go/v2/producer"
 	"golang.org/x/net/context"
-	"im-chatroom-broker/handler"
 	"im-chatroom-broker/protocol"
+	"im-chatroom-broker/service"
 	"im-chatroom-broker/util"
 	"sync"
 )
@@ -90,11 +90,11 @@ func (d *Deliver) ConsumeRoom() {
 			json.Unmarshal(msgs[i].Body, p)
 
 			if p.Header.Target == protocol.TargetRoom {
-				b, e := handler.GetRoom(c, p.Header.To)
+				b, e := service.GetRoom(c, p.Header.To)
 
 				if e == nil {
 					for _, v := range b {
-						broker, _ := handler.GetUserDeviceBroker(c, v)
+						broker, _ := service.GetUserDeviceBroker(c, v)
 
 						m := protocol.PacketMessage{
 							UserKey: v,
@@ -116,7 +116,7 @@ func (d *Deliver) ConsumeMine(broker string) {
 			p := &protocol.PacketMessage{}
 			json.Unmarshal(msgs[i].Body, p)
 
-			_, e := handler.GetUserContext(p.UserKey)
+			_, e := service.GetUserContext(p.UserKey)
 
 			if !e {
 				//c.Push(&p.Packet)

@@ -2,7 +2,6 @@ package context
 
 import (
 	"go.uber.org/atomic"
-	"im-chatroom-broker/protocol"
 	"im-chatroom-broker/util"
 	"net"
 )
@@ -114,6 +113,6 @@ func (c *Context) Close() {
 	c.conn.Close()
 }
 
-func (c *Context) Push(p *protocol.Packet) error{
-	return protocol.Write(c,p)
-}
+//func (c *Context) Push(p *protocol.Packet) error{
+//	return protocol.Write(c,p)
+//}

@@ -1,9 +1,14 @@
 package serializer
 
 import (
+	"bytes"
+	"encoding/binary"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"im-chatroom-broker/context"
 	"im-chatroom-broker/protocol"
+	"im-chatroom-broker/util"
 	"sync"
 )
 
@@ -42,6 +47,37 @@ func (j JsonSerializer) DecodePacket(bytes []byte, c *context.Context) (*protoco
 	message := protocol.Packet{}
 	e := json.Unmarshal(bytes, &message)
 	return &message, e
+}
+
+func (j JsonSerializer) Write(c *context.Context, p *protocol.Packet) error {
+
+	bs, e := j.EncodePacket(p, c)
+	if bs == nil {
+		return errors.New("empty packet")
+	}
+
+	if e != nil {
+		return e
+	}
+
+	buffer := new(bytes.Buffer)
+
+	binary.Write(buffer, binary.BigEndian, j.Version())
+
+	length := uint32(len(bs))
+	binary.Write(buffer, binary.BigEndian, length)
+
+	buffer.Write(bs)
+	_, err := c.Conn().Write(buffer.Bytes())
+
+	fmt.Println(util.CurrentSecond(), "Write 等待客户端读取", p.ToString())
+
+	if err != nil {
+		return errors.New("write response error +" + err.Error())
+	} else {
+		return nil
+	}
+
 }
 
 //tmpBuffer := make([]byte, 0)
