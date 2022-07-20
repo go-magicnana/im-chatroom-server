@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/hashicorp/go-uuid"
 	"github.com/labstack/echo"
@@ -28,12 +29,14 @@ func MessagePush(ct echo.Context) error {
 	// 类型 是何种通知
 	fromUserId := ct.FormValue("fromUserId")
 	fromUserName := ct.FormValue("fromUserName")
+	fromUserAvatar := ct.FormValue("fromUserAvatar")
 	// 类型 是何种通知
 	messageTarget := ct.FormValue("messageTarget")
-	messageTargetInt32, _ := strconv.ParseInt(messageTarget, 10, 32)
+	messageTargetInt64, _ := strconv.ParseInt(messageTarget, 0, 64)
 
 	messageType := ct.FormValue("messageType")
-	messageTypeInt32, _ := strconv.ParseInt(messageType, 10, 32)
+	messageTypeInt64, _ := strconv.ParseInt(messageType, 10, 64)
+
 	// 个人 userid，所有人 roomid
 	userId := ct.FormValue("userId")
 	// 信息
@@ -50,24 +53,28 @@ func MessagePush(ct echo.Context) error {
 	header := protocol.MessageHeader{
 		MessageId: messageId,
 		Command:   protocol.CommandNotice,
-		Target:    uint32(messageTargetInt32),
+		Target:    uint32(messageTargetInt64),
 		From: protocol.UserInfo{
 			UserId: fromUserId,
 			Name:   fromUserName,
+			Avatar: fromUserAvatar,
 		},
 		To:   userId,
 		Flow: protocol.FlowUp,
-		Type: uint32(messageTypeInt32),
+		Type: uint32(messageTypeInt64),
 	}
 
 	var body any
 
-	switch messageTargetInt32 {
+	switch int(messageTypeInt64) {
 	case protocol.TypeNoticeBlockUser:
 		body = protocol.MessageBodyNoticeBlockUser{UserId: userId, RoomId: roomId}
 
 	case protocol.TypeNoticeUnblockUser:
 		body = protocol.MessageBodyNoticeUnblockUser{UserId: userId, RoomId: roomId}
+
+	case protocol.TypeNoticeCloseRoom:
+		body = protocol.MessageBodyNoticeCloseRoom{RoomId: roomId}
 
 	case protocol.TypeNoticeBlockRoom:
 		body = protocol.MessageBodyNoticeBlockRoom{RoomId: roomId}
@@ -81,6 +88,8 @@ func MessagePush(ct echo.Context) error {
 		Header: header, Body: body,
 	}
 
+	fmt.Println("send message packet :" + packet.ToString())
+
 	e.Logger.Info("send notice message ", packet)
 
 	result := deliver(context.Background(), &packet)
@@ -93,21 +102,17 @@ func MessagePush(ct echo.Context) error {
 }
 
 func deliver(ctx context.Context, packet *protocol.Packet) error {
-	//user, e1 := service.GetUserInfo(ctx, packet.Header.From.UserId)
-	//if e1 != nil {
-	//	return e1
-	//}
-	//fmt.Println("get user info ", user)
-	//packet.Header.From = *user
+
 	packet.Header.Flow = protocol.FlowDeliver
 
 	if packet.Header.Target == protocol.TargetRoom {
-		mq.OneDeliver().ProduceRoom(packet)
+		mq.SendSync2Room(packet)
 	} else {
 
 		ret := service.GetUserClients(ctx, packet.Header.To)
 
 		for _, v := range ret {
+
 			msg := &protocol.PacketMessage{
 				UserKey: v,
 				Packet:  *packet,
@@ -115,7 +120,7 @@ func deliver(ctx context.Context, packet *protocol.Packet) error {
 
 			broker, _ := service.GetUserDeviceBroker(ctx, v)
 
-			mq.OneDeliver().ProduceOne(broker, msg)
+			mq.SendSync2One(broker, msg)
 			//fmt.Println(msg,broker)
 		}
 
