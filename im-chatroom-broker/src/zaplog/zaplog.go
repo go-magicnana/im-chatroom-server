@@ -105,10 +105,10 @@ func Debugf(template string, args ...interface{}) {
 const (
 	name = "im-chatroom-broker"
 	ip = "192.168.3.92"
-	port = "8080"
-	trace = "xxxxx"
-	span = "span"
-	url = "www.baidu.com"
+	port = "33121"
+	trace = ""
+	span = ""
+	url = ""
 
 )
 

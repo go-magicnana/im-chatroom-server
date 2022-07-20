@@ -150,7 +150,6 @@ func ProbeConn(ctx context.Context) {
 }
 
 func Close(ctx context.Context, c *context2.Context) {
-	fmt.Println(util.CurrentSecond(), "Read 关闭线程 关闭连接")
 
 	DelUserInfo(ctx, c.UserKey())
 
