@@ -54,7 +54,7 @@ func (s SignalHandler) Handle(ctx context.Context, c *context2.Context, packet *
 
 func ping(ctx context.Context, c *context2.Context, packet *protocol.Packet) (*protocol.Packet, error) {
 	c.Ping()
-	service.SetUserAlive(ctx,c.UserId(),c.UserKey())
+	service.SetUserAlive(ctx, c.UserId(), c.UserKey())
 	return nil, nil
 }
 
@@ -112,7 +112,7 @@ func login(ctx context.Context, c *context2.Context, packet *protocol.Packet, bo
 	}
 	service.SetUserDevice(ctx, userDevice)
 
-	service.SetUserDevice2Login(ctx,userKey,context2.Login)
+	service.SetUserDevice2Login(ctx, userKey, context2.Login)
 
 	service.SetUserContext(&userDevice, c)
 
@@ -122,7 +122,7 @@ func login(ctx context.Context, c *context2.Context, packet *protocol.Packet, bo
 
 	fmt.Println(p.ToString())
 
-	service.DelUserAuth(ctx,token)
+	service.DelUserAuth(ctx, token)
 
 	return p, nil
 }
@@ -139,6 +139,8 @@ func joinRoom(ctx context.Context, c *context2.Context, packet *protocol.Packet,
 
 	service.SetRoomUser(ctx, body.RoomId, c.UserKey())
 
+	noticeJoinRoom(ctx, c, body.RoomId)
+
 	return protocol.NewResponseOK(packet, body), nil
 }
 
@@ -149,6 +151,8 @@ func leaveRoom(ctx context.Context, c *context2.Context, packet *protocol.Packet
 	service.DelUserDeviceInRoom(ctx, c.UserKey())
 
 	service.DelRoomUser(ctx, userDevice.RoomId, c.UserKey())
+
+	noticeLeaveRoom(ctx, c, userDevice.RoomId)
 
 	return protocol.NewResponseOK(packet, nil), nil
 }
@@ -166,6 +170,9 @@ func changeRoom(ctx context.Context, c *context2.Context, packet *protocol.Packe
 	service.SetRoomUser(ctx, body.RoomId, c.UserKey())
 
 	service.SetUserDevice2InRoom(ctx, c.UserKey(), body.RoomId)
+
+	noticeLeaveRoom(ctx, c, info.RoomId)
+	noticeJoinRoom(ctx, c, body.RoomId)
 
 	return protocol.NewResponseOK(packet, body), nil
 }
