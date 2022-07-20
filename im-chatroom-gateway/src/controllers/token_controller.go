@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/labstack/echo"
 	"github.com/ziflex/lecho/v3"
-	"im-chatroom-gateway/src/rediss"
+	"im-chatroom-gateway/src/redis"
 	"net/http"
 	"os"
 	"strconv"
@@ -57,7 +57,7 @@ func GetToken(ct echo.Context) error {
 		e.Logger.Error("json userinfo occur err")
 		return ct.JSON(http.StatusOK, gin.H{"code": 1001, "message": "Server Error"})
 	}
-	result := rediss.RedisSingleton().Set(context.Background(), userTokenKey+userToken, data, time.Hour*24)
+	result := redis.Rdb.Set(context.Background(), userTokenKey+userToken, data, time.Hour*24)
 	e.Logger.Info(result)
 	return ct.JSON(http.StatusOK, gin.H{"code": 0, "message": "success", "data": userToken})
 }

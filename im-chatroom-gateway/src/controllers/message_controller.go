@@ -1,8 +1,10 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	"github.com/hashicorp/go-uuid"
 	"github.com/labstack/echo"
 	"github.com/ziflex/lecho/v3"
@@ -13,7 +15,22 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 )
+
+var e echo.Echo
+
+func init() {
+	fmt.Println("messagecontroller init")
+	e := echo.New()
+	e.Logger = lecho.New(
+		os.Stdout,
+		lecho.WithFields(map[string]interface{}{"name": "lecho factory"}),
+		lecho.WithTimestamp(),
+		lecho.WithCaller(),
+		lecho.WithPrefix("controllers.MessageController"),
+	)
+}
 
 func MessagePush(ct echo.Context) error {
 	e := echo.New()
@@ -24,7 +41,6 @@ func MessagePush(ct echo.Context) error {
 		lecho.WithCaller(),
 		lecho.WithPrefix("controllers.MessagePush"),
 	)
-
 	//获取post请求的表单参数，
 	// 类型 是何种通知
 	fromUserId := ct.FormValue("fromUserId")
@@ -60,7 +76,7 @@ func MessagePush(ct echo.Context) error {
 			Avatar: fromUserAvatar,
 		},
 		To:   userId,
-		Flow: protocol.FlowUp,
+		Flow: protocol.FlowDeliver,
 		Type: uint32(messageTypeInt64),
 	}
 
@@ -88,11 +104,9 @@ func MessagePush(ct echo.Context) error {
 		Header: header, Body: body,
 	}
 
-	fmt.Println("send message packet :" + packet.ToString())
-
 	e.Logger.Info("send notice message ", packet)
 
-	result := deliver(context.Background(), &packet)
+	result := deliver(context.Background(), &packet, roomId)
 	if result != nil {
 		e.Logger.Info("send notice message error:", result)
 		return ct.JSON(http.StatusOK, gin.H{"code": 1001, "message": "Server Error"})
@@ -101,30 +115,50 @@ func MessagePush(ct echo.Context) error {
 	return ct.JSON(http.StatusOK, gin.H{"code": 0, "message": "success"})
 }
 
-func deliver(ctx context.Context, packet *protocol.Packet) error {
+func deliver(ctx context.Context, packet *protocol.Packet, roomId string) error {
 
 	packet.Header.Flow = protocol.FlowDeliver
 
 	if packet.Header.Target == protocol.TargetRoom {
-		mq.SendSync2Room(packet)
-	} else {
-
-		ret := service.GetUserClients(ctx, packet.Header.To)
-
-		for _, v := range ret {
-
-			msg := &protocol.PacketMessage{
-				UserKey: v,
-				Packet:  *packet,
-			}
-
-			broker, _ := service.GetUserDeviceBroker(ctx, v)
-
-			mq.SendSync2One(broker, msg)
-			//fmt.Println(msg,broker)
+		fmt.Printf("get room mebmere packet ", packet)
+		rmembers, err := service.GetRoom(ctx, roomId)
+		//fmt.Printf("get room rmembers err ", err.Error())
+		fmt.Printf("get room rmembers ", rmembers)
+		if err == redis.Nil {
+			e.Logger.Info("roomId[", roomId, "] not exists...")
+			return errors.New("roomId[" + roomId + "] not exists...")
 		}
 
+		for i := range rmembers {
+			member := rmembers[i]
+			userKey := strings.Split(member, "/")
+			packet.Header.To = userKey[0]
+			fmt.Printf("get mebmere packet ", packet)
+			//sendMessageToUser(ctx , packet)
+		}
+
+		//mq.SendSync2Room(packet)
+	} else {
+		//sendMessageToUser(ctx , packet)
 	}
 
+	return nil
+}
+
+func sendMessageToUser(ctx context.Context, packet *protocol.Packet) error {
+	ret := service.GetUserClients(ctx, packet.Header.To)
+
+	for _, v := range ret {
+
+		msg := &protocol.PacketMessage{
+			UserKey: v,
+			Packet:  *packet,
+		}
+
+		broker, _ := service.GetUserDeviceBroker(ctx, v)
+
+		mq.SendSync2One(broker, msg)
+		//fmt.Println(msg,broker)
+	}
 	return nil
 }
