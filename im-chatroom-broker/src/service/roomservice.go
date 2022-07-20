@@ -24,11 +24,6 @@ func GetRoom(ctx context.Context, roomId string) ([]string, error) {
 
 func DelRoomUser(ctx context.Context, roomId string, userKey string) {
 	redis.Rdb.SRem(ctx, RoomInfo+roomId, userKey)
-
-	userKeys, _ := GetRoom(ctx, roomId)
-	if userKeys == nil || len(userKeys) == 0 {
-		DelRoom(ctx, roomId)
-	}
 }
 
 func DelRoom(ctx context.Context, roomId string) {
