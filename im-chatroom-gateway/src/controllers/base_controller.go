@@ -3,10 +3,9 @@ package controllers
 import (
 	"context"
 	"github.com/gin-gonic/gin"
-	rediss "github.com/go-redis/redis/v8"
 	"github.com/labstack/echo"
 	"github.com/ziflex/lecho/v3"
-	"im-chatroom-gateway/src/redis"
+	"im-chatroom-gateway/redis"
 	"net/http"
 	"os"
 	"sort"
@@ -35,12 +34,12 @@ func GetConfig(ct echo.Context) error {
 
 	// 遍历列表，获取每台服务加入量
 	slist := []string{}
-	if err != rediss.Nil && len(serverlist) > 0 {
+	if err != redis.Nil && len(serverlist) > 0 {
 
 		for i := range serverlist {
 			sip := serverlist[i]
 			serverCap, err := redis.Rdb.SCard(context.Background(), BrokerCapacity+sip).Result()
-			if err != rediss.Nil {
+			if err != redis.Nil {
 				slist = append(slist, strconv.FormatInt(serverCap, 10)+"-"+sip)
 			} else {
 				slist = append(slist, "0-"+sip)

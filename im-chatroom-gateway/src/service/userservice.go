@@ -3,9 +3,9 @@ package service
 import (
 	"encoding/json"
 	"golang.org/x/net/context"
-	"im-chatroom-gateway/src/protocol"
-	"im-chatroom-gateway/src/redis"
-	"im-chatroom-gateway/src/util"
+	"im-chatroom-gateway/protocol"
+	"im-chatroom-gateway/redis"
+	"im-chatroom-gateway/util"
 	"time"
 )
 

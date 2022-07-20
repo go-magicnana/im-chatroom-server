@@ -2,7 +2,7 @@ package service
 
 import (
 	"golang.org/x/net/context"
-	"im-chatroom-gateway/src/redis"
+	"im-chatroom-gateway/redis"
 )
 
 const (

@@ -2,7 +2,6 @@ package protocol
 
 import (
 	"encoding/json"
-	err "im-chatroom-gateway/src/errors"
 )
 
 const (
@@ -73,44 +72,6 @@ type MessageHeader struct {
 	Type      uint32   `json:"type"`
 	Code      uint32   `json:"code"`
 	Message   string   `json:"message"`
-}
-
-func NewResponseOK(in *Packet, body any) *Packet {
-
-	header := MessageHeader{
-		MessageId: in.Header.MessageId,
-		Command:   in.Header.Command,
-		Target:    in.Header.Target,
-		From:      in.Header.From,
-		To:        in.Header.To,
-		Type:      in.Header.Type,
-		Flow:      FlowDown,
-		Code:      err.OK.Code,
-		Message:   err.OK.Message,
-	}
-
-	return &Packet{
-		Header: header,
-		Body:   body,
-	}
-}
-
-func NewResponseError(in *Packet, error err.Error) *Packet {
-	header := MessageHeader{
-		MessageId: in.Header.MessageId,
-		Command:   in.Header.Command,
-		Target:    in.Header.Target,
-		From:      in.Header.From,
-		To:        in.Header.To,
-		Type:      in.Header.Type,
-		Flow:      FlowDown,
-		Code:      error.Code,
-		Message:   error.Message,
-	}
-
-	return &Packet{
-		Header: header,
-	}
 }
 
 type UserAuth struct {

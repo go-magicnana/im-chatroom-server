@@ -9,6 +9,8 @@ var once sync.Once
 
 var Rdb *redis.Client
 
+const Nil = redis.Nil
+
 func singleton() *redis.Client {
 	once.Do(func() {
 		Rdb = redis.NewClient(&redis.Options{

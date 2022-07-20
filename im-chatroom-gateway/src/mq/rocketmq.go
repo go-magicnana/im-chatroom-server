@@ -7,12 +7,9 @@ import (
 	"github.com/apache/rocketmq-client-go/v2/admin"
 	"github.com/apache/rocketmq-client-go/v2/primitive"
 	"github.com/apache/rocketmq-client-go/v2/producer"
-	"github.com/labstack/echo"
-	"github.com/ziflex/lecho/v3"
 	"golang.org/x/net/context"
-	"im-chatroom-gateway/src/protocol"
-	"im-chatroom-gateway/src/util"
-	"os"
+	"im-chatroom-gateway/protocol"
+	"im-chatroom-gateway/util"
 	"strings"
 )
 
@@ -33,17 +30,7 @@ var _producer rocketmq.Producer
 
 func init() {
 
-	e := echo.New()
-	e.Logger = lecho.New(
-		os.Stdout,
-		lecho.WithFields(map[string]interface{}{"name": "lecho factory"}),
-		lecho.WithTimestamp(),
-		lecho.WithCaller(),
-		lecho.WithPrefix("rocketmq.init"),
-	)
-
 	_producer = newProducer()
-	e.Logger.Info("rocketmq init finished....")
 }
 
 func newProducer() rocketmq.Producer {

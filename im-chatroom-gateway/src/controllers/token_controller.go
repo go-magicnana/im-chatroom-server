@@ -5,66 +5,62 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"github.com/labstack/echo"
-	"github.com/ziflex/lecho/v3"
-	"im-chatroom-gateway/src/redis"
+	"im-chatroom-gateway/apierror"
+	"im-chatroom-gateway/domains"
+	"im-chatroom-gateway/redis"
 	"net/http"
-	"os"
-	"strconv"
 	"time"
 )
 
-const userTokenKey string = "imchatroom:userauth:token:"
+const userTokenKey string = "imchatroom:userauth:"
 
-func GetToken(ct echo.Context) error {
-	e := echo.New()
-	e.Logger = lecho.New(
-		os.Stdout,
-		lecho.WithFields(map[string]interface{}{"name": "lecho factory"}),
-		lecho.WithTimestamp(),
-		lecho.WithCaller(),
-		lecho.WithPrefix("controllers.GetToken"),
-	)
+func GetToken(c echo.Context) error {
 
-	//获取post请求的表单参数
-	userId := ct.FormValue("userId")
-	name := ct.FormValue("name")
-	avatar := ct.FormValue("avatar")
-	genderstr := ct.FormValue("gender")
+	u := new(domains.UserInfo)
 
-	if userId == "" {
-		e.Logger.Info("userId is illegal")
-		ct.JSON(http.StatusOK, gin.H{"code": 1001, "message": "param is error"})
+	if err := c.Bind(u); err != nil {
+		fmt.Println(err)
+		return nil
 	}
 
-	userinfo := UserInfo{}
-	userinfo.UserId = userId
-	userinfo.Name = name
-	userinfo.Avatar = avatar
-	gender, _ := strconv.Atoi(genderstr)
-	userinfo.Gender = gender
+	u.Token = buildToken(u.UserId)
 
+	_, e := SetUserAuth(*u)
+
+	if e != nil {
+		c.JSON(http.StatusOK, NewApiResultError(e))
+	}
+
+	return c.JSON(http.StatusOK, NewApiResultOK(u.Token))
+}
+
+func buildToken(userId string) string {
 	timeUnix := time.Now().Unix()
-	// userToken:userId时间戳 获取md5值作为token
 	data := []byte("userToken:" + userId + fmt.Sprintf("%d", timeUnix))
 	// 将[]byte转成16进制
 	userToken := fmt.Sprintf("%x", md5.Sum(data))
-
-	// 存入redis 需要序列化
-	data, err := json.Marshal(userinfo)
-	if err != nil {
-		e.Logger.Error("json userinfo occur err")
-		return ct.JSON(http.StatusOK, gin.H{"code": 1001, "message": "Server Error"})
-	}
-	result := redis.Rdb.Set(context.Background(), userTokenKey+userToken, data, time.Hour*24)
-	e.Logger.Info(result)
-	return ct.JSON(http.StatusOK, gin.H{"code": 0, "message": "success", "data": userToken})
+	return userToken
 }
 
-type UserInfo struct {
-	UserId string `json:"userId"`
-	Name   string `json:"name"`
-	Avatar string `json:"avatar"`
-	Gender int    `json:"gender"`
+func SetUserAuth(u domains.UserInfo) (string, error) {
+
+	data, err := json.Marshal(u)
+
+	if err != nil {
+		return "", apierror.CouldNotBeSeries.WrapperAndFormat(err)
+	}
+
+	result := redis.Rdb.Set(context.Background(), userTokenKey+u.Token, data, time.Minute*30)
+	if result == nil {
+		return "", apierror.StorageResponseNil
+	}
+
+	ret, e := result.Result()
+	if e != nil {
+		return "", apierror.StorageResponseError.WrapperAndFormat(e)
+	}
+
+	return ret, nil
+
 }
