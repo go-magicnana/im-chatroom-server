@@ -25,5 +25,5 @@ func GravelChannel(n []byte, mess chan byte) {
 	for _, v := range n {
 		mess <- v
 	}
-	close(nil,nil,nil)
+	//close(nil,nil,nil)
 }
