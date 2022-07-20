@@ -13,6 +13,7 @@ import (
 	"im-chatroom-broker/serializer"
 	"im-chatroom-broker/service"
 	"im-chatroom-broker/util"
+	"os"
 	"strings"
 )
 
@@ -34,6 +35,7 @@ var _consumer2 rocketmq.PushConsumer
 
 func init() {
 
+	os.Setenv("ROCKETMQ_GO_LOG_LEVEL","error")
 	ip := util.GetBrokerIp()
 	MyName = broker2name(ip + ":33121")
 

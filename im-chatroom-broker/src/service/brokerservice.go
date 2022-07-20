@@ -2,7 +2,6 @@ package service
 
 import (
 	"errors"
-	"fmt"
 	"github.com/robfig/cron/v3"
 	"golang.org/x/net/context"
 	context2 "im-chatroom-broker/context"
@@ -77,22 +76,22 @@ func AliveTask(ctx context.Context, broker string) {
 	//0/5 * * * * ? 	每5秒钟1次
 	c.AddFunc("*/1 * * * *", func() { //1分钟1次
 		SetBrokerAlive(ctx, broker)
-		zaplog.Debugf("Task SetBrokerAlive %s",broker)
+		zaplog.Logger.Debugf("Task SetBrokerAlive %s", broker)
 
 	})
 
-	c.AddFunc("0/30 * * * * ?", func() {
+	c.AddFunc("*/2 * * * *", func() {
 		ProbeBroker(ctx)
-		zaplog.Debugf("Task ProbeBroker %s",broker)
+		zaplog.Logger.Debugf("Task ProbeBroker %s", broker)
 	})
 
 	c.AddFunc("*/1 * * * *", func() {
 		ProbeConn(ctx)
-		zaplog.Debugf("Task ProbeConns %s",broker)
+		zaplog.Logger.Debugf("Task ProbeConns %s", broker)
 	})
 
 	c.Start()
-	fmt.Println("BrokerTask Running")
+	zaplog.Logger.Infof("Task Running %s", broker)
 
 }
 
@@ -150,7 +149,6 @@ func ProbeConn(ctx context.Context) {
 }
 
 func Close(ctx context.Context, c *context2.Context) {
-	fmt.Println(util.CurrentSecond(), "Read 关闭线程 关闭连接")
 
 	DelUserInfo(ctx, c.UserKey())
 
@@ -162,10 +160,7 @@ func Close(ctx context.Context, c *context2.Context) {
 
 	DelBrokerCapacity(ctx, c.Broker(), c.UserKey())
 
-
-
-	zaplog.Infof("CloseByClient ",c.Conn().RemoteAddr())
-
+	zaplog.Logger.Infof("CloseByClient %s", c.Conn().RemoteAddr())
 
 	c.Close()
 
