@@ -1,10 +1,8 @@
 package controllers
 
 import (
-	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/go-redis/redis/v8"
 	"github.com/hashicorp/go-uuid"
 	"github.com/labstack/echo"
 	"github.com/ziflex/lecho/v3"
@@ -15,7 +13,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 )
 
 var e echo.Echo
@@ -116,49 +113,36 @@ func MessagePush(ct echo.Context) error {
 }
 
 func deliver(ctx context.Context, packet *protocol.Packet, roomId string) error {
+	//user, e1 := service.GetUserInfo(ctx, packet.Header.From.UserId)
+	//if e1 != nil {
+	//	return e1
+	//}
+	//fmt.Println("get user info ", user)
+	//packet.Header.From = *user
 
 	packet.Header.Flow = protocol.FlowDeliver
 
 	if packet.Header.Target == protocol.TargetRoom {
-		fmt.Printf("get room mebmere packet ", packet)
-		rmembers, err := service.GetRoom(ctx, roomId)
-		//fmt.Printf("get room rmembers err ", err.Error())
-		fmt.Printf("get room rmembers ", rmembers)
-		if err == redis.Nil {
-			e.Logger.Info("roomId[", roomId, "] not exists...")
-			return errors.New("roomId[" + roomId + "] not exists...")
-		}
-
-		for i := range rmembers {
-			member := rmembers[i]
-			userKey := strings.Split(member, "/")
-			packet.Header.To = userKey[0]
-			fmt.Printf("get mebmere packet ", packet)
-			//sendMessageToUser(ctx , packet)
-		}
-
-		//mq.SendSync2Room(packet)
+		packet.Header.To = roomId
+		mq.SendSync2Room(packet)
 	} else {
-		//sendMessageToUser(ctx , packet)
-	}
 
-	return nil
-}
+		ret := service.GetUserClients(ctx, packet.Header.To)
 
-func sendMessageToUser(ctx context.Context, packet *protocol.Packet) error {
-	ret := service.GetUserClients(ctx, packet.Header.To)
+		for _, v := range ret {
 
-	for _, v := range ret {
+			msg := &protocol.PacketMessage{
+				UserKey: v,
+				Packet:  *packet,
+			}
 
-		msg := &protocol.PacketMessage{
-			UserKey: v,
-			Packet:  *packet,
+			broker, _ := service.GetUserDeviceBroker(ctx, v)
+
+			mq.SendSync2One(broker, msg)
+			//fmt.Println(msg,broker)
 		}
 
-		broker, _ := service.GetUserDeviceBroker(ctx, v)
-
-		mq.SendSync2One(broker, msg)
-		//fmt.Println(msg,broker)
 	}
+
 	return nil
 }
