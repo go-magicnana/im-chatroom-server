@@ -8,6 +8,7 @@ import (
 	err "im-chatroom-broker/error"
 	"im-chatroom-broker/handler"
 	"im-chatroom-broker/service"
+	"im-chatroom-broker/zaplog"
 
 	//"im-chatroom-broker/mq"
 	"im-chatroom-broker/protocol"
@@ -27,7 +28,7 @@ var conns sync.Map
 
 func Start() {
 
-	//zaplog.InitLogger()
+	zaplog.InitLogger()
 	//zaplog.Infof("Start ...")
 
 	//wg.Add(1)
@@ -65,7 +66,7 @@ func listen(ctx context.Context, addr string) {
 			return
 		default:
 
-			fmt.Println(util.CurrentSecond(), "Accept 等待客户端连接")
+			zaplog.Infof("Accept ", brokerAddress)
 			conn, err := netListen.Accept()
 			if err != nil {
 				util.Panic(err)
@@ -84,6 +85,8 @@ func listen(ctx context.Context, addr string) {
 
 			c.Connect()
 
+			zaplog.Infof("Connected ", conn.RemoteAddr())
+
 			go read(ctx, cancel, c)
 
 		}
@@ -98,9 +101,7 @@ func read(ctx context.Context, cancel context.CancelFunc, c *context2.Context) {
 
 	for {
 
-		fmt.Println(util.CurrentSecond(), "Read 等待客户端写入")
-
-		c.Conn().SetReadDeadline(time.Now().Add(time.Second * 9999))
+		c.Conn().SetReadDeadline(time.Now().Add(time.Second * 60))
 
 		meta := make([]byte, protocol.MetaVersionBytes+protocol.MetaLengthBytes)
 		ml, me := c.Conn().Read(meta)
@@ -110,27 +111,37 @@ func read(ctx context.Context, cancel context.CancelFunc, c *context2.Context) {
 		switch me.(type) {
 		case *net.OpError:
 			if c.State() < context2.Login {
+
+				zaplog.Errorf("ReadTimeOut %s Close Client", c.Conn().RemoteAddr())
 				return
 			} else {
+
+				zaplog.Errorf("ReadTimeOut %s To Read Continue", c.Conn().RemoteAddr())
 				continue
 			}
 		}
 
 		if me == io.EOF {
+
+			zaplog.Errorf("ReadClose %s Close Client", c.Conn().RemoteAddr())
 			break
 		}
 
 		if me != nil {
+
+			zaplog.Errorf("ReadError %s To Read Continue", c.Conn().RemoteAddr())
 			continue
 		}
 
 		if ml != protocol.MetaVersionBytes+protocol.MetaLengthBytes {
+			zaplog.Errorf("MetaError %s To Read Continue", c.Conn().RemoteAddr())
 			continue
 		}
 
 		version := meta[0]
 
 		if version != serializer.Version() {
+			zaplog.Errorf("MetaOfVersionError %s To Read Continue", c.Conn().RemoteAddr())
 			continue
 		}
 
@@ -144,8 +155,7 @@ func read(ctx context.Context, cancel context.CancelFunc, c *context2.Context) {
 			return
 		}
 
-		fmt.Println(util.CurrentSecond(), "Read 读取客户端写入", packet.ToString())
-
+		zaplog.Debugf("ReadOK %s Go Process %s", c.Conn().RemoteAddr(), packet)
 		go process(ctx, cancel, c, packet)
 	}
 
@@ -195,6 +205,8 @@ func process(ctx context.Context, cancel context.CancelFunc, c *context2.Context
 			ret = protocol.NewResponseError(packet, err.Default)
 		}
 	}
+
+	zaplog.Debugf("HandleOK %s %s", c.Conn().RemoteAddr(), ret)
 
 	if ret != nil {
 		serializer.SingleJsonSerializer().Write(c, ret)

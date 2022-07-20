@@ -1,13 +1,11 @@
 package zaplog
 
 import (
-	"github.com/go-redis/redis/v8"
 	"github.com/natefinch/lumberjack"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"net/http"
 	"os"
-	"sync"
 	"time"
 )
 
@@ -32,7 +30,7 @@ func getEncoder() zapcore.Encoder {
 func getLogWriter() zapcore.WriteSyncer {
 
 	lumberJackLogger := &lumberjack.Logger{
-		Filename:   "./embru.log",
+		Filename:   "./imchatroom.log",
 		MaxSize:    10,
 		MaxBackups: 5,
 		MaxAge:     30,
@@ -49,24 +47,6 @@ func getLogWriter() zapcore.WriteSyncer {
 type Log struct {
 	Logger *zap.SugaredLogger
 }
-
-var once sync.Once
-
-//var Logger *zap.SugaredLogger
-var client *redis.Client
-
-func Singleton() *Log {
-	once.Do(func() {
-		client = redis.NewClient(&redis.Options{
-			Addr:     "47.95.148.121:6379",
-			Password: "o1trUmeh", // no password set
-			DB:       1,          // use default DB
-		})
-	})
-
-	return nil
-}
-
 
 func InitLogger() {
 	writeSyncer := getLogWriter()
@@ -124,7 +104,7 @@ func Debugf(template string, args ...interface{}) {
 
 const (
 	name = "im-chatroom-broker"
-	ip = "192.168.1.1"
+	ip = "192.168.3.92"
 	port = "8080"
 	trace = "xxxxx"
 	span = "span"

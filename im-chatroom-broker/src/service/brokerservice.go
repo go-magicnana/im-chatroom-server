@@ -8,6 +8,7 @@ import (
 	context2 "im-chatroom-broker/context"
 	"im-chatroom-broker/redis"
 	"im-chatroom-broker/util"
+	"im-chatroom-broker/zaplog"
 	"time"
 )
 
@@ -76,14 +77,18 @@ func AliveTask(ctx context.Context, broker string) {
 	//0/5 * * * * ? 	每5秒钟1次
 	c.AddFunc("*/1 * * * *", func() { //1分钟1次
 		SetBrokerAlive(ctx, broker)
+		zaplog.Debugf("Task SetBrokerAlive %s",broker)
+
 	})
 
 	c.AddFunc("0/30 * * * * ?", func() {
 		ProbeBroker(ctx)
+		zaplog.Debugf("Task ProbeBroker %s",broker)
 	})
 
 	c.AddFunc("*/1 * * * *", func() {
 		ProbeConn(ctx)
+		zaplog.Debugf("Task ProbeConns %s",broker)
 	})
 
 	c.Start()
@@ -157,8 +162,12 @@ func Close(ctx context.Context, c *context2.Context) {
 
 	DelBrokerCapacity(ctx, c.Broker(), c.UserKey())
 
+
+
+	zaplog.Infof("CloseByClient ",c.Conn().RemoteAddr())
+
+
 	c.Close()
 
 	c = nil
-
 }
