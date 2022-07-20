@@ -32,7 +32,7 @@ var _producer rocketmq.Producer
 var _consumer1 rocketmq.PushConsumer
 var _consumer2 rocketmq.PushConsumer
 
-func Init() {
+func init() {
 
 	ip := util.GetBrokerIp()
 	MyName = broker2name(ip + ":33121")

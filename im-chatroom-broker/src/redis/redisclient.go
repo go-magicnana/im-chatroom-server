@@ -7,24 +7,26 @@ import (
 
 var once sync.Once
 
-var client *redis.Client
+var Rdb *redis.Client
 
-func Singleton() *redis.Client {
+func singleton() *redis.Client {
 	once.Do(func() {
-		client = redis.NewClient(&redis.Options{
+		Rdb = redis.NewClient(&redis.Options{
 			Addr:     "47.95.148.121:6379",
 			Password: "o1trUmeh", // no password set
 			DB:       1,          // use default DB
 		})
 	})
 
-	return client
+	return Rdb
 }
 
-
-func NewZSetMember(score float64,member interface{}) *redis.Z{
+func NewZSetMember(score float64, member interface{}) *redis.Z {
 	return &redis.Z{
 		Score: score, Member: member,
 	}
 }
 
+func init() {
+	singleton()
+}

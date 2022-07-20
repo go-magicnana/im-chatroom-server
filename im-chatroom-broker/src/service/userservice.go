@@ -22,9 +22,7 @@ const (
 )
 
 func SetUserClient(ctx context.Context, userId string, userKey string) int64 {
-	rdb := redis.Singleton()
-
-	cmd := rdb.HSet(ctx, UserClients+userId, userKey, util.CurrentSecond())
+	cmd := redis.Rdb.HSet(ctx, UserClients+userId, userKey, util.CurrentSecond())
 
 	if cmd == nil {
 		return 0
@@ -34,8 +32,7 @@ func SetUserClient(ctx context.Context, userId string, userKey string) int64 {
 }
 
 func GetUserClients(ctx context.Context, userId string) []string {
-	rdb := redis.Singleton()
-	cmd := rdb.HGetAll(ctx, UserClients+userId)
+	cmd := redis.Rdb.HGetAll(ctx, UserClients+userId)
 
 	m := cmd.Val()
 
@@ -49,8 +46,7 @@ func GetUserClients(ctx context.Context, userId string) []string {
 }
 
 func GetUserAuth(ctx context.Context, token string) (*protocol.UserAuth, error) {
-	redis := redis.Singleton()
-	cmd := redis.Get(ctx, UserAuth+token)
+	cmd := redis.Rdb.Get(ctx, UserAuth+token)
 
 	bs, err := cmd.Bytes()
 	if err != nil {
@@ -67,13 +63,11 @@ func GetUserAuth(ctx context.Context, token string) (*protocol.UserAuth, error) 
 }
 
 func DelUserAuth(ctx context.Context, token string) {
-	//redis := redis.Singleton()
+	//redis := redis.Rdb
 	//redis.Del(ctx, UserAuth+token)
 }
 
 func SetUserInfo(ctx context.Context, info protocol.UserInfo) {
-	redis := redis.Singleton()
-
 	bs, e := json.Marshal(info)
 
 	if e != nil {
@@ -82,66 +76,59 @@ func SetUserInfo(ctx context.Context, info protocol.UserInfo) {
 
 	json := string(bs)
 
-	redis.Set(ctx, UserInfo+info.UserId, json, time.Minute)
+	redis.Rdb.Set(ctx, UserInfo+info.UserId, json, time.Minute)
 }
 
 func GetUserInfo(ctx context.Context, userId string) (*protocol.UserInfo, error) {
-	redis := redis.Singleton()
-
-	cmd := redis.Get(ctx, UserInfo+userId)
+	cmd := redis.Rdb.Get(ctx, UserInfo+userId)
 
 	bs, err := cmd.Bytes()
 	if err != nil {
 		return nil, err
 	}
 
-	if len(bs)==0 {
-		return nil,nil
+	if len(bs) == 0 {
+		return nil, nil
 	}
 
-			user := &protocol.UserInfo{}
+	user := &protocol.UserInfo{}
 	e2 := json.Unmarshal(bs, user)
 	return user, e2
 }
 
-func SetUserAlive(ctx context.Context, userId,userKey string) {
-	redis := redis.Singleton()
-	redis.Expire(ctx, UserDevice+userKey, time.Second*20)
-	redis.Expire(ctx, UserInfo+userId, time.Second*20)
-	redis.Expire(ctx, UserClients+userId, time.Second*20)
+func SetUserAlive(ctx context.Context, userId, userKey string) {
+	redis.Rdb.Expire(ctx, UserDevice+userKey, time.Second*20)
+	redis.Rdb.Expire(ctx, UserInfo+userId, time.Second*20)
+	redis.Rdb.Expire(ctx, UserClients+userId, time.Second*20)
 }
 
 func SetUserDevice(ctx context.Context, user protocol.UserDevice) {
 
-	redis := redis.Singleton()
-
 	if util.IsNotEmpty(user.UserId) {
-		redis.HSet(ctx, UserDevice+user.UserKey, "userId", user.UserId)
+		redis.Rdb.HSet(ctx, UserDevice+user.UserKey, "userId", user.UserId)
 	}
 
 	if util.IsNotEmpty(user.Broker) {
-		redis.HSet(ctx, UserDevice+user.UserKey, "broker", user.Broker)
+		redis.Rdb.HSet(ctx, UserDevice+user.UserKey, "broker", user.Broker)
 	}
 
 	if util.IsNotEmpty(user.Device) {
-		redis.HSet(ctx, UserDevice+user.UserKey, "device", user.Device)
+		redis.Rdb.HSet(ctx, UserDevice+user.UserKey, "device", user.Device)
 	}
 
 	if util.IsNotEmpty(user.RoomId) {
-		redis.HSet(ctx, UserDevice+user.UserKey, "roomId", user.RoomId)
+		redis.Rdb.HSet(ctx, UserDevice+user.UserKey, "roomId", user.RoomId)
 	}
 
 	if util.IsNotEmpty(user.State) {
-		redis.HSet(ctx, UserDevice+user.UserKey, "state", user.State)
+		redis.Rdb.HSet(ctx, UserDevice+user.UserKey, "state", user.State)
 	}
 
 }
 
 func GetUserDevice(ctx context.Context, userKey string) (*protocol.UserDevice, error) {
 
-	redis := redis.Singleton()
-
-	cmd := redis.HGetAll(ctx, UserDevice+userKey)
+	cmd := redis.Rdb.HGetAll(ctx, UserDevice+userKey)
 	m := cmd.Val()
 
 	userDevice := &protocol.UserDevice{
@@ -158,31 +145,29 @@ func GetUserDevice(ctx context.Context, userKey string) (*protocol.UserDevice, e
 }
 
 func GetUserDeviceBroker(ctx context.Context, userKey string) (string, error) {
-	redis := redis.Singleton()
-	cmd := redis.HGet(ctx, UserDevice+userKey, "broker")
+	cmd := redis.Rdb.HGet(ctx, UserDevice+userKey, "broker")
 	return cmd.Val(), nil
 }
 
 func SetUserDevice2InRoom(ctx context.Context, userKey, roomId string) {
-	redis := redis.Singleton()
 	if util.IsNotEmpty(roomId) {
-		redis.HSet(ctx, UserDevice+userKey, "roomId", roomId)
+		redis.Rdb.HSet(ctx, UserDevice+userKey, "roomId", roomId)
 	}
 }
 
 func DelUserDeviceInRoom(ctx context.Context, userKey string) {
-	redis := redis.Singleton()
-	redis.HDel(ctx, UserDevice+userKey, "roomId")
+	redis.Rdb.HDel(ctx, UserDevice+userKey, "roomId")
+}
 
+func DelUserDevice(ctx context.Context, userKey string) {
+	redis.Rdb.Del(ctx, UserDevice+userKey)
 }
 
 func SetUserDevice2Login(ctx context.Context, userKey string, state int32) {
-	redis := redis.Singleton()
-	redis.HSet(ctx, UserDevice+userKey, "state", state)
+	redis.Rdb.HSet(ctx, UserDevice+userKey, "state", state)
 
 }
 
 func DelUserInfo(ctx context.Context, userKey string) {
-	redis := redis.Singleton()
-	redis.Del(ctx, UserInfo+userKey)
+	redis.Rdb.Del(ctx, UserInfo+userKey)
 }

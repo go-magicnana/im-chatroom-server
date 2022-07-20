@@ -7,7 +7,6 @@ import (
 	context2 "im-chatroom-broker/context"
 	err "im-chatroom-broker/error"
 	"im-chatroom-broker/handler"
-	"im-chatroom-broker/mq"
 	"im-chatroom-broker/service"
 
 	//"im-chatroom-broker/mq"
@@ -58,8 +57,7 @@ func listen(ctx context.Context, addr string) {
 
 	go service.AliveTask(ctx, brokerAddress)
 
-	mq.Init()
-
+	//mq.Init()
 
 	for {
 		select {
@@ -92,21 +90,9 @@ func listen(ctx context.Context, addr string) {
 	}
 }
 
-func close(ctx context.Context, cancel context.CancelFunc, c *context2.Context) {
-	fmt.Println(util.CurrentSecond(), "Read 关闭线程 关闭连接")
-
-	service.DelUserInfo(ctx, c.UserKey())
-
-	service.DelUserContext(c.UserKey())
-
-	service.DelBrokerCapacity(ctx, c.Broker(), c.UserKey())
-
-	c.Close()
-}
-
 func read(ctx context.Context, cancel context.CancelFunc, c *context2.Context) {
 
-	defer close(ctx, cancel, c)
+	defer service.Close(ctx, c)
 
 	serializer := serializer.SingleJsonSerializer()
 

@@ -26,7 +26,7 @@ func SetUser(userId string, c *context2.Context) {
 
 	users.Store(userId, c)
 
-	//cmd1 := redis.Singleton().HSet(c.Ctx, UserHash, userId, c.Broker)
+	//cmd1 := redis.Rdb.HSet(c.Ctx, UserHash, userId, c.Broker)
 	//if cmd1.Err() != nil {
 	//	Panic(cmd1.Err())
 	//}
@@ -63,7 +63,7 @@ func UserLocal2String(){
 
 func GetUserGlobal(ctx context.Context, userId string) (string, bool) {
 
-	ret := redis.Singleton().HGet(ctx, UserHash, userId)
+	ret := redis.Rdb.HGet(ctx, UserHash, userId)
 
 	if ret.Err() != nil {
 		util.Panic(ret.Err())

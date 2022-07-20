@@ -13,8 +13,13 @@ func SetUserContext(user *protocol.UserDevice, c *context.Context) {
 	users.Store(user.UserKey, c)
 }
 
-func DelUserContext(userKey string) {
+func DelUserContext(userKey string) (*context.Context, bool) {
+	c, f := GetUserContext(userKey)
+
 	users.Delete(userKey)
+
+	return c, f
+
 }
 
 func GetUserContext(userKey string) (*context.Context, bool) {
