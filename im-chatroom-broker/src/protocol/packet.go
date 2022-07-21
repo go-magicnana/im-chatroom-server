@@ -156,14 +156,14 @@ type MessageBodySignalLogin struct {
 
 type MessageBodySignalJoinRoom struct {
 	RoomId      string `json:"roomId"`
-	Blocked     string `json:"blocked"`
-	RoomBlocked string `json:"roomBlocked"`
+	Blocked     int    `json:"blocked"`
+	RoomBlocked int    `json:"roomBlocked"`
 }
 
 type MessageBodySignalChangeRoom struct {
 	RoomId      string `json:"newRoomId"`
-	Blocked     string `json:"blocked"`
-	RoomBlocked string `json:"roomBlocked"`
+	Blocked     int    `json:"blocked"`
+	RoomBlocked int    `json:"roomBlocked"`
 }
 
 type MessageBodyNoticeJoinRoom struct {
