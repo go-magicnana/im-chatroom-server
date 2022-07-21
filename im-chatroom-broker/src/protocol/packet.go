@@ -134,6 +134,12 @@ type UserInfo struct {
 	Role   string   `json:"role"`
 }
 
+type RoomInfo struct {
+	RoomId  string `json:"roomId"`
+	Name    string `json:"name"`
+	Blocked string `json:"blocked"`
+}
+
 type UserDevice struct {
 	UserKey string `json:"userKey"`
 	UserId  string `json:"userId"`
@@ -149,11 +155,15 @@ type MessageBodySignalLogin struct {
 }
 
 type MessageBodySignalJoinRoom struct {
-	RoomId string `json:"roomId"`
+	RoomId      string `json:"roomId"`
+	Blocked     string `json:"blocked"`
+	RoomBlocked string `json:"roomBlocked"`
 }
 
 type MessageBodySignalChangeRoom struct {
-	RoomId string `json:"newRoomId"`
+	RoomId      string `json:"newRoomId"`
+	Blocked     string `json:"blocked"`
+	RoomBlocked string `json:"roomBlocked"`
 }
 
 type MessageBodyNoticeJoinRoom struct {
