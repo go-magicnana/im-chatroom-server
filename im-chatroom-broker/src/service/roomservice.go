@@ -3,6 +3,7 @@ package service
 import (
 	"golang.org/x/net/context"
 	"im-chatroom-broker/redis"
+	"strconv"
 )
 
 const (
@@ -30,20 +31,21 @@ func DelRoomUser(ctx context.Context, roomId string, userKey string) {
 	redis.Rdb.SRem(ctx, RoomMembers+roomId, userKey)
 }
 
-func GetRoomBlocked(ctx context.Context, roomId string) string {
+func GetRoomBlocked(ctx context.Context, roomId string) int {
 	cmd := redis.Rdb.HGet(ctx, RoomInfo+roomId, "blocked")
 	result, err := cmd.Result()
 	if err != nil {
-		return "0"
+		return 0
 	}
-	return result
+	atoi, _ := strconv.Atoi(result)
+	return atoi
 }
 
-func GetRoomMemberBlocked(ctx context.Context, roomId string, userId string) bool {
+func GetRoomMemberBlocked(ctx context.Context, roomId string, userId string) int {
 	cmd := redis.Rdb.SIsMember(ctx, RoomBlacks+roomId, userId)
 	m, e := cmd.Result()
-	if e != nil {
-		return false
+	if e != nil || m == false {
+		return 0
 	}
-	return m
+	return 1
 }

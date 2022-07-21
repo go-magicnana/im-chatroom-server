@@ -118,7 +118,7 @@ func login(ctx context.Context, c *context2.Context, packet *protocol.Packet, bo
 
 	service.SetBrokerCapacity(ctx, userDevice.Broker, userKey)
 
-	p := protocol.NewResponseOK(packet, nil)
+	p := protocol.NewResponseOK(packet, userInfo)
 
 	fmt.Println(p.ToString())
 
@@ -142,7 +142,7 @@ func joinRoom(ctx context.Context, c *context2.Context, packet *protocol.Packet,
 	noticeJoinRoom(ctx, c, body.RoomId)
 
 	body.RoomBlocked = service.GetRoomBlocked(ctx, body.RoomId)
-	body.Blocked = strconv.FormatBool(service.GetRoomMemberBlocked(ctx, body.RoomId, c.UserId()))
+	body.Blocked = service.GetRoomMemberBlocked(ctx, body.RoomId, c.UserId())
 
 	return protocol.NewResponseOK(packet, body), nil
 }
@@ -178,7 +178,7 @@ func changeRoom(ctx context.Context, c *context2.Context, packet *protocol.Packe
 	noticeJoinRoom(ctx, c, body.RoomId)
 
 	body.RoomBlocked = service.GetRoomBlocked(ctx, body.RoomId)
-	body.Blocked = strconv.FormatBool(service.GetRoomMemberBlocked(ctx, body.RoomId, c.UserId()))
+	body.Blocked = service.GetRoomMemberBlocked(ctx, body.RoomId, c.UserId())
 
 	return protocol.NewResponseOK(packet, body), nil
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/apache/rocketmq-client-go/v2/consumer"
 	"github.com/apache/rocketmq-client-go/v2/primitive"
 	"github.com/apache/rocketmq-client-go/v2/producer"
+	"github.com/spf13/viper"
 	"golang.org/x/net/context"
 	"os"
 	"strconv"
@@ -75,7 +76,6 @@ func SubscribeMessage(topic, group string) {
 
 func TestRocket(t *testing.T) {
 
-
 	var wg sync.WaitGroup
 
 	wg.Add(1)
@@ -86,14 +86,14 @@ func TestRocket(t *testing.T) {
 	topic2 := "test2Topic"
 	group2 := "test2Group"
 
-	go SubscribeMessage(topic1,group1)
-	go SubscribeMessage(topic2,group2)
+	go SubscribeMessage(topic1, group1)
+	go SubscribeMessage(topic2, group2)
 
-	for{
-		i:=0
-		SendSyncMessage(topic1,"hello world "+strconv.Itoa(i))
-		time.Sleep(time.Second*5)
-		SendSyncMessage(topic2,"hello world "+strconv.Itoa(i))
+	for {
+		i := 0
+		SendSyncMessage(topic1, "hello world "+strconv.Itoa(i))
+		time.Sleep(time.Second * 5)
+		SendSyncMessage(topic2, "hello world "+strconv.Itoa(i))
 
 		i++
 
@@ -103,6 +103,12 @@ func TestRocket(t *testing.T) {
 
 }
 
-func TestMQ2(t *testing.T){
-	SendSync2Room(nil)
+func TestMQ2(t *testing.T) {
+	fmt.Println(os.Getenv("GO_ENV"))
+
+	endpoint := viper.GetString("rocketmq.endpoint")
+
+	fmt.Println(endpoint)
+
+	//SendSync2Room(nil)
 }
