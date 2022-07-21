@@ -11,6 +11,7 @@ import (
 )
 
 const (
+	BrokerInfo     string = "imchatroom:brokerinfo:"
 	BrokerInstance string = "imchatroom:brokerinstance"
 	BrokerCapacity string = "imchatroom:brokercapacity:"
 )

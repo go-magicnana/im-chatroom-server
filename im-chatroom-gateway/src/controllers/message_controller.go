@@ -1,18 +1,33 @@
 package controllers
 
 import (
-	"github.com/gin-gonic/gin"
+	"fmt"
 	"github.com/hashicorp/go-uuid"
 	"github.com/labstack/echo"
+	"github.com/ziflex/lecho/v3"
 	"golang.org/x/net/context"
+	"im-chatroom-gateway/apierror"
 	"im-chatroom-gateway/mq"
 	"im-chatroom-gateway/protocol"
 	"im-chatroom-gateway/service"
 	"net/http"
+	"os"
 	"strconv"
 )
 
 var e echo.Echo
+
+func init() {
+	fmt.Println("messagecontroller init")
+	e := echo.New()
+	e.Logger = lecho.New(
+		os.Stdout,
+		lecho.WithFields(map[string]interface{}{"name": "lecho factory"}),
+		lecho.WithTimestamp(),
+		lecho.WithCaller(),
+		lecho.WithPrefix("controllers.MessageController"),
+	)
+}
 
 func MessagePush(ct echo.Context) error {
 
@@ -65,14 +80,15 @@ func MessagePush(ct echo.Context) error {
 	}
 
 	var body any
-
+	var userinfo *protocol.UserInfo
 	switch int(messageTypeInt64) {
 	case protocol.TypeNoticeBlockUser:
-		service.GetUserInfo(context.Background(), userId)
-		//body = protocol.MessageBodyNoticeBlockUser{UserId: userId, RoomId: roomId}
+		userinfo, _ = service.GetUserInfo(context.Background(), userId)
+		body = protocol.MessageBodyNoticeBlockUser{User: *userinfo, RoomId: roomId}
 
 	case protocol.TypeNoticeUnblockUser:
-		//body = protocol.MessageBodyNoticeUnblockUser{UserId: userId, RoomId: roomId}
+		userinfo, _ = service.GetUserInfo(context.Background(), userId)
+		body = protocol.MessageBodyNoticeUnblockUser{User: *userinfo, RoomId: roomId}
 
 	case protocol.TypeNoticeCloseRoom:
 		body = protocol.MessageBodyNoticeCloseRoom{RoomId: roomId}
@@ -94,19 +110,13 @@ func MessagePush(ct echo.Context) error {
 	result := deliver(context.Background(), &packet, roomId)
 	if result != nil {
 		e.Logger.Info("send notice message error:", result)
-		return ct.JSON(http.StatusOK, gin.H{"code": 1001, "message": "Server Error"})
+		return ct.JSON(http.StatusOK, NewApiResultError(apierror.Default))
 	}
 
-	return ct.JSON(http.StatusOK, gin.H{"code": 0, "message": "success"})
+	return ct.JSON(http.StatusOK, NewApiResultOK(nil))
 }
 
 func deliver(ctx context.Context, packet *protocol.Packet, roomId string) error {
-	//user, e1 := service.GetUserInfo(ctx, packet.Header.From.UserId)
-	//if e1 != nil {
-	//	return e1
-	//}
-	//fmt.Println("get user info ", user)
-	//packet.Header.From = *user
 
 	packet.Header.Flow = protocol.FlowDeliver
 
