@@ -154,6 +154,10 @@ type MessageBodySignalLogin struct {
 	Device string `json:"device"`
 }
 
+type MessageBodySignalLoginRes struct {
+	User UserInfo `json:"user"`
+}
+
 type MessageBodySignalJoinRoom struct {
 	RoomId      string `json:"roomId"`
 	Blocked     int    `json:"blocked"`
