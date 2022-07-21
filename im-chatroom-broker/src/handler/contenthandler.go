@@ -113,25 +113,27 @@ func text(ctx context.Context, c *context2.Context, packet *protocol.Packet) (*p
 
 func at(ctx context.Context, c *context2.Context, packet *protocol.Packet, body *protocol.MessageBodyContentAt) (*protocol.Packet, error) {
 
-	user, _ := service.GetUserInfo(ctx, body.AtUserId)
+	user, e := service.GetUserInfo(ctx, body.AtUser.UserId)
+	if user == nil {
+		return nil, e
+	}
 
-	body.AtUserId = user.UserId
-	body.AtUserName = user.Name
-	body.AtUserAvatar = user.Avatar
+	body.AtUser = *user
+
+	packet.Body = body
 
 	return deliver(ctx, c, packet)
 }
 
 func reply(ctx context.Context, c *context2.Context, packet *protocol.Packet, body *protocol.MessageBodyContentReply) (*protocol.Packet, error) {
 
-	atUser, e2 := service.GetUserInfo(ctx, body.ReplyUserId)
-	if e2 != nil {
+	user, e2 := service.GetUserInfo(ctx, body.ReplyUser.UserId)
+	if user == nil {
 		return nil, e2
 	}
 
-	body.ReplyUserId = atUser.UserId
-	body.ReplyUserName = atUser.Name
-	body.ReplyUserAvatar = atUser.Avatar
+	body.ReplyUser = *user
+	packet.Body = body
 
 	return deliver(ctx, c, packet)
 
