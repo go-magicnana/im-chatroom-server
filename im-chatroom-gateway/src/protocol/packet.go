@@ -125,13 +125,13 @@ type MessageBodyNoticeLeaveRoom struct {
 }
 
 type MessageBodyNoticeBlockUser struct {
-	UserId string `json:"userId"`
-	RoomId string `json:"roomId"`
+	User   UserInfo `json:"user"`
+	RoomId string   `json:"roomId"`
 }
 
 type MessageBodyNoticeUnblockUser struct {
-	UserId string `json:"userId"`
-	RoomId string `json:"roomId"`
+	User   UserInfo `json:"user"`
+	RoomId string   `json:"roomId"`
 }
 
 type MessageBodyNoticeCloseRoom struct {

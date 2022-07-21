@@ -62,9 +62,9 @@ func GetConfig(ct echo.Context) error {
 	}
 	appConfig.Servers = servers
 
-	appConfig.HeartTime = 1
-
+	appConfig.HeartTime = 5
 	return ct.JSON(http.StatusOK, gin.H{"code": 0, "message": "success", "data": appConfig})
+	// return NewApiResultOK(appConfig)
 }
 
 type AppConfig struct {

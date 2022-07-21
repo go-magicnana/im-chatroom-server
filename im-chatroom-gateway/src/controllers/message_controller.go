@@ -7,9 +7,9 @@ import (
 	"github.com/labstack/echo"
 	"github.com/ziflex/lecho/v3"
 	"golang.org/x/net/context"
-	"im-chatroom-gateway/src/mq"
-	"im-chatroom-gateway/src/protocol"
-	"im-chatroom-gateway/src/service"
+	"im-chatroom-gateway/mq"
+	"im-chatroom-gateway/protocol"
+	"im-chatroom-gateway/service"
 	"net/http"
 	"os"
 	"strconv"
@@ -75,16 +75,18 @@ func MessagePush(ct echo.Context) error {
 		To:   userId,
 		Flow: protocol.FlowDeliver,
 		Type: uint32(messageTypeInt64),
+		Code: 200,
 	}
 
 	var body any
 
 	switch int(messageTypeInt64) {
 	case protocol.TypeNoticeBlockUser:
-		body = protocol.MessageBodyNoticeBlockUser{UserId: userId, RoomId: roomId}
+		service.GetUserInfo(context.Background(), userId)
+		//body = protocol.MessageBodyNoticeBlockUser{UserId: userId, RoomId: roomId}
 
 	case protocol.TypeNoticeUnblockUser:
-		body = protocol.MessageBodyNoticeUnblockUser{UserId: userId, RoomId: roomId}
+		//body = protocol.MessageBodyNoticeUnblockUser{UserId: userId, RoomId: roomId}
 
 	case protocol.TypeNoticeCloseRoom:
 		body = protocol.MessageBodyNoticeCloseRoom{RoomId: roomId}
