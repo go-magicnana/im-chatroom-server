@@ -8,6 +8,7 @@ import (
 	"im-chatroom-gateway/zaplog"
 	"net/http"
 	"sort"
+	"strings"
 )
 
 const (
@@ -18,8 +19,8 @@ const (
 
 func GetConfig(c echo.Context) error {
 
-	a, _ := c.FormParams()
-	zaplog.Logger.Debugf("%s %v", c.Request().RequestURI, a)
+	//a, _ := c.FormParams()
+	zaplog.Logger.Info("request url:", c.Request().RequestURI, "...")
 
 	// 先获取所有服务器列表
 	serverList, err := redis.Rdb.SMembers(context.Background(), BrokerInstance).Result()
@@ -31,20 +32,20 @@ func GetConfig(c echo.Context) error {
 		return write(c, http.StatusOK, NewApiResultError(apierror.StorageResponseEmpty))
 	}
 
-	var brokerList []brokerCompare
+	var brokerList []BrokerCompare
 
 	// 遍历列表，获取每台服务加入量
 	for _, v := range serverList {
+		server := strings.Split(v, ":")
 		cap, err := redis.Rdb.SCard(context.Background(), BrokerCapacity+v).Result()
 		if err != nil {
-			brokerList = append(brokerList, brokerCompare{999999999, v})
+			brokerList = append(brokerList, BrokerCompare{999999999, server[0], server[1]})
 		} else {
-			brokerList = append(brokerList, brokerCompare{cap, v})
+			brokerList = append(brokerList, BrokerCompare{cap, server[0], server[1]})
 		}
 	}
 
 	sortBySize(brokerList)
-
 	config := AppConfig{
 		Servers:   brokerList,
 		HeartTime: 10,
@@ -72,7 +73,7 @@ func GetConfig(c echo.Context) error {
 }
 
 type AppConfig struct {
-	Servers   []brokerCompare `json:"servers"`
+	Servers   []BrokerCompare `json:"servers"`
 	HeartTime int32           `json:"heartTime"`
 }
 
@@ -84,10 +85,10 @@ type serverInfo struct {
 //通用排序
 //结构体排序，必须重写数组Len() Swap() Less()函数
 type body_wrapper struct {
-	Bodys []brokerCompare
-	by    func(p, q *brokerCompare) bool //内部Less()函数会用到
+	Bodys []BrokerCompare
+	by    func(p, q *BrokerCompare) bool //内部Less()函数会用到
 }
-type SortBodyBy func(p, q *brokerCompare) bool //定义一个函数类型
+type SortBodyBy func(p, q *BrokerCompare) bool //定义一个函数类型
 
 //数组长度Len()
 func (acw body_wrapper) Len() int {
@@ -105,18 +106,19 @@ func (acw body_wrapper) Less(i, j int) bool {
 }
 
 //自定义排序字段，参考SortBodyByCreateTime中的传入函数
-func SortBody(bodys []brokerCompare, by SortBodyBy) {
+func SortBody(bodys []BrokerCompare, by SortBodyBy) {
 	sort.Sort(body_wrapper{bodys, by})
 }
 
 //按照createtime排序，需要注意是否有createtime
-func sortBySize(bodys []brokerCompare) {
-	sort.Sort(body_wrapper{bodys, func(p, q *brokerCompare) bool {
-		return p.size < q.size
+func sortBySize(bodys []BrokerCompare) {
+	sort.Sort(body_wrapper{bodys, func(p, q *BrokerCompare) bool {
+		return p.Size < q.Size
 	}})
 }
 
-type brokerCompare struct {
-	size   int64
-	broker string
+type BrokerCompare struct {
+	Size int64  `json:"size"`
+	Ip   string `json:"ip"`
+	Port string `json:"port"`
 }
