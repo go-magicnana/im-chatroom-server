@@ -3,6 +3,9 @@ package controllers
 import (
 	"github.com/hashicorp/go-uuid"
 	"github.com/labstack/echo"
+	"golang.org/x/net/context"
+	"im-chatroom-gateway/apierror"
+	"im-chatroom-gateway/redis"
 	"im-chatroom-gateway/zaplog"
 	"math/rand"
 	"net/http"
@@ -40,14 +43,6 @@ func randCreator(l int) string {
 }
 
 func GetRoomMembers(ct echo.Context) error {
-	e := echo.New()
-	e.Logger = lecho.New(
-		os.Stdout,
-		lecho.WithFields(map[string]interface{}{"name": "lecho factory"}),
-		lecho.WithTimestamp(),
-		lecho.WithCaller(),
-		lecho.WithPrefix("controllers.CreateChatroom"),
-	)
 
 	//获取post请求的表单参数
 	roomId := ct.FormValue("roomId")

@@ -7,10 +7,7 @@ import (
 	"im-chatroom-gateway/redis"
 	"im-chatroom-gateway/zaplog"
 	"net/http"
-	"os"
 	"sort"
-	"strconv"
-	"strings"
 )
 
 const (

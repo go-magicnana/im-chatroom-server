@@ -2,11 +2,11 @@ package controllers
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"github.com/hashicorp/go-uuid"
 	"github.com/labstack/echo"
 	"github.com/ziflex/lecho/v3"
 	"golang.org/x/net/context"
+	"im-chatroom-gateway/apierror"
 	"im-chatroom-gateway/mq"
 	"im-chatroom-gateway/protocol"
 	"im-chatroom-gateway/service"
