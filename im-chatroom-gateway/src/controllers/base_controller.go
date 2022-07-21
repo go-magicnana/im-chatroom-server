@@ -2,69 +2,71 @@ package controllers
 
 import (
 	"context"
-	"github.com/gin-gonic/gin"
+	"github.com/emirpasic/gods/maps/treemap"
+	"github.com/emirpasic/gods/utils"
 	"github.com/labstack/echo"
-	"github.com/ziflex/lecho/v3"
+	"im-chatroom-gateway/apierror"
 	"im-chatroom-gateway/redis"
+	"im-chatroom-gateway/zaplog"
 	"net/http"
-	"os"
-	"sort"
-	"strconv"
-	"strings"
 )
 
 const (
-	BrokerInfo     string = "imchatroom:brokerinfo:"
 	BrokerInstance string = "imchatroom:brokerinstance"
 	BrokerCapacity string = "imchatroom:brokercapacity:"
 )
 
-func GetConfig(ct echo.Context) error {
-	e := echo.New()
-	e.Logger = lecho.New(
-		os.Stdout,
-		lecho.WithFields(map[string]interface{}{"name": "lecho factory"}),
-		lecho.WithTimestamp(),
-		lecho.WithCaller(),
-		lecho.WithPrefix("controllers.GetConfig"),
-	)
+func GetConfig(c echo.Context) error {
+
+	a, _ := c.FormParams()
+	zaplog.Logger.Debugf("%s %v", c.Request().RequestURI, a)
 
 	// 先获取所有服务器列表
 	serverlist, err := redis.Rdb.SMembers(context.Background(), BrokerInstance).Result()
+	if err != nil {
+		return write(c, http.StatusOK, NewApiResultError(apierror.StorageResponseError.Format(err.Error())))
+	}
+
+	if serverlist==nil || len(serverlist)==0 {
+		return write(c, http.StatusOK, NewApiResultError(apierror.StorageResponseEmpty))
+
+	}
+
+	var l []string
+
+	m := treemap.NewWith(utils.Int64Comparator)
+
 
 	// 遍历列表，获取每台服务加入量
-	slist := []string{}
-	if err != redis.Nil && len(serverlist) > 0 {
-
-		for i := range serverlist {
-			sip := serverlist[i]
-			serverCap, err := redis.Rdb.SCard(context.Background(), BrokerCapacity+sip).Result()
-			if err != redis.Nil {
-				slist = append(slist, strconv.FormatInt(serverCap, 10)+"-"+sip)
+		for _,v := range serverlist {
+			cap, err := redis.Rdb.SCard(context.Background(), BrokerCapacity+v).Result()
+			if err != nil {
+				l = append(l, v)
 			} else {
-				slist = append(slist, "0-"+sip)
+				m.Put(v,cap)
 			}
 		}
-		sort.Strings(slist)
 
-	}
-	e.Logger.Info("get serverBrokers :", slist)
-	var appConfig AppConfig
-	var servers []serverInfo
-	for i := range slist {
-		svr := slist[i]
-		svrArr := strings.Split(svr[strings.Index(svr, "-")+1:], ":")
-		svrTmp := serverInfo{
-			Ip:   svrArr[0],
-			Port: svrArr[1],
-		}
-		servers = append(servers, svrTmp)
-	}
-	appConfig.Servers = servers
 
-	appConfig.HeartTime = 1
 
-	return ct.JSON(http.StatusOK, gin.H{"code": 0, "message": "success", "data": appConfig})
+	//e.Logger.Info("get serverBrokers :", slist)
+	//var appConfig AppConfig
+	//var servers []serverInfo
+	//for i := range slist {
+	//	svr := slist[i]
+	//	svrArr := strings.Split(svr[strings.Index(svr, "-")+1:], ":")
+	//	svrTmp := serverInfo{
+	//		Ip:   svrArr[0],
+	//		Port: svrArr[1],
+	//	}
+	//	servers = append(servers, svrTmp)
+	//}
+	//appConfig.Servers = servers
+	//
+	//appConfig.HeartTime = 1
+	//
+	//return ct.JSON(http.StatusOK, gin.H{"code": 0, "message": "success", "data": appConfig})
+	return nil
 }
 
 type AppConfig struct {

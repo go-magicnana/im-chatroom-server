@@ -6,12 +6,6 @@ import (
 	"sync"
 )
 
-var v *validator.Validate = validator.New() //初始化（赋值）
-
-type Validatable interface {
-	Validate() error
-}
-
 type CustomValidator struct {
 	once     sync.Once
 	validate *validator.Validate
@@ -19,11 +13,11 @@ type CustomValidator struct {
 
 func (c *CustomValidator) Validate(i interface{}) error {
 	c.lazyInit()
-	e:= c.validate.Struct(i)
+	e := c.validate.Struct(i)
 
-	if e!=nil {
+	if e != nil {
 		return apierror.InvalidParameter.Replace(e.Error())
-	}else{
+	} else {
 		return nil
 	}
 }
