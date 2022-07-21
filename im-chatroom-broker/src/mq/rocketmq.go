@@ -35,7 +35,7 @@ var _consumer2 rocketmq.PushConsumer
 
 func init() {
 
-	os.Setenv("ROCKETMQ_GO_LOG_LEVEL","error")
+	os.Setenv("ROCKETMQ_GO_LOG_LEVEL", "error")
 	ip := util.GetBrokerIp()
 	MyName = broker2name(ip + ":33121")
 
@@ -75,7 +75,7 @@ func newConsumerRoom() rocketmq.PushConsumer {
 				json.Unmarshal(msgs[i].Body, p)
 
 				if p.Header.Target == protocol.TargetRoom {
-					b, e := service.GetRoom(ctx, p.Header.To)
+					b, e := service.GetRoomMembers(ctx, p.Header.To)
 
 					if e == nil {
 						for _, v := range b {
