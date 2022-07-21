@@ -1,14 +1,11 @@
 package controllers
 
 import (
-	"fmt"
+	"github.com/hashicorp/go-uuid"
 	"github.com/labstack/echo"
-	"github.com/ziflex/lecho/v3"
-	"golang.org/x/net/context"
-	"im-chatroom-gateway/apierror"
-	"im-chatroom-gateway/redis"
+	"im-chatroom-gateway/zaplog"
+	"math/rand"
 	"net/http"
-	"os"
 	"time"
 )
 
@@ -16,28 +13,30 @@ const (
 	RoomInfo string = "imchatroom:roominfo:"
 )
 
-func CreateChatroom(ct echo.Context) error {
-	e := echo.New()
-	e.Logger = lecho.New(
-		os.Stdout,
-		lecho.WithFields(map[string]interface{}{"name": "lecho factory"}),
-		lecho.WithTimestamp(),
-		lecho.WithCaller(),
-		lecho.WithPrefix("controllers.CreateChatroom"),
-	)
+func CreateChatroom(c echo.Context) error {
 
-	//获取post请求的表单参数
-	userId := ct.FormValue("userId")
-	if userId == "" {
-		e.Logger.Info("userId is illegal")
-		return ct.JSON(http.StatusOK, NewApiResultError(apierror.InvalidParameter))
+	zaplog.Logger.Debugf("%s %v", c.Request().RequestURI, nil)
+
+	id, _ := uuid.GenerateUUID()
+
+	return write(c, http.StatusOK, NewApiResultOK(id))
+
+}
+
+func randCreator(l int) string {
+	str := "0123456789abcdefghigklmnopqrstuvwxyz"
+	strList := []byte(str)
+
+	result := []byte{}
+	i := 0
+
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	for i < l {
+		new := strList[r.Intn(len(strList))]
+		result = append(result, new)
+		i = i + 1
 	}
-
-	// 创建roomId
-	timeUnix := time.Now().UnixNano() / 1e6
-	roomId := userId + fmt.Sprintf("%d", timeUnix)
-
-	return ct.JSON(http.StatusOK, NewApiResultOK(roomId))
+	return string(result)
 }
 
 func GetRoomMembers(ct echo.Context) error {

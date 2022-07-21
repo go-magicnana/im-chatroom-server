@@ -9,6 +9,7 @@ import (
 	"im-chatroom-gateway/apierror"
 	"im-chatroom-gateway/domains"
 	"im-chatroom-gateway/redis"
+	"im-chatroom-gateway/zaplog"
 	"net/http"
 	"time"
 )
@@ -17,22 +18,32 @@ const userTokenKey string = "imchatroom:userauth:"
 
 func GetToken(c echo.Context) error {
 
+	a, _ := c.FormParams()
+	zaplog.Logger.Debugf("%s %v", c.Request().RequestURI, a)
+
 	u := new(domains.UserInfo)
 
 	if err := c.Bind(u); err != nil {
-		fmt.Println(err)
-		return nil
+		return write(c, http.StatusOK, NewApiResultError(err))
+	}
+
+	if err := c.Validate(u); err != nil {
+		return write(c, http.StatusOK, NewApiResultError(err))
 	}
 
 	u.Token = buildToken(u.UserId)
 
-	_, e := SetUserAuth(*u)
-
-	if e != nil {
-		c.JSON(http.StatusOK, NewApiResultError(e))
+	if err := SetUserAuth(*u); err != nil {
+		return write(c, http.StatusOK, NewApiResultError(err))
 	}
 
-	return c.JSON(http.StatusOK, NewApiResultOK(u.Token))
+	return write(c, http.StatusOK, NewApiResultOK(u.Token))
+
+}
+
+func write(c echo.Context, code int, ret ApiResult) error {
+	zaplog.Logger.Infof("%s %v", c.Request().RequestURI, ret)
+	return c.JSON(code, ret)
 }
 
 func buildToken(userId string) string {
@@ -43,24 +54,24 @@ func buildToken(userId string) string {
 	return userToken
 }
 
-func SetUserAuth(u domains.UserInfo) (string, error) {
+func SetUserAuth(u domains.UserInfo) error {
 
 	data, err := json.Marshal(u)
 
 	if err != nil {
-		return "", apierror.CouldNotBeSeries.WrapperAndFormat(err)
+		return apierror.CouldNotBeSeries.Format(err.Error())
 	}
 
 	result := redis.Rdb.Set(context.Background(), userTokenKey+u.Token, data, time.Minute*30)
 	if result == nil {
-		return "", apierror.StorageResponseNil
+		return apierror.StorageResponseNil
 	}
 
-	ret, e := result.Result()
+	_, e := result.Result()
 	if e != nil {
-		return "", apierror.StorageResponseError.WrapperAndFormat(e)
+		return apierror.StorageResponseError.Format(e.Error())
 	}
 
-	return ret, nil
+	return nil
 
 }

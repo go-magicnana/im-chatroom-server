@@ -1,6 +1,10 @@
 package controllers
 
-import "im-chatroom-gateway/apierror"
+import (
+	"github.com/go-playground/validator/v10"
+	"github.com/labstack/echo"
+	"im-chatroom-gateway/apierror"
+)
 
 type ApiResult struct {
 	Code uint32 `json:"code"`
@@ -16,6 +20,17 @@ func NewApiResultError(e error) ApiResult {
 		return ApiResult{
 			Code: apiError.Code,
 			Msg:  apiError.Error(),
+		}
+	case validator.ValidationErrors:
+		return ApiResult{
+			Code: apierror.InvalidParameter.Code,
+			Msg:  e.Error(),
+		}
+
+	case *echo.HTTPError:
+		return ApiResult{
+			Code:apierror.ParameterBindError.Code,
+			Msg: e.Error(),
 		}
 	default:
 		return ApiResult{

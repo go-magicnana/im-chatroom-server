@@ -2,11 +2,11 @@ package controllers
 
 import (
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/hashicorp/go-uuid"
 	"github.com/labstack/echo"
 	"github.com/ziflex/lecho/v3"
 	"golang.org/x/net/context"
-	"im-chatroom-gateway/apierror"
 	"im-chatroom-gateway/mq"
 	"im-chatroom-gateway/protocol"
 	"im-chatroom-gateway/service"
@@ -30,14 +30,15 @@ func init() {
 }
 
 func MessagePush(ct echo.Context) error {
-	e := echo.New()
-	e.Logger = lecho.New(
-		os.Stdout,
-		lecho.WithFields(map[string]interface{}{"name": "lecho factory"}),
-		lecho.WithTimestamp(),
-		lecho.WithCaller(),
-		lecho.WithPrefix("controllers.MessagePush"),
-	)
+
+	/**
+	TypeNoticeBlockUser   = 3103
+	TypeNoticeUnblockUser = 3104
+	TypeNoticeCloseRoom   = 3105
+	TypeNoticeBlockRoom   = 3106
+	TypeNoticeUnblockRoom = 3107
+	*/
+
 	//获取post请求的表单参数，
 	// 类型 是何种通知
 	fromUserId := ct.FormValue("fromUserId")
