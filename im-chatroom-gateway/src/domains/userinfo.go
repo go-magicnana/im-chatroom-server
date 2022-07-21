@@ -8,3 +8,8 @@ type UserInfo struct {
 	Gender string `validate:"required" form:"gender" query:"gender" json:"gender"	`
 	Role   string `form:"role" query:"role" json:"role"`
 }
+
+type BlockUser struct {
+	UserId string `validate:"required" form:"userId" query:"userId" json:"userId"`
+	RoomId string `validate:"required" form:"roomId" query:"roomId" json:"roomId"`
+}

@@ -197,20 +197,15 @@ type MessageBodyContentEmoji struct {
 }
 
 type MessageBodyContentAt struct {
-	AtUserKey    string `json:"atUserKey"`
-	AtUserId     string `json:"atUserId"`
-	AtUserName   string `json:"atUserName"`
-	AtUserAvatar string `json:"atUserAvatar"`
-	Content      string `json:"content"`
+	AtUser  UserInfo `json:"atUser"`
+	Content string   `json:"content"`
 }
 
 type MessageBodyContentReply struct {
-	ReplyUserKey    string `json:"replyUserKey"`
-	ReplyUserId     string `json:"replyUserId"`
-	ReplyUserName   string `json:"replyUserName"`
-	ReplyUserAvatar string `json:"replyUserAvatar"`
-	ReplyContent    string `json:"replyContent"`
-	Content         string `json:"content"`
+	ReplyContent   string   `json:"replyContent"`
+	ReplyMessageId string   `json:"replyMessageId"`
+	ReplyUser      UserInfo `json:"replyUser"`
+	Content        string   `json:"content"`
 }
 
 func JsonSignalLogin(any any) *MessageBodySignalLogin {

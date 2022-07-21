@@ -23,10 +23,10 @@ func (e ApiError) Format(msg string) error {
 	return e
 }
 
-//func (e ApiError) Replace(msg string) error {
-//	e.Message = msg
-//	return e
-//}
+func (e ApiError) Replace(msg string) error {
+	e.Message = msg
+	return e
+}
 
 func (e ApiError) Error() string {
 	return e.Message

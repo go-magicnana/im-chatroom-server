@@ -153,7 +153,7 @@ func read(ctx context.Context, cancel context.CancelFunc, c *context2.Context) {
 			return
 		}
 
-		zaplog.Logger.Debugf("ReadOK %s Go Process %s", c.Conn().RemoteAddr(), packet.Header)
+		zaplog.Logger.Debugf("ReadOK %s Go Process %s", c.Conn().RemoteAddr(), packet.ToString())
 		go process(ctx, cancel, c, packet)
 	}
 

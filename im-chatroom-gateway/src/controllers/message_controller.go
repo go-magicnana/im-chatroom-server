@@ -1,43 +1,29 @@
 package controllers
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/hashicorp/go-uuid"
 	"github.com/labstack/echo"
-	"github.com/ziflex/lecho/v3"
 	"golang.org/x/net/context"
 	"im-chatroom-gateway/mq"
 	"im-chatroom-gateway/protocol"
 	"im-chatroom-gateway/service"
 	"net/http"
-	"os"
 	"strconv"
 )
 
 var e echo.Echo
 
-func init() {
-	fmt.Println("messagecontroller init")
-	e := echo.New()
-	e.Logger = lecho.New(
-		os.Stdout,
-		lecho.WithFields(map[string]interface{}{"name": "lecho factory"}),
-		lecho.WithTimestamp(),
-		lecho.WithCaller(),
-		lecho.WithPrefix("controllers.MessageController"),
-	)
-}
-
 func MessagePush(ct echo.Context) error {
-	e := echo.New()
-	e.Logger = lecho.New(
-		os.Stdout,
-		lecho.WithFields(map[string]interface{}{"name": "lecho factory"}),
-		lecho.WithTimestamp(),
-		lecho.WithCaller(),
-		lecho.WithPrefix("controllers.MessagePush"),
-	)
+
+	/**
+	TypeNoticeBlockUser   = 3103
+	TypeNoticeUnblockUser = 3104
+	TypeNoticeCloseRoom   = 3105
+	TypeNoticeBlockRoom   = 3106
+	TypeNoticeUnblockRoom = 3107
+	*/
+
 	//获取post请求的表单参数，
 	// 类型 是何种通知
 	fromUserId := ct.FormValue("fromUserId")
@@ -75,16 +61,18 @@ func MessagePush(ct echo.Context) error {
 		To:   userId,
 		Flow: protocol.FlowDeliver,
 		Type: uint32(messageTypeInt64),
+		Code: 200,
 	}
 
 	var body any
 
 	switch int(messageTypeInt64) {
 	case protocol.TypeNoticeBlockUser:
-		body = protocol.MessageBodyNoticeBlockUser{UserId: userId, RoomId: roomId}
+		service.GetUserInfo(context.Background(), userId)
+		//body = protocol.MessageBodyNoticeBlockUser{UserId: userId, RoomId: roomId}
 
 	case protocol.TypeNoticeUnblockUser:
-		body = protocol.MessageBodyNoticeUnblockUser{UserId: userId, RoomId: roomId}
+		//body = protocol.MessageBodyNoticeUnblockUser{UserId: userId, RoomId: roomId}
 
 	case protocol.TypeNoticeCloseRoom:
 		body = protocol.MessageBodyNoticeCloseRoom{RoomId: roomId}
