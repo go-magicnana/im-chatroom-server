@@ -118,7 +118,7 @@ func login(ctx context.Context, c *context2.Context, packet *protocol.Packet, bo
 
 	service.SetBrokerCapacity(ctx, userDevice.Broker, userKey)
 
-	p := protocol.NewResponseOK(packet, nil)
+	p := protocol.NewResponseOK(packet, userInfo)
 
 	fmt.Println(p.ToString())
 
