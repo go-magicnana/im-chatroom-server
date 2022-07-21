@@ -27,6 +27,11 @@ func NoticeBlockUser(c echo.Context) error {
 	a, _ := c.FormParams()
 	zaplog.Logger.Debugf("%s %v", c.Request().RequestURI, a)
 
+
+	if len(a) == 0 {
+		return write(c, http.StatusOK, NewApiResultError(apierror.InvalidParameter))
+	}
+
 	u := new(domains.BlockUser)
 
 	if err := c.Bind(u); err != nil {
@@ -77,6 +82,11 @@ func NoticeUnblockUser(c echo.Context) error {
 
 	a, _ := c.FormParams()
 	zaplog.Logger.Debugf("%s %v", c.Request().RequestURI, a)
+
+
+	if len(a) == 0 {
+		return write(c, http.StatusOK, NewApiResultError(apierror.InvalidParameter))
+	}
 
 	u := new(domains.BlockUser)
 

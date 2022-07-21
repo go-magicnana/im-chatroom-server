@@ -10,6 +10,7 @@ import (
 	"im-chatroom-gateway/domains"
 	"im-chatroom-gateway/redis"
 	"im-chatroom-gateway/zaplog"
+	"math/rand"
 	"net/http"
 	"time"
 )
@@ -21,6 +22,10 @@ func GetToken(c echo.Context) error {
 	a, _ := c.FormParams()
 	zaplog.Logger.Debugf("%s %v", c.Request().RequestURI, a)
 
+	if len(a) == 0 {
+		return write(c, http.StatusOK, NewApiResultError(apierror.InvalidParameter))
+	}
+
 	u := new(domains.UserInfo)
 
 	if err := c.Bind(u); err != nil {
@@ -31,7 +36,9 @@ func GetToken(c echo.Context) error {
 		return write(c, http.StatusOK, NewApiResultError(err))
 	}
 
-	u.Token = buildToken(u.UserId)
+	//u.Token = buildToken(u.UserId)
+
+	u.Token = randCreator22(4)
 
 	if err := SetUserAuth(*u); err != nil {
 		return write(c, http.StatusOK, NewApiResultError(err))
@@ -74,4 +81,21 @@ func SetUserAuth(u domains.UserInfo) error {
 
 	return nil
 
+}
+
+
+func randCreator22(l int) string {
+	str := "0123456789abcdefghigklmnopqrstuvwxyz"
+	strList := []byte(str)
+
+	result := []byte{}
+	i := 0
+
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	for i < l {
+		new := strList[r.Intn(len(strList))]
+		result = append(result, new)
+		i = i + 1
+	}
+	return string(result)
 }
