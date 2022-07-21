@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"github.com/gin-gonic/gin"
 	"github.com/labstack/echo"
 	"github.com/ziflex/lecho/v3"
 	"im-chatroom-gateway/redis"
@@ -63,7 +62,7 @@ func GetConfig(ct echo.Context) error {
 	appConfig.Servers = servers
 
 	appConfig.HeartTime = 5
-	return ct.JSON(http.StatusOK, gin.H{"code": 0, "message": "success", "data": appConfig})
+	return ct.JSON(http.StatusOK, NewApiResultOK(appConfig))
 	// return NewApiResultOK(appConfig)
 }
 

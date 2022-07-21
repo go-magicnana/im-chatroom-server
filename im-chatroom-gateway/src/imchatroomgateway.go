@@ -37,6 +37,8 @@ func main() {
 
 	e.POST("/imchatroom/room/create", controllers.CreateChatroom)
 
+	e.GET("/imchatroom/room/memberNum", controllers.GetRoomMembers)
+
 	e.POST("/imchatroom/message/push", controllers.MessagePush)
 
 	//启动http server, 并监听1324端口，冒号（:）前面为空的意思就是绑定网卡所有Ip地址，本机支持的所有ip地址都可以访问。
