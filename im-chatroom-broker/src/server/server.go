@@ -196,6 +196,9 @@ func process(ctx context.Context, cancel context.CancelFunc, c *context2.Context
 	case protocol.CommandContent:
 		ret, e = handler.SingleContentHandler().Handle(ctx, c, packet)
 		break
+	case protocol.CommandCustom:
+		ret, e = handler.CustomContentHandler().Handle(ctx, c, packet)
+		break
 	}
 
 	if ret == nil {
