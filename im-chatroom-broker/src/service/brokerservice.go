@@ -85,7 +85,7 @@ func AliveTask(ctx context.Context, broker string) {
 		zaplog.Logger.Debugf("Task ProbeBroker %s", broker)
 	})
 
-	c.AddFunc("*/1 * * * *", func() {
+	c.AddFunc("@every 1m", func() {
 		ProbeConn(ctx)
 		zaplog.Logger.Debugf("Task ProbeConns %s", broker)
 	})

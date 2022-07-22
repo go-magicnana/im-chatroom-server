@@ -5,6 +5,7 @@ import (
 	"golang.org/x/net/context"
 	context2 "im-chatroom-broker/context"
 	err "im-chatroom-broker/error"
+	"im-chatroom-broker/mq"
 	"im-chatroom-broker/protocol"
 	"im-chatroom-broker/service"
 	"im-chatroom-broker/util"
@@ -85,7 +86,8 @@ func login(ctx context.Context, c *context2.Context, packet *protocol.Packet, bo
 
 	if exist != nil || util.IsNotEmpty(exist.State) {
 		if exist.State == strconv.FormatInt(int64(context2.Login), 10) {
-			return protocol.NewResponseError(packet, err.AlreadyLogin), nil
+			alreadyLogin(ctx, userKey, packet)
+			//return protocol.NewResponseError(packet, err.AlreadyLogin), nil
 		}
 	}
 
@@ -128,6 +130,25 @@ func login(ctx context.Context, c *context2.Context, packet *protocol.Packet, bo
 	service.DelUserAuth(ctx, token)
 
 	return p, nil
+}
+
+func alreadyLogin(ctx context.Context, userKey string, packet *protocol.Packet) {
+	p := protocol.Packet{
+		Header: packet.Header,
+		Body:   nil,
+	}
+	p.Header.Type = protocol.TypeSignalAlreadyLogin
+	p.Header.Flow = protocol.FlowDeliver
+
+	broker, _ := service.GetUserDeviceBroker(ctx, userKey)
+
+	service.DelUserDevice(ctx, userKey)
+
+	msg := protocol.PacketMessage{
+		UserKey: userKey,
+		Packet:  p,
+	}
+	mq.SendSync2One(broker, &msg)
 }
 
 func joinRoom(ctx context.Context, c *context2.Context, packet *protocol.Packet, body *protocol.MessageBodySignalJoinRoom) (*protocol.Packet, error) {

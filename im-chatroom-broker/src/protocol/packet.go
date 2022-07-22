@@ -25,11 +25,12 @@ const (
 	CommandGoods   = 6
 	CommandCustom  = 9
 
-	TypeSignalPing       = 2101
-	TypeSignalLogin      = 2102
-	TypeSignalJoinRoom   = 2104
-	TypeSignalLeaveRoom  = 2105
-	TypeSignalChangeRoom = 2106
+	TypeSignalPing         = 2101
+	TypeSignalLogin        = 2102
+	TypeSignalAlreadyLogin = 2103
+	TypeSignalJoinRoom     = 2104
+	TypeSignalLeaveRoom    = 2105
+	TypeSignalChangeRoom   = 2106
 
 	TypeNoticeJoinRoom    = 3101
 	TypeNoticeLeaveRoom   = 3102
