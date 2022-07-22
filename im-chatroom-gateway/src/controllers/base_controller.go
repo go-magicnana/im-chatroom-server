@@ -12,9 +12,9 @@ import (
 )
 
 const (
-	BrokerInfo     string = "imchatroom:brokerinfo:"
-	BrokerInstance string = "imchatroom:brokerinstance"
-	BrokerCapacity string = "imchatroom:brokercapacity:"
+	BrokerInfo     string = "imchatroom:broker.info:"
+	BrokerInstance string = "imchatroom:broker.instance"
+	BrokerCapacity string = "imchatroom:broker.capacity:"
 )
 
 func GetConfig(c echo.Context) error {

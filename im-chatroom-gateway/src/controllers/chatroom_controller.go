@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	RoomInfo string = "imchatroom:roominfo:"
+	RoomInfo string = "imchatroom:room.info:"
 )
 
 func CreateChatroom(c echo.Context) error {

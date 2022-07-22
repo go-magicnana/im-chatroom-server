@@ -6,6 +6,7 @@ import (
 	"github.com/apache/rocketmq-client-go/v2/consumer"
 	"github.com/apache/rocketmq-client-go/v2/primitive"
 	"github.com/apache/rocketmq-client-go/v2/producer"
+	profile "github.com/lvornholt/go-profiles"
 	"github.com/spf13/viper"
 	"golang.org/x/net/context"
 	"os"
@@ -109,6 +110,8 @@ func TestMQ2(t *testing.T) {
 	endpoint := viper.GetString("rocketmq.endpoint")
 
 	fmt.Println(endpoint)
+
+	fmt.Println(profile.GetStringValue("rocketmq.endpoint"))
 
 	//SendSync2Room(nil)
 }

@@ -8,10 +8,10 @@ import (
 
 const (
 	// hash
-	RoomInfo string = "imchatroom:room_info:"
+	RoomInfo string = "imchatroom:room.info:"
 	// set
-	RoomMembers string = "imchatroom:room_members:"
-	RoomBlacks  string = "imchatroom:room_blacks:"
+	RoomMembers string = "imchatroom:room.members:"
+	RoomBlacks  string = "imchatroom:room.blacks:"
 )
 
 func SetRoomUser(ctx context.Context, roomId string, userKey string) {

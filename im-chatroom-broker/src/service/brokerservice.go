@@ -12,9 +12,9 @@ import (
 )
 
 const (
-	BrokerAlive    string = "imchatroom:brokeralive:"
-	BrokerCapacity string = "imchatroom:brokercapacity:"
-	BrokerInstance string = "imchatroom:brokerinstance"
+	BrokerAlive    string = "imchatroom:broker.alive:"
+	BrokerCapacity string = "imchatroom:broker.capacity:"
+	BrokerInstance string = "imchatroom:broker.instance"
 )
 
 func SetBrokerCapacity(ctx context.Context, broker, userKey string) {

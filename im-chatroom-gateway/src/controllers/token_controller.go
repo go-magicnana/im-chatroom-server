@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-const userTokenKey string = "imchatroom:userauth:"
+const userTokenKey string = "imchatroom:user.auth:"
 
 func GetToken(c echo.Context) error {
 
@@ -82,7 +82,6 @@ func SetUserAuth(u domains.UserInfo) error {
 	return nil
 
 }
-
 
 func randCreator22(l int) string {
 	str := "0123456789abcdefghigklmnopqrstuvwxyz"

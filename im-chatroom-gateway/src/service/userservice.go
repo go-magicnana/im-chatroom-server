@@ -12,13 +12,13 @@ import (
 const (
 
 	/*hash*/
-	UserDevice string = "imchatroom:userdevice:"
-	UserInfo   string = "imchatroom:userinfo:"
+	UserDevice string = "imchatroom:user.device:"
+	UserInfo   string = "imchatroom:user.info:"
 
 	/*string json */
-	UserAuth string = "imchatroom:userauth:"
+	UserAuth string = "imchatroom:user.auth:"
 
-	UserClients string = "imchatroom:userclients:"
+	UserClients string = "imchatroom:user.clients:"
 )
 
 func SetUserClient(ctx context.Context, userId string, userKey string) int64 {
