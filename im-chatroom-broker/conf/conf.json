@@ -1,0 +1,9 @@
+{
+  "port" : "33121",
+  "rocketmq": {
+    "endpoint" :"127.0.0.1:9876",
+  }
+  "obj":{
+    "name":"objname"
+  }
+}
