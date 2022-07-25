@@ -1,4 +1,4 @@
-package mq
+package config
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ func init() {
 
 	os.Setenv("GO_ENV", "dev")
 
-	viper.SetConfigFile("../conf/config-" + os.Getenv("GO_ENV") + ".json")
+	viper.SetConfigFile("../../conf/config-" + os.Getenv("GO_ENV") + ".json")
 	viper.AutomaticEnv()
 	viper.SetConfigType("json")
 
