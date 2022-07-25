@@ -82,12 +82,12 @@ func deliver(ctx context.Context, c *context2.Context, packet *protocol.Packet) 
 
 		for _, v := range ret {
 
-			if v == c.UserKey() {
+			if v == c.ClientName() {
 				continue
 			}
 
 			msg := &protocol.PacketMessage{
-				UserKey: v,
+				ClientName: v,
 				Packet:  *packet,
 			}
 

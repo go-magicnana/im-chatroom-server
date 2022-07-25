@@ -83,7 +83,7 @@ func listen(ctx context.Context, addr string) {
 
 			c := context2.NewContext(brokerAddress, conn)
 
-			c.Connect()
+			c.Connect(conn.RemoteAddr().String())
 
 			zaplog.Logger.Infof("Connected %s", conn.RemoteAddr())
 
@@ -159,29 +159,6 @@ func read(ctx context.Context, cancel context.CancelFunc, c *context2.Context) {
 
 }
 
-//type ReadDeadliner interface {
-//	SetReadDeadline(t time.Time) error
-//}
-//
-//type WriteDeadliner interface {
-//	SetWriteDeadline(t time.Time) error
-//}
-//
-//func SetReadDeadlineOnCancel(ctx context.Context, cancel context.CancelFunc, d ReadDeadliner) {
-//	go func() {
-//		<-ctx.Done()
-//		fmt.Println("receive done")
-//		d.SetReadDeadline(time.Now())
-//	}()
-//}
-//
-//func SetWriteDeadlineOnCancel(ctx context.Context, cancel context.CancelFunc, d WriteDeadliner) {
-//	go func() {
-//		<-ctx.Done()
-//		d.SetWriteDeadline(time.Now())
-//	}()
-//}
-
 func process(ctx context.Context, cancel context.CancelFunc, c *context2.Context, packet *protocol.Packet) {
 
 	var ret *protocol.Packet = nil
@@ -207,7 +184,7 @@ func process(ctx context.Context, cancel context.CancelFunc, c *context2.Context
 		}
 	}
 
-	//zaplog.Logger.Debugf("HandleOK %s %v", c.Conn().RemoteAddr(), ret.Header)
+
 
 	if ret != nil {
 		serializer.SingleJsonSerializer().Write(c, ret)
@@ -215,58 +192,3 @@ func process(ctx context.Context, cancel context.CancelFunc, c *context2.Context
 
 }
 
-func goHandle(s string, context *context2.Context) {
-
-	//fmt.Println(strings.Contains(s,"\n"))
-	//
-	//if startWith(s,"auth"){
-	//	userId := s[5:]
-	//
-	//	v,e:=userMap.Load(userId)
-	//	if e{
-	//		context.UserKey = v.(string)
-	//		doAuth(context.UserKey,context)
-	//	}
-	//
-	//}else{
-	//
-	//	if strings.Contains(s,":"){
-	//		index := strings.Index(s,":")
-	//		otherId := s[0:index]
-	//		content := s[index:]+" \n"
-	//
-	//		v,e:=userMap.Load(otherId)
-	//		if e{
-	//			doDeliver(v.(string),content,context)
-	//
-	//		}
-	//
-	//	}
-	//}
-}
-
-//func goConnection(context *Context) {
-//
-//	tmpBuffer := make([]byte, 0)
-//
-//	buffer := make([]byte, 1024)
-//	messnager := make(chan byte)
-//	for {
-//		n, err := context.Conn.Read(buffer)
-//		if err != nil {
-//			Log(context.Conn.RemoteAddr().String(), " connection error: ", err)
-//			return
-//		}
-//
-//		tmpBuffer = protocol.Depack(append(tmpBuffer, buffer[:n]...))
-//		Log("receive data string:", string(tmpBuffer))
-//		TaskDeliver(tmpBuffer, context)
-//		//start heartbeating
-//		go HeartBeating(context, messnager, 10)
-//		//check if get message from client
-//		go GravelChannel(tmpBuffer, messnager)
-//
-//	}
-//	defer context.Conn.Close()
-//
-//}

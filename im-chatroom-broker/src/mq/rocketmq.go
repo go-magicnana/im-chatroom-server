@@ -87,7 +87,7 @@ func newConsumerRoom() rocketmq.PushConsumer {
 							broker, _ := service.GetUserDeviceBroker(ctx, v)
 
 							m := protocol.PacketMessage{
-								UserKey: v,
+								ClientName: v,
 								Packet:  *p,
 							}
 
@@ -123,13 +123,11 @@ func newConsumerOne() rocketmq.PushConsumer {
 	err := c.Subscribe(OneTopic+MyName, consumer.MessageSelector{},
 		func(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
 
-			fmt.Println(util.CurrentSecond(), "Consumer 消费开始 ", OneTopic+MyName, msgs)
-
 			for i := range msgs {
 				p := &protocol.PacketMessage{}
 				json.Unmarshal(msgs[i].Body, p)
 
-				c, e := service.GetUserContext(p.UserKey)
+				c, e := service.GetUserContext(p.ClientName)
 
 				if e {
 					serializer.SingleJsonSerializer().Write(c, &p.Packet)

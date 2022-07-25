@@ -14,8 +14,8 @@ const (
 	RoomBlacks  string = "imchatroom:room.blacks:"
 )
 
-func SetRoomUser(ctx context.Context, roomId string, userKey string) {
-	redis.Rdb.SAdd(ctx, RoomMembers+roomId, userKey)
+func SetRoomUser(ctx context.Context, roomId string, clientName string) {
+	redis.Rdb.SAdd(ctx, RoomMembers+roomId, clientName)
 }
 
 func GetRoomMembers(ctx context.Context, roomId string) ([]string, error) {
@@ -27,8 +27,8 @@ func GetRoomMembers(ctx context.Context, roomId string) ([]string, error) {
 	return m, nil
 }
 
-func DelRoomUser(ctx context.Context, roomId string, userKey string) {
-	redis.Rdb.SRem(ctx, RoomMembers+roomId, userKey)
+func DelRoomUser(ctx context.Context, roomId string, clientName string) {
+	redis.Rdb.SRem(ctx, RoomMembers+roomId, clientName)
 }
 
 func GetRoomBlocked(ctx context.Context, roomId string) int {

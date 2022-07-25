@@ -17,14 +17,14 @@ const (
 	BrokerInstance string = "imchatroom:broker.instance"
 )
 
-func SetBrokerCapacity(ctx context.Context, broker, userKey string) {
+func SetBrokerCapacity(ctx context.Context, broker, clientName string) {
 	redis := redis.Rdb
-	redis.SAdd(ctx, BrokerCapacity+broker, userKey)
+	redis.SAdd(ctx, BrokerCapacity+broker, clientName)
 }
 
-func DelBrokerCapacity(ctx context.Context, broker, userKey string) {
+func DelBrokerCapacity(ctx context.Context, broker, clientName string) {
 	redis := redis.Rdb
-	redis.SRem(ctx, BrokerCapacity+broker, userKey)
+	redis.SRem(ctx, BrokerCapacity+broker, clientName)
 }
 
 func DelBrokerCapacityAll(ctx context.Context, broker string) {
@@ -150,15 +150,15 @@ func ProbeConn(ctx context.Context) {
 
 func Close(ctx context.Context, c *context2.Context) {
 
-	DelUserInfo(ctx, c.UserKey())
+	DelUserInfo(ctx, c.ClientName())
 
-	DelUserDevice(ctx, c.UserKey())
+	DelUserDevice(ctx, c.ClientName())
 
-	DelRoomUser(ctx, c.RoomId(), c.UserKey())
+	DelRoomUser(ctx, c.RoomId(), c.ClientName())
 
-	DelUserContext(c.UserKey())
+	DelUserContext(c.ClientName())
 
-	DelBrokerCapacity(ctx, c.Broker(), c.UserKey())
+	DelBrokerCapacity(ctx, c.Broker(), c.ClientName())
 
 	zaplog.Logger.Infof("CloseByClient %s", c.Conn().RemoteAddr())
 

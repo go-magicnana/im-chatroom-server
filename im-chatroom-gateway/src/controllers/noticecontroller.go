@@ -254,7 +254,7 @@ func SendSync2User(ctx context.Context, packet *protocol.Packet) {
 	for _, v := range ret {
 
 		msg := &protocol.PacketMessage{
-			UserKey: v,
+			ClientName: v,
 			Packet:  *packet,
 		}
 

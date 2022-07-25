@@ -63,7 +63,7 @@ func (p Packet) ToString() string {
 }
 
 type PacketMessage struct {
-	UserKey string `json:"userKey"`
+	ClientName string `json:"clientName"`
 	Packet  Packet `json:"packet"`
 }
 
@@ -139,15 +139,6 @@ type RoomInfo struct {
 	RoomId  string `json:"roomId"`
 	Name    string `json:"name"`
 	Blocked string `json:"blocked"`
-}
-
-type UserDevice struct {
-	UserKey string `json:"userKey"`
-	UserId  string `json:"userId"`
-	Device  string `json:"device"`
-	State   string `json:"state"`
-	RoomId  string `json:"roomId"`
-	Broker  string `json:"broker"`
 }
 
 type MessageBodySignalLogin struct {

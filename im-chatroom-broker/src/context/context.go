@@ -15,13 +15,13 @@ const (
 )
 
 type Context struct {
-	userKey  string
-	userId   string
-	roomId   string
-	broker   string
-	conn     net.Conn
-	state    *atomic.Int32
-	pingTime *atomic.Int64
+	clientName string
+	userId     string
+	roomId     string
+	broker     string
+	conn       net.Conn
+	state      *atomic.Int32
+	pingTime   *atomic.Int64
 }
 
 func NewContext(brokerAddr string, conn net.Conn) *Context {
@@ -34,8 +34,8 @@ func NewContext(brokerAddr string, conn net.Conn) *Context {
 	}
 }
 
-func (c *Context) UserKey() string {
-	return c.userKey
+func (c *Context) ClientName() string {
+	return c.clientName
 }
 
 func (c *Context) UserId() string {
@@ -58,9 +58,10 @@ func (c *Context) Conn() net.Conn {
 	return c.conn
 }
 
-func (c *Context) Connect() (int32, bool) {
+func (c *Context) Connect(clientName string) (int32, bool) {
 	ret := c.state.CAS(Ready, Connected)
 	if ret {
+		c.clientName = clientName
 		return Connected, true
 	} else {
 		return c.state.Load(), false
@@ -73,10 +74,9 @@ func (c *Context) Ping() (int64, bool) {
 	return ret, true
 }
 
-func (c *Context) Login(userKey, userId string) (int32, bool) {
+func (c *Context) Login(userId string) (int32, bool) {
 	ret := c.state.CAS(Connected, Login)
 	if ret {
-		c.userKey = userKey
 		c.userId = userId
 		return Login, true
 	} else {

@@ -130,7 +130,7 @@ func deliver(ctx context.Context, packet *protocol.Packet, roomId string) error 
 		for _, v := range ret {
 
 			msg := &protocol.PacketMessage{
-				UserKey: v,
+				ClientName: v,
 				Packet:  *packet,
 			}
 

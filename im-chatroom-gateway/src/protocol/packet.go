@@ -58,8 +58,8 @@ func (p Packet) ToString() string {
 }
 
 type PacketMessage struct {
-	UserKey string `json:"userKey"`
-	Packet  Packet `json:"packet"`
+	ClientName string `json:"clientName"`
+	Packet     Packet `json:"packet"`
 }
 
 type MessageHeader struct {
@@ -92,14 +92,6 @@ type UserInfo struct {
 	Role   string   `json:"role"`
 }
 
-type UserDevice struct {
-	UserKey string `json:"userKey"`
-	UserId  string `json:"userId"`
-	Device  string `json:"device"`
-	State   string `json:"state"`
-	RoomId  string `json:"roomId"`
-	Broker  string `json:"broker"`
-}
 
 type MessageBodySignalLogin struct {
 	Token  string `json:"token"`
@@ -155,7 +147,6 @@ type MessageBodyContentEmoji struct {
 }
 
 type MessageBodyContentAt struct {
-	AtUserKey    string `json:"atUserKey"`
 	AtUserId     string `json:"atUserId"`
 	AtUserName   string `json:"atUserName"`
 	AtUserAvatar string `json:"atUserAvatar"`
@@ -163,7 +154,6 @@ type MessageBodyContentAt struct {
 }
 
 type MessageBodyContentReply struct {
-	ReplyUserKey    string `json:"replyUserKey"`
 	ReplyUserId     string `json:"replyUserId"`
 	ReplyUserName   string `json:"replyUserName"`
 	ReplyUserAvatar string `json:"replyUserAvatar"`

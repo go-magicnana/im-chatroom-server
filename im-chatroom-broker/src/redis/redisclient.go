@@ -21,6 +21,8 @@ func singleton() *redis.Client {
 	return Rdb
 }
 
+const Nil = redis.Nil
+
 func NewZSetMember(score float64, member interface{}) *redis.Z {
 	return &redis.Z{
 		Score: score, Member: member,

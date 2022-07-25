@@ -5,10 +5,9 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"im-chatroom-broker/context"
 	"im-chatroom-broker/protocol"
-	"im-chatroom-broker/util"
+	"im-chatroom-broker/zaplog"
 	"sync"
 )
 
@@ -70,7 +69,8 @@ func (j JsonSerializer) Write(c *context.Context, p *protocol.Packet) error {
 	buffer.Write(bs)
 	_, err := c.Conn().Write(buffer.Bytes())
 
-	fmt.Println(util.CurrentSecond(), "Write 等待客户端读取", p.ToString())
+	zaplog.Logger.Debugf("Write %s %v", c.Conn().RemoteAddr(), p.Header)
+
 
 	if err != nil {
 		return errors.New("write response error +" + err.Error())

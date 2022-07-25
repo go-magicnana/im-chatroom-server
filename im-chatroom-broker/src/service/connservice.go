@@ -10,20 +10,20 @@ var users sync.Map
 var dirty sync.Map
 
 func SetUserContext(user *protocol.UserDevice, c *context.Context) {
-	users.Store(user.UserKey, c)
+	users.Store(user.ClientName, c)
 }
 
-func DelUserContext(userKey string) (*context.Context, bool) {
-	c, f := GetUserContext(userKey)
+func DelUserContext(clientName string) (*context.Context, bool) {
+	c, f := GetUserContext(clientName)
 
-	users.Delete(userKey)
+	users.Delete(clientName)
 
 	return c, f
 
 }
 
-func GetUserContext(userKey string) (*context.Context, bool) {
-	v, e := users.Load(userKey)
+func GetUserContext(clientName string) (*context.Context, bool) {
+	v, e := users.Load(clientName)
 
 	if e {
 		return v.(*context.Context), e
