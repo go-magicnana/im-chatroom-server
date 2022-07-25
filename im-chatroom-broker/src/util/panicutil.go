@@ -1,10 +1,8 @@
 package util
 
-func Panic(obj interface{}){
+func Panic(obj interface{}) {
 
-	if obj!=nil {
-		panic(obj)
+	if obj != nil {
+		//panic(obj)
 	}
 }
-
-

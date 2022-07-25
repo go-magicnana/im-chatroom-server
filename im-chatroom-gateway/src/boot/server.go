@@ -32,6 +32,8 @@ func Start() {
 
 	e.POST("/imchatroom/room/create", controllers.CreateChatroom)
 
+	e.GET("/imchatroom/room/membersNum", controllers.GetRoomMembers)
+
 	e.POST("/imchatroom/notice/block_user", controllers.NoticeBlockUser)
 	e.POST("/imchatroom/notice/unblock_user", controllers.NoticeUnblockUser)
 	e.POST("/imchatroom/notice/close_room", controllers.NoticeCloseRoom)
