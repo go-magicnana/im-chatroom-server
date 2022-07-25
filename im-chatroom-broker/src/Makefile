@@ -1,47 +1,44 @@
-GO_ENV := "dev"
-GOOS := 'linux'
-
-OS := $(if $(GOOS),$(GOOS),$(shell go env GOOS))
-ARCH := $(if $(GOARCH),$(GOARCH),$(shell go env GOARCH))
-
-build:
-	GOOS=$(OS) GOARCH=$(ARCH) go build imchatroombroker.go
-
-
-
+#GO_ENV := "dev"
+#GOOS := 'linux'
+#VERSION := "v0.0.1"
 
 # 二进制文件名
-PROJECT="main"
-# 启动文件PATH
-MAIN_PATH="main.go"
-VERSION="v0.0.1"
-DATE= `date +%FT%T%z`
+MAIN_PATH :="broker.go"
+VERSION := "imchatroom-broker v0.0.1"
+DATE := `date +%FT%T%z`
 
-# 可以执行函数，但是函数不能存在 command
-ifeq (${VERSION}, "v0.0.1")
-    VERSION=VERSION = "v0.0.1"
-endif
+#
+#OS := $(if $(GOOS),$(GOOS),$(shell go env GOOS))
+#ARCH := $(if $(GOARCH),$(GOARCH),$(shell go env GOARCH))
 
 version:
-    @echo ${VERSION}
+	@echo $(VERSION)
 
 # .PHONY 有 build 文件，不影响 build 命令执行
 .PHONY: build
-build:
-    @echo version: ${VERSION} date: ${DATE} os: Mac OS
-    @go  build -o ${PROJECT} ${MAIN_PATH}
+
+resource:
+	@echo Current env haha
+	@echo Copy resources
+
+build-mac:
+	GOOS := 'Mac'
+	echo version:$(VERSION) date:$(DATE) os: $(GOOS)
+	OS := $(if $(GOOS),$(GOOS),$(shell go env GOOS))
+	ARCH := $(if $(GOARCH),$(GOARCH),$(shell go env GOARCH))
+	GOOS=$(OS) GOARCH=$(ARCH) go build broker.go
 
 install:
-    @echo download package
-    @go mod download
+	go mod download
+	go mod tidy
 
 # 交叉编译运行在linux系统环境
 build-linux:
-    @echo version: ${VERSION} date: ${DATE} os: linux-centOS
-    @GOOS=linux go build -o ${PROJECT} ${MAIN_PATH}
-
-run:   build
-    @./${PROJECT}
+	GOOS := 'Linux'
+	echo version:$(VERSION) date:$(DATE) os: $(GOOS)
+	OS := $(if $(GOOS),$(GOOS),$(shell go env GOOS))
+	ARCH := $(if $(GOARCH),$(GOARCH),$(shell go env GOARCH))
+	GOOS=$(OS) GOARCH=$(ARCH) go build broker.go
 
 clean:
-    rm -rf ./log
+	rm broker

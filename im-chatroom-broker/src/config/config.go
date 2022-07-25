@@ -6,6 +6,20 @@ import (
 	"os"
 )
 
+/**
+{
+  "port": "33121",
+  "rocketmq": {
+    "address" :"127.0.0.1:9876",
+  },
+  "redis": {
+    "address":"47.95.148.121:6379",
+    "password":"o1trUmeh",
+    "db":1
+  }
+}
+*/
+
 func LoadConf(path string) *Option {
 
 	file, e := os.Open(path)
@@ -24,10 +38,16 @@ func LoadConf(path string) *Option {
 }
 
 type Option struct {
-	RocketMQ string `json:"rocketmq"`
-	Obj Obj `json:"obj"`
+	Port     string   `json:"port"`
+	RocketMQ RocketMQ `json:"rocketmq"`
+	Redis    Redis    `json:"redis"`
 }
 
-type Obj struct {
-	Name string `json:"name"`
+type RocketMQ struct {
+	Address string `json:"address"`
+}
+type Redis struct {
+	Address  string `json:"address"`
+	Password string `json:"password"`
+	Db       int    `json:"db"`
 }
