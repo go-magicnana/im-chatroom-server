@@ -6,6 +6,7 @@ import (
 	"golang.org/x/net/context"
 	"im-chatroom-gateway/apierror"
 	"im-chatroom-gateway/redis"
+	"im-chatroom-gateway/service"
 	"im-chatroom-gateway/zaplog"
 	"math/rand"
 	"net/http"
@@ -21,6 +22,8 @@ func CreateChatroom(c echo.Context) error {
 	zaplog.Logger.Debugf("%s %v", c.Request().RequestURI, nil)
 
 	id, _ := uuid.GenerateUUID()
+
+	service.SetRoomInstance(context.Background(),id)
 
 	return write(c, http.StatusOK, NewApiResultOK(id))
 

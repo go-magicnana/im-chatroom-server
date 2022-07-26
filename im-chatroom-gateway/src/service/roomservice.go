@@ -9,9 +9,14 @@ const (
 	// hash
 	RoomInfo string = "imchatroom:room.info:"
 	// set
-	RoomMembers string = "imchatroom:room.members:"
-	RoomBlacks  string = "imchatroom:room.blacks:"
+	RoomMembers  string = "imchatroom:room.members:"
+	RoomBlacks   string = "imchatroom:room.blacks:"
+	RoomInstance string = "imchatroom:room.instance"
 )
+
+func SetRoomInstance(ctx context.Context, roomId string) {
+	redis.Rdb.SAdd(ctx, RoomInstance, roomId)
+}
 
 // block 0正常；1封禁
 func SetRoomBlocked(ctx context.Context, roomId string, block int) int64 {
