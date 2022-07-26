@@ -2,6 +2,7 @@ package redis
 
 import (
 	"github.com/go-redis/redis/v8"
+	"im-chatroom-broker/config"
 	"sync"
 )
 
@@ -12,9 +13,9 @@ var Rdb *redis.Client
 func singleton() *redis.Client {
 	once.Do(func() {
 		Rdb = redis.NewClient(&redis.Options{
-			Addr:     "47.95.148.121:6379",
-			Password: "o1trUmeh", // no password set
-			DB:       1,          // use default DB
+			Addr:     config.OP.Redis.Address,
+			Password: config.OP.Redis.Password, // no password set
+			DB:       config.OP.Redis.Db,       // use default DB
 		})
 	})
 

@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/binary"
+	"im-chatroom-broker/config"
 	context2 "im-chatroom-broker/context"
 	err "im-chatroom-broker/error"
 	"im-chatroom-broker/handler"
@@ -27,12 +28,11 @@ var conns sync.Map
 
 func Start() {
 
-	zaplog.InitLogger()
 	//zaplog.Infof("Start ...")
 
 	//wg.Add(1)
 
-	addr := ":33121"
+	addr := ":"+config.OP.Port
 
 	ctx := context.Background()
 

@@ -9,6 +9,7 @@ import (
 	"github.com/apache/rocketmq-client-go/v2/primitive"
 	"github.com/apache/rocketmq-client-go/v2/producer"
 	"golang.org/x/net/context"
+	"im-chatroom-broker/config"
 	"im-chatroom-broker/protocol"
 	"im-chatroom-broker/serializer"
 	"im-chatroom-broker/service"
@@ -24,7 +25,6 @@ const (
 	OneGroup = "imchatroom_one_group_"
 	OneTopic = "imchatroom_one_topic_"
 
-	EndPoint = "192.168.3.242:9876"
 )
 
 var MyName = ""
@@ -37,7 +37,7 @@ func init() {
 
 	os.Setenv("ROCKETMQ_GO_LOG_LEVEL", "error")
 	ip := util.GetBrokerIp()
-	MyName = broker2name(ip + ":33121")
+	MyName = broker2name(ip + ":"+config.OP.Port)
 
 	//createTopic(RoomTopic)
 	//createTopic(OneTopic + MyName)
@@ -48,7 +48,7 @@ func init() {
 
 func newProducer() rocketmq.Producer {
 	p, _ := rocketmq.NewProducer(
-		producer.WithNsResolver(primitive.NewPassthroughResolver([]string{EndPoint})),
+		producer.WithNsResolver(primitive.NewPassthroughResolver([]string{config.OP.RocketMQ.Address})),
 		producer.WithRetry(2),
 	)
 	err := p.Start()
@@ -62,7 +62,7 @@ func newProducer() rocketmq.Producer {
 func newConsumerRoom() rocketmq.PushConsumer {
 	c, _ := rocketmq.NewPushConsumer(
 		consumer.WithGroupName(RoomGroup),
-		consumer.WithNsResolver(primitive.NewPassthroughResolver([]string{EndPoint})),
+		consumer.WithNsResolver(primitive.NewPassthroughResolver([]string{config.OP.RocketMQ.Address})),
 	)
 	err := c.Subscribe(RoomTopic, consumer.MessageSelector{},
 		func(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
@@ -118,7 +118,7 @@ func newConsumerOne() rocketmq.PushConsumer {
 
 	c, _ := rocketmq.NewPushConsumer(
 		consumer.WithGroupName(OneGroup+MyName),
-		consumer.WithNsResolver(primitive.NewPassthroughResolver([]string{EndPoint})),
+		consumer.WithNsResolver(primitive.NewPassthroughResolver([]string{config.OP.RocketMQ.Address})),
 	)
 	err := c.Subscribe(OneTopic+MyName, consumer.MessageSelector{},
 		func(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
@@ -150,7 +150,7 @@ func newConsumerOne() rocketmq.PushConsumer {
 }
 
 func createTopic(topicName string) {
-	endPoint := []string{EndPoint}
+	endPoint := []string{config.OP.RocketMQ.Address}
 	// 创建主题
 	testAdmin, err := admin.NewAdmin(admin.WithResolver(primitive.NewPassthroughResolver(endPoint)))
 	if err != nil {

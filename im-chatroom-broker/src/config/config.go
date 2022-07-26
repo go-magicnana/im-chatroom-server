@@ -51,3 +51,21 @@ type Redis struct {
 	Password string `json:"password"`
 	Db       int    `json:"db"`
 }
+
+
+var OP *Option
+
+
+func NewDefaultOption() *Option {
+	return &Option{
+		Port: "33121",
+		RocketMQ: RocketMQ{
+			Address: "192.168.3.242:9876",
+		},
+		Redis: Redis{
+			Address:  "47.95.148.121:6379",
+			Password: "o1trUmeh",
+			Db:       1,
+		},
+	}
+}
