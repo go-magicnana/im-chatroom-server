@@ -21,4 +21,6 @@ imchatroombroker
 .DS_Store
 target/
 logs/
+bin/
+conf/
 *.iml
