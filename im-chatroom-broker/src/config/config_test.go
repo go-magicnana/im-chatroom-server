@@ -2,14 +2,13 @@ package config
 
 import (
 	"fmt"
-	profile "github.com/lvornholt/go-profiles"
 	"github.com/spf13/viper"
 	"os"
 	"testing"
 )
 
 func TestLoadConf(t *testing.T) {
-	s := LoadConf("../../conf/conf.json")
+	s := LoadConf("../../conf/conf-test.json")
 	fmt.Println(s)
 }
 
@@ -20,5 +19,5 @@ func TestViper(t *testing.T) {
 
 	fmt.Println(endpoint)
 
-	fmt.Println(profile.GetStringValue("rocketmq.endpoint"))
+	//fmt.Println(profile.GetStringValue("rocketmq.endpoint"))
 }

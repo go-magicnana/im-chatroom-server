@@ -1,7 +1,21 @@
 package main
 
-import "im-chatroom-broker/server"
+import "fmt"
 
 func main(){
-	server.Start()
+	//server.Start()
+	fmt.Println("hello world")
+	fmt.Println("hello world")
+	fmt.Println("hello world")
+	fmt.Println("hello world")
+	fmt.Println("hello world")
+	fmt.Println("hello world")
+	fmt.Println("hello world")
+	fmt.Println("hello world")
+	fmt.Println("hello world")
+	fmt.Println("hello world")
+	fmt.Println("hello world")
+	fmt.Println("hello world")
+	fmt.Println("hello world")
+	fmt.Println("hello world")
 }

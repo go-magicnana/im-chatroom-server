@@ -1,0 +1,11 @@
+{
+  "port": "33121",
+  "rocketmq": {
+    "address" :"127.0.0.1:9876"
+  },
+  "redis": {
+    "address":"47.95.148.121:6379",
+    "password":"o1trUmeh",
+    "db":1
+  }
+}
