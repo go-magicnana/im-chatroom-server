@@ -14,7 +14,7 @@ import (
 	"im-chatroom-broker/serializer"
 	"im-chatroom-broker/service"
 	"im-chatroom-broker/util"
-	"os"
+	"im-chatroom-broker/zaplog"
 	"strings"
 )
 
@@ -24,7 +24,6 @@ const (
 
 	OneGroup = "imchatroom_one_group_"
 	OneTopic = "imchatroom_one_topic_"
-
 )
 
 var MyName = ""
@@ -35,9 +34,8 @@ var _consumer2 rocketmq.PushConsumer
 
 func init() {
 
-	os.Setenv("ROCKETMQ_GO_LOG_LEVEL", "error")
 	ip := util.GetBrokerIp()
-	MyName = broker2name(ip + ":"+config.OP.Port)
+	MyName = broker2name(ip + ":" + config.OP.Port)
 
 	//createTopic(RoomTopic)
 	//createTopic(OneTopic + MyName)
@@ -56,6 +54,8 @@ func newProducer() rocketmq.Producer {
 		util.Panic(err)
 	}
 
+	zaplog.Logger.Infof("Init RocketMQ Producer %s", config.OP.RocketMQ.Address)
+
 	return p
 }
 
@@ -67,7 +67,8 @@ func newConsumerRoom() rocketmq.PushConsumer {
 	err := c.Subscribe(RoomTopic, consumer.MessageSelector{},
 		func(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
 
-			fmt.Println(util.CurrentSecond(), "Consumer 消费开始 ", RoomTopic, msgs)
+			zaplog.Logger.Debugf("ConsumeRoom RocketMQ OK %s %s",RoomTopic,msgs)
+
 
 			for i := range msgs {
 
@@ -88,7 +89,7 @@ func newConsumerRoom() rocketmq.PushConsumer {
 
 							m := protocol.PacketMessage{
 								ClientName: v,
-								Packet:  *p,
+								Packet:     *p,
 							}
 
 							SendSync2One(broker, &m)
@@ -111,6 +112,8 @@ func newConsumerRoom() rocketmq.PushConsumer {
 		util.Panic(err)
 	}
 
+	zaplog.Logger.Infof("Init RocketMQ Consumer-Room %s", config.OP.RocketMQ.Address)
+
 	return c
 }
 
@@ -122,6 +125,8 @@ func newConsumerOne() rocketmq.PushConsumer {
 	)
 	err := c.Subscribe(OneTopic+MyName, consumer.MessageSelector{},
 		func(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
+
+			zaplog.Logger.Debugf("ConsumeOne RocketMQ OK %s %s",OneTopic+MyName,msgs)
 
 			for i := range msgs {
 				p := &protocol.PacketMessage{}
@@ -145,6 +150,8 @@ func newConsumerOne() rocketmq.PushConsumer {
 	if err != nil {
 		util.Panic(err)
 	}
+
+	zaplog.Logger.Infof("Init RocketMQ Consumer-One %s", config.OP.RocketMQ.Address)
 
 	return c
 }
@@ -170,9 +177,11 @@ func sendSync(topic string, message []byte) {
 	res, err := _producer.SendSync(context.Background(), msg)
 
 	if err != nil {
-		fmt.Printf("send message error: %s\n", err)
+		zaplog.Logger.Errorf("SendSync RocketMQ Error %s %s", topic, err.Error())
+
 	} else {
-		fmt.Printf("----------- send message success: result=%s\n", res.String())
+		zaplog.Logger.Debugf("SendSync RocketMQ OK %s %s %s", topic, res.String(), string(message))
+
 	}
 }
 

@@ -9,7 +9,6 @@ import (
 	"im-chatroom-broker/handler"
 	"im-chatroom-broker/service"
 	"im-chatroom-broker/zaplog"
-
 	//"im-chatroom-broker/mq"
 	"im-chatroom-broker/protocol"
 	"im-chatroom-broker/serializer"
@@ -28,11 +27,13 @@ var conns sync.Map
 
 func Start() {
 
+	zaplog.InitLogger()
+
 	//zaplog.Infof("Start ...")
 
 	//wg.Add(1)
 
-	addr := ":"+config.OP.Port
+	addr := ":" + config.OP.Port
 
 	ctx := context.Background()
 
@@ -184,11 +185,8 @@ func process(ctx context.Context, cancel context.CancelFunc, c *context2.Context
 		}
 	}
 
-
-
 	if ret != nil {
 		serializer.SingleJsonSerializer().Write(c, ret)
 	}
 
 }
-

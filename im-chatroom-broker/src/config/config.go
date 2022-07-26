@@ -4,22 +4,29 @@ import (
 	"encoding/json"
 	"im-chatroom-broker/util"
 	"os"
+	"sync"
 )
 
-/**
-{
-  "port": "33121",
-  "rocketmq": {
-    "address" :"127.0.0.1:9876",
-  },
-  "redis": {
-    "address":"47.95.148.121:6379",
-    "password":"o1trUmeh",
-    "db":1
-  }
-}
-*/
+var once sync.Once
 
+var OP *Option
+
+func init() {
+
+	os.Setenv("ROCKETMQ_GO_LOG_LEVEL", "error")
+
+
+	OP = Singleton()
+}
+
+func Singleton() *Option {
+	once.Do(func() {
+		OP = LoadConf("../conf/conf.json")
+
+	})
+
+	return OP
+}
 func LoadConf(path string) *Option {
 
 	file, e := os.Open(path)
@@ -51,10 +58,6 @@ type Redis struct {
 	Password string `json:"password"`
 	Db       int    `json:"db"`
 }
-
-
-var OP *Option
-
 
 func NewDefaultOption() *Option {
 	return &Option{
