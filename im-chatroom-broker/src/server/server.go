@@ -55,6 +55,8 @@ func listen(ctx context.Context, addr string) {
 	brokerAddress := util.GetBrokerIp() + addr
 
 	service.SetBrokerInstance(ctx, brokerAddress)
+	service.SetBrokerAlive(ctx, brokerAddress)
+
 
 	go service.AliveTask(ctx, brokerAddress)
 

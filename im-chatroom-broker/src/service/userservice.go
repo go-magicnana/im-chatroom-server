@@ -45,6 +45,11 @@ func GetUserClients(ctx context.Context, userId string) []string {
 	return ret
 }
 
+func DelUserClient(ctx context.Context,userId,clientName string){
+	redis.Rdb.HDel(ctx, UserClients+userId,clientName)
+
+}
+
 func GetUserAuth(ctx context.Context, token string) (*protocol.UserAuth, error) {
 	cmd := redis.Rdb.Get(ctx, UserAuth+token)
 
@@ -63,8 +68,8 @@ func GetUserAuth(ctx context.Context, token string) (*protocol.UserAuth, error) 
 }
 
 func DelUserAuth(ctx context.Context, token string) {
-	redis := redis.Rdb
-	redis.Del(ctx, UserAuth+token)
+	//redis := redis.Rdb
+	//redis.Del(ctx, UserAuth+token)
 }
 
 func SetUserInfo(ctx context.Context, info protocol.UserInfo) {

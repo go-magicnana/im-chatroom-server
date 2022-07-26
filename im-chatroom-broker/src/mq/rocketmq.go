@@ -45,6 +45,7 @@ func init() {
 }
 
 func newProducer() rocketmq.Producer {
+	zaplog.Logger.Infof("Init RocketMQ Producer %s", config.OP.RocketMQ.Address)
 	p, _ := rocketmq.NewProducer(
 		producer.WithNsResolver(primitive.NewPassthroughResolver([]string{config.OP.RocketMQ.Address})),
 		producer.WithRetry(2),
@@ -54,12 +55,12 @@ func newProducer() rocketmq.Producer {
 		util.Panic(err)
 	}
 
-	zaplog.Logger.Infof("Init RocketMQ Producer %s", config.OP.RocketMQ.Address)
 
 	return p
 }
 
 func newConsumerRoom() rocketmq.PushConsumer {
+
 	c, _ := rocketmq.NewPushConsumer(
 		consumer.WithGroupName(RoomGroup),
 		consumer.WithNsResolver(primitive.NewPassthroughResolver([]string{config.OP.RocketMQ.Address})),

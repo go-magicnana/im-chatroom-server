@@ -154,11 +154,14 @@ func Close(ctx context.Context, c *context2.Context) {
 
 	DelUserDevice(ctx, c.ClientName())
 
+	DelUserClient(ctx,c.UserId(),c.ClientName())
+
 	DelRoomUser(ctx, c.RoomId(), c.ClientName())
 
 	DelUserContext(c.ClientName())
 
 	DelBrokerCapacity(ctx, c.Broker(), c.ClientName())
+
 
 	zaplog.Logger.Infof("CloseByClient %s", c.Conn().RemoteAddr())
 
