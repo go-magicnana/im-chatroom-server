@@ -8,7 +8,7 @@ import (
 	"github.com/apache/rocketmq-client-go/v2/producer"
 	"github.com/hashicorp/go-uuid"
 	"golang.org/x/net/context"
-	"im-chatroom-gateway/src/protocol"
+	"im-chatroom-gateway/protocol"
 	"os"
 	"strconv"
 	"sync"

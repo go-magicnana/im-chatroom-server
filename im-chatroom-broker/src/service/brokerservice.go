@@ -1,14 +1,11 @@
 package service
 
 import (
-	"errors"
 	"github.com/robfig/cron/v3"
 	"golang.org/x/net/context"
 	context2 "im-chatroom-broker/context"
 	"im-chatroom-broker/redis"
-	"im-chatroom-broker/util"
 	"im-chatroom-broker/zaplog"
-	"time"
 )
 
 const (
@@ -54,36 +51,36 @@ func DelBrokerInstance(ctx context.Context, broker string) {
 	redis.SRem(ctx, BrokerInstance, broker)
 }
 
-func SetBrokerAlive(ctx context.Context, broker string) {
-	redis := redis.Rdb
-	redis.Set(ctx, BrokerAlive+broker, util.CurrentSecond(), time.Second*70)
-}
-
-func GetBrokerAlive(ctx context.Context, broker string) string {
-	redis := redis.Rdb
-	cmd := redis.Get(ctx, BrokerAlive+broker)
-	if cmd == nil {
-		return ""
-	}
-
-	return cmd.Val()
-}
+//func SetBrokerAlive(ctx context.Context, broker string) {
+//	redis := redis.Rdb
+//	redis.Set(ctx, BrokerAlive+broker, util.CurrentSecond(), time.Second*70)
+//}
+//
+//func GetBrokerAlive(ctx context.Context, broker string) string {
+//	redis := redis.Rdb
+//	cmd := redis.Get(ctx, BrokerAlive+broker)
+//	if cmd == nil {
+//		return ""
+//	}
+//
+//	return cmd.Val()
+//}
 
 func AliveTask(ctx context.Context, broker string) {
 
 	c := cron.New()
 
-	//0/5 * * * * ? 	每5秒钟1次
-	c.AddFunc("*/1 * * * *", func() { //1分钟1次
-		SetBrokerAlive(ctx, broker)
-		zaplog.Logger.Debugf("Task SetBrokerAlive %s", broker)
+	////0/5 * * * * ? 	每5秒钟1次
+	//c.AddFunc("*/1 * * * *", func() { //1分钟1次
+	//	SetBrokerAlive(ctx, broker)
+	//	zaplog.Logger.Debugf("Task SetBrokerAlive %s", broker)
+	//
+	//})
 
-	})
-
-	c.AddFunc("@every 1m", func() {
-		ProbeBroker(ctx)
-		zaplog.Logger.Debugf("Task ProbeBroker %s", broker)
-	})
+	//c.AddFunc("@every 1m", func() {
+	//	ProbeBroker(ctx)
+	//	zaplog.Logger.Debugf("Task ProbeBroker %s", broker)
+	//})
 
 	c.AddFunc("@every 1m", func() {
 		ProbeConn(ctx)
@@ -116,50 +113,45 @@ func ProbeRoom(ctx context.Context) {
 					}
 				}
 			}
-
-			m2, e2 := GetRoomMembers(ctx, v)
-			if (e2 == nil || e2 == redis.Nil) && len(m2) == 0 {
-				DelRoomInstance(ctx, v)
-			}
 		}
 	}
 
 }
 
-func ProbeBroker(ctx context.Context) {
-	redis := redis.Rdb
-	cmd := redis.SMembers(ctx, BrokerInstance)
-
-	if cmd == nil {
-		util.Panic(errors.New("无法启动ProbeBroker任务"))
-	}
-
-	list, e := cmd.Result()
-
-	if e != nil {
-		util.Panic(e)
-	}
-
-	for _, broker := range list {
-		ret := GetBrokerAlive(ctx, broker)
-		if util.IsEmpty(ret) {
-			clients := GetBrokerCapacityAll(ctx, broker)
-
-			if clients != nil && len(clients) > 0 {
-				for _, v := range clients {
-					ud, e := GetUserDevice(ctx, v)
-
-					if e == nil && ud != nil {
-						DelRoomUser(ctx, ud.RoomId, v)
-					}
-				}
-			}
-
-			DelBrokerInstance(ctx, broker)
-			DelBrokerCapacityAll(ctx, broker)
-		}
-	}
-}
+//func ProbeBroker(ctx context.Context) {
+//	redis := redis.Rdb
+//	cmd := redis.SMembers(ctx, BrokerInstance)
+//
+//	if cmd == nil {
+//		util.Panic(errors.New("无法启动ProbeBroker任务"))
+//	}
+//
+//	list, e := cmd.Result()
+//
+//	if e != nil {
+//		util.Panic(e)
+//	}
+//
+//	for _, broker := range list {
+//		ret := GetBrokerAlive(ctx, broker)
+//		if util.IsEmpty(ret) {
+//			clients := GetBrokerCapacityAll(ctx, broker)
+//
+//			if clients != nil && len(clients) > 0 {
+//				for _, v := range clients {
+//					ud, e := GetUserDevice(ctx, v)
+//
+//					if e == nil && ud != nil {
+//						DelRoomUser(ctx, ud.RoomId, v)
+//					}
+//				}
+//			}
+//
+//			DelBrokerInstance(ctx, broker)
+//			DelBrokerCapacityAll(ctx, broker)
+//		}
+//	}
+//}
 
 func ProbeConn(ctx context.Context) {
 	RangeUserContextAll(func(key, value any) bool {

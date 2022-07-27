@@ -1,14 +1,14 @@
-package client2
+package client
 
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"im-chatroom-broker/protocol"
 	"im-chatroom-broker/serializer"
 	"im-chatroom-broker/util"
-	"im-chatroom-broker/zaplog"
 	"net"
 	"os"
 	"sync"
@@ -17,11 +17,11 @@ import (
 
 var wg sync.WaitGroup
 
-func Start() {
+func Start(serverIp string) {
 
 	wg.Add(1)
 
-	server := "localhost:33121"
+	server := serverIp + ":33121"
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", server)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Fatal error: %s", err.Error())
@@ -38,15 +38,15 @@ func Start() {
 
 	go read(conn)
 
-	time.Sleep(time.Second * 10)
+	time.Sleep(time.Second * 5)
 	sendConnect(conn)
 
 	//
-	time.Sleep(time.Second * 10)
+	time.Sleep(time.Second * 5)
 	sendJoinRoom(conn)
 	//
 	//
-	time.Sleep(time.Second * 10)
+	time.Sleep(time.Second * 5)
 	sendPing(conn)
 	wg.Wait()
 }
@@ -86,7 +86,13 @@ func read(conn net.Conn) {
 			return
 		}
 
-		fmt.Println(util.CurrentSecond(), "Read receive server", packet)
+
+		if packet.Header.Command == protocol.CommandContent && packet.Header.Flow == protocol.FlowDeliver {
+			responseBody, _ := json.Marshal(packet.Body)
+			fmt.Println(util.CurrentSecond(), "Read receive server", string(responseBody))
+		}
+
+
 
 	}
 
@@ -115,7 +121,7 @@ func write(conn net.Conn, p *protocol.Packet) error {
 	buffer.Write(bs)
 	_, err := conn.Write(buffer.Bytes())
 
-	zaplog.Logger.Debugf("WriteOK %s %s %d %d %s", conn.RemoteAddr().String(), p.Header.MessageId, p.Header.Command, p.Header.Type, p.Body)
+	//zaplog.Logger.Debugf("WriteOK %s %s %d %d %s", conn.RemoteAddr().String(), p.Header.MessageId, p.Header.Command, p.Header.Type, p.Body)
 
 	if err != nil {
 		return errors.New("write response error +" + err.Error())

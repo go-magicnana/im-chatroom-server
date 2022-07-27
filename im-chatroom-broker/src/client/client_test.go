@@ -1,7 +1,7 @@
-package client2
+package client
 
 import "testing"
 
 func TestStart(t *testing.T) {
-	Start()
+	Start("127.0.0.1")
 }
