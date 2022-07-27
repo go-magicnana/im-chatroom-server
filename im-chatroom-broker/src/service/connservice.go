@@ -15,11 +15,8 @@ func SetUserContext(user *protocol.UserDevice, c *context.Context) {
 
 func DelUserContext(clientName string) (*context.Context, bool) {
 	c, f := GetUserContext(clientName)
-
 	users.Delete(clientName)
-
 	return c, f
-
 }
 
 func GetUserContext(clientName string) (*context.Context, bool) {

@@ -80,7 +80,7 @@ func AliveTask(ctx context.Context, broker string) {
 
 	})
 
-	c.AddFunc("*/2 * * * *", func() {
+	c.AddFunc("@every 1m", func() {
 		ProbeBroker(ctx)
 		zaplog.Logger.Debugf("Task ProbeBroker %s", broker)
 	})
@@ -90,8 +90,39 @@ func AliveTask(ctx context.Context, broker string) {
 		zaplog.Logger.Debugf("Task ProbeConns %s", broker)
 	})
 
+	c.AddFunc("@every 1m", func() {
+		ProbeRoom(ctx)
+		zaplog.Logger.Debugf("Task ProbeRoom %s", broker)
+	})
+
 	c.Start()
 	zaplog.Logger.Infof("Task Running %s", broker)
+
+}
+
+func ProbeRoom(ctx context.Context) {
+	roomList := GetRoomInstance(ctx)
+
+	if roomList != nil && len(roomList) > 0 {
+		for _, v := range roomList {
+			members, err := GetRoomMembers(ctx, v)
+
+			if (err == nil || err == redis.Nil) && len(members) < 10 && len(members) > 0 {
+				for _, vv := range members {
+					userDevice, e := GetUserDevice(ctx, vv)
+
+					if (e == nil || e == redis.Nil) && userDevice == nil {
+						DelRoomUser(ctx, v, vv)
+					}
+				}
+			}
+
+			m2, e2 := GetRoomMembers(ctx, v)
+			if (e2 == nil || e2 == redis.Nil) && len(m2) == 0 {
+				DelRoomInstance(ctx, v)
+			}
+		}
+	}
 
 }
 
@@ -112,9 +143,7 @@ func ProbeBroker(ctx context.Context) {
 	for _, broker := range list {
 		ret := GetBrokerAlive(ctx, broker)
 		if util.IsEmpty(ret) {
-			DelBrokerInstance(ctx, broker)
 			clients := GetBrokerCapacityAll(ctx, broker)
-			DelBrokerCapacityAll(ctx, broker)
 
 			if clients != nil && len(clients) > 0 {
 				for _, v := range clients {
@@ -126,6 +155,8 @@ func ProbeBroker(ctx context.Context) {
 				}
 			}
 
+			DelBrokerInstance(ctx, broker)
+			DelBrokerCapacityAll(ctx, broker)
 		}
 	}
 }
@@ -154,14 +185,13 @@ func Close(ctx context.Context, c *context2.Context) {
 
 	DelUserDevice(ctx, c.ClientName())
 
-	DelUserClient(ctx,c.UserId(),c.ClientName())
+	DelUserClient(ctx, c.UserId(), c.ClientName())
 
 	DelRoomUser(ctx, c.RoomId(), c.ClientName())
 
 	DelUserContext(c.ClientName())
 
 	DelBrokerCapacity(ctx, c.Broker(), c.ClientName())
-
 
 	zaplog.Logger.Infof("CloseByClient %s", c.Conn().RemoteAddr())
 

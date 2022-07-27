@@ -25,6 +25,9 @@ const (
 	CommandGoods   = 6
 	CommandCustom  = 9
 
+	TypeDefaultHeartBeat         = 1101
+	TypeDefaultHeartBeatPassword = "djfjrifgaajg$3ksdfkjsd23843JJJJdsfsdfjergj"
+
 	TypeSignalPing         = 2101
 	TypeSignalLogin        = 2102
 	TypeSignalAlreadyLogin = 2103
@@ -64,7 +67,7 @@ func (p Packet) ToString() string {
 
 type PacketMessage struct {
 	ClientName string `json:"clientName"`
-	Packet  Packet `json:"packet"`
+	Packet     Packet `json:"packet"`
 }
 
 type MessageHeader struct {
@@ -141,6 +144,10 @@ type RoomInfo struct {
 	Blocked string `json:"blocked"`
 }
 
+type MessageBodyDefaultHeartBeat struct {
+	Password string `json:"password"`
+}
+
 type MessageBodySignalLogin struct {
 	Token  string `json:"token"`
 	Device string `json:"device"`
@@ -212,6 +219,13 @@ type MessageBodyContentReply struct {
 	ReplyMessageId string   `json:"replyMessageId"`
 	ReplyUser      UserInfo `json:"replyUser"`
 	Content        string   `json:"content"`
+}
+
+func JsonDefaultHearBeat(any any) *MessageBodyDefaultHeartBeat {
+	bs, _ := json.Marshal(any)
+	ret := MessageBodyDefaultHeartBeat{}
+	json.Unmarshal(bs, &ret)
+	return &ret
 }
 
 func JsonSignalLogin(any any) *MessageBodySignalLogin {

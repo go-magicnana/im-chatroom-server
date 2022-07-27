@@ -5,9 +5,9 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
-	"im-chatroom-broker/context"
-	"im-chatroom-broker/protocol"
-	"im-chatroom-broker/zaplog"
+	"im-chatroom-gateway/protocol"
+	"im-chatroom-gateway/zaplog"
+	"net"
 	"sync"
 )
 
@@ -36,21 +36,21 @@ func (j JsonSerializer) Name() (string, error) {
 	return Name, nil
 }
 
-func (j JsonSerializer) EncodePacket(packet *protocol.Packet, c *context.Context) ([]byte, error) {
+func (j JsonSerializer) EncodePacket(packet *protocol.Packet) ([]byte, error) {
 	bs, e := json.Marshal(packet)
 	return bs, e
 
 }
 
-func (j JsonSerializer) DecodePacket(bytes []byte, c *context.Context) (*protocol.Packet, error) {
+func (j JsonSerializer) DecodePacket(bytes []byte) (*protocol.Packet, error) {
 	message := protocol.Packet{}
 	e := json.Unmarshal(bytes, &message)
 	return &message, e
 }
 
-func (j JsonSerializer) Write(c *context.Context, p *protocol.Packet) error {
+func (j JsonSerializer) Write(conn net.Conn,p *protocol.Packet) error {
 
-	bs, e := j.EncodePacket(p, c)
+	bs, e := j.EncodePacket(p)
 	if bs == nil {
 		return errors.New("empty packet")
 	}
@@ -67,9 +67,9 @@ func (j JsonSerializer) Write(c *context.Context, p *protocol.Packet) error {
 	binary.Write(buffer, binary.BigEndian, length)
 
 	buffer.Write(bs)
-	_, err := c.Conn().Write(buffer.Bytes())
+	_, err := conn.Write(buffer.Bytes())
 
-	zaplog.Logger.Debugf("WriteOK %s %s %d %d %s", c.Conn().RemoteAddr(), p.Header.MessageId,p.Header.Command,p.Header.Type,p.Body)
+	zaplog.Logger.Debugf("WriteOK %s %s %d %d %s", conn.RemoteAddr().String(), p.Header.MessageId,p.Header.Command,p.Header.Type,p.Body)
 
 
 

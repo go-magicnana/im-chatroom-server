@@ -14,8 +14,8 @@ const (
 	RoomInstance string = "imchatroom:room.instance"
 )
 
-func SetRoomInstance(ctx context.Context, roomId string) {
-	redis.Rdb.SAdd(ctx, RoomInstance, roomId)
+func SetRoomInstance(ctx context.Context, roomId string) int64 {
+	return redis.Rdb.SAdd(ctx, RoomInstance, roomId).Val()
 }
 
 // block 0正常；1封禁

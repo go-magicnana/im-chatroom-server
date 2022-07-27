@@ -22,12 +22,17 @@ const (
 	CommandContent = 4
 	CommandGift    = 5
 	CommandGoods   = 6
+	CommandCustom  = 9
 
-	TypeSignalPing       = 2101
-	TypeSignalLogin      = 2102
-	TypeSignalJoinRoom   = 2104
-	TypeSignalLeaveRoom  = 2105
-	TypeSignalChangeRoom = 2106
+	TypeDefaultHeartBeat         = 1101
+	TypeDefaultHeartBeatPassword = "djfjrifgaajg$3ksdfkjsd23843JJJJdsfsdfjergj"
+
+	TypeSignalPing         = 2101
+	TypeSignalLogin        = 2102
+	TypeSignalAlreadyLogin = 2103
+	TypeSignalJoinRoom     = 2104
+	TypeSignalLeaveRoom    = 2105
+	TypeSignalChangeRoom   = 2106
 
 	TypeNoticeJoinRoom    = 3101
 	TypeNoticeLeaveRoom   = 3102
@@ -45,6 +50,8 @@ const (
 	TypeGiftNone = 5101
 
 	TypeGoodsNone = 6101
+
+	TypeCustomNone = 9999
 )
 
 type Packet struct {
@@ -74,6 +81,7 @@ type MessageHeader struct {
 	Message   string   `json:"message"`
 }
 
+
 type UserAuth struct {
 	UserId string `json:"userId"`
 	Name   string `json:"name"`
@@ -92,18 +100,35 @@ type UserInfo struct {
 	Role   string   `json:"role"`
 }
 
+type RoomInfo struct {
+	RoomId  string `json:"roomId"`
+	Name    string `json:"name"`
+	Blocked string `json:"blocked"`
+}
+
+type MessageBodyDefaultHeartBeat struct {
+	Password string `json:"password"`
+}
 
 type MessageBodySignalLogin struct {
 	Token  string `json:"token"`
 	Device string `json:"device"`
 }
 
+type MessageBodySignalLoginRes struct {
+	User UserInfo `json:"user"`
+}
+
 type MessageBodySignalJoinRoom struct {
-	RoomId string `json:"roomId"`
+	RoomId      string `json:"roomId"`
+	Blocked     int    `json:"blocked"`
+	RoomBlocked int    `json:"roomBlocked"`
 }
 
 type MessageBodySignalChangeRoom struct {
-	RoomId string `json:"newRoomId"`
+	RoomId      string `json:"newRoomId"`
+	Blocked     int    `json:"blocked"`
+	RoomBlocked int    `json:"roomBlocked"`
 }
 
 type MessageBodyNoticeJoinRoom struct {
@@ -147,18 +172,22 @@ type MessageBodyContentEmoji struct {
 }
 
 type MessageBodyContentAt struct {
-	AtUserId     string `json:"atUserId"`
-	AtUserName   string `json:"atUserName"`
-	AtUserAvatar string `json:"atUserAvatar"`
-	Content      string `json:"content"`
+	AtUser  UserInfo `json:"atUser"`
+	Content string   `json:"content"`
 }
 
 type MessageBodyContentReply struct {
-	ReplyUserId     string `json:"replyUserId"`
-	ReplyUserName   string `json:"replyUserName"`
-	ReplyUserAvatar string `json:"replyUserAvatar"`
-	ReplyContent    string `json:"replyContent"`
-	Content         string `json:"content"`
+	ReplyContent   string   `json:"replyContent"`
+	ReplyMessageId string   `json:"replyMessageId"`
+	ReplyUser      UserInfo `json:"replyUser"`
+	Content        string   `json:"content"`
+}
+
+func JsonDefaultHearBeat(any any) *MessageBodyDefaultHeartBeat {
+	bs, _ := json.Marshal(any)
+	ret := MessageBodyDefaultHeartBeat{}
+	json.Unmarshal(bs, &ret)
+	return &ret
 }
 
 func JsonSignalLogin(any any) *MessageBodySignalLogin {

@@ -3,11 +3,15 @@ package boot
 import (
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
+	"im-chatroom-gateway/client"
 	"im-chatroom-gateway/controllers"
 	"im-chatroom-gateway/domains"
 )
 
 func Start() {
+
+	go client.Heartbeat()
+
 	//实例化echo对象。
 	e := echo.New()
 	e.Validator = &domains.CustomValidator{}
@@ -42,4 +46,5 @@ func Start() {
 
 	//启动http server, 并监听1324端口，冒号（:）前面为空的意思就是绑定网卡所有Ip地址，本机支持的所有ip地址都可以访问。
 	e.Start(":33110")
+
 }

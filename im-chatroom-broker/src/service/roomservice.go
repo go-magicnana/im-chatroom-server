@@ -12,7 +12,17 @@ const (
 	// set
 	RoomMembers string = "imchatroom:room.members:"
 	RoomBlacks  string = "imchatroom:room.blacks:"
+	RoomInstance  string = "imchatroom:room.instance"
 )
+
+
+func GetRoomInstance(ctx context.Context) []string{
+	return redis.Rdb.SMembers(ctx,RoomInstance).Val()
+}
+
+func DelRoomInstance(ctx context.Context,roomId string){
+	redis.Rdb.SRem(ctx,RoomInstance,roomId)
+}
 
 func SetRoomUser(ctx context.Context, roomId string, clientName string) {
 	redis.Rdb.SAdd(ctx, RoomMembers+roomId, clientName)

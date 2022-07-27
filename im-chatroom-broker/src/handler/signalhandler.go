@@ -8,7 +8,6 @@ import (
 	"im-chatroom-broker/protocol"
 	"im-chatroom-broker/service"
 	"im-chatroom-broker/util"
-	"strconv"
 	"sync"
 )
 
@@ -79,14 +78,14 @@ func login(ctx context.Context, c *context2.Context, packet *protocol.Packet, bo
 		return protocol.NewResponseError(packet, err.AlreadyLogin), nil
 	}
 
-	exist, _ := service.GetUserDevice(ctx, c.ClientName())
+	//exist, _ := service.GetUserDevice(ctx, c.ClientName())
 
-	if exist != nil && util.IsNotEmpty(exist.State) {
-		if exist.State == strconv.FormatInt(int64(context2.Login), 10) {
-
-			alreadyLogin(ctx, c.ClientName(), packet)
-		}
-	}
+	//if exist != nil && util.IsNotEmpty(exist.State) {
+	//	if exist.State == strconv.FormatInt(int64(context2.Login), 10) {
+	//
+	//		alreadyLogin(ctx, c.ClientName(), packet)
+	//	}
+	//}
 
 	service.SetUserClient(ctx, user.UserId, c.ClientName())
 

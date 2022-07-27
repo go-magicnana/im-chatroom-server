@@ -10,12 +10,9 @@ import (
 )
 
 const (
-
-	/*hash*/
 	UserDevice string = "imchatroom:user.device:"
 	UserInfo   string = "imchatroom:user.info:"
 
-	/*string json */
 	UserAuth string = "imchatroom:user.auth:"
 
 	UserClients string = "imchatroom:user.clients:"
@@ -45,8 +42,8 @@ func GetUserClients(ctx context.Context, userId string) []string {
 	return ret
 }
 
-func DelUserClient(ctx context.Context,userId,clientName string){
-	redis.Rdb.HDel(ctx, UserClients+userId,clientName)
+func DelUserClient(ctx context.Context, userId, clientName string) {
+	redis.Rdb.HDel(ctx, UserClients+userId, clientName)
 
 }
 
@@ -135,6 +132,10 @@ func GetUserDevice(ctx context.Context, clientName string) (*protocol.UserDevice
 
 	cmd := redis.Rdb.HGetAll(ctx, UserDevice+clientName)
 	m := cmd.Val()
+
+	if m == nil || len(m) == 0 {
+		return nil, nil
+	}
 
 	userDevice := &protocol.UserDevice{
 		ClientName: clientName,

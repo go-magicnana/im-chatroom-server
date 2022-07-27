@@ -12,6 +12,7 @@ var CouldNotBeSeries = ApiError{1004, "Series Error %s"}
 var StorageResponseNil = ApiError{1005, "Storage response nil"}
 var StorageResponseError = ApiError{1006, "Storage response error %s"}
 var StorageResponseEmpty = ApiError{1007, "Storage response empty"}
+var RoomIdExist = ApiError{1008, "This room is exist"}
 
 type ApiError struct {
 	Code    uint32

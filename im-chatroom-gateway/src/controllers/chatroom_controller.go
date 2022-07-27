@@ -23,10 +23,13 @@ func CreateChatroom(c echo.Context) error {
 
 	id, _ := uuid.GenerateUUID()
 
-	service.SetRoomInstance(context.Background(),id)
+	affected := service.SetRoomInstance(context.Background(), id)
 
-	return write(c, http.StatusOK, NewApiResultOK(id))
-
+	if affected == 1 {
+		return write(c, http.StatusOK, NewApiResultOK(id))
+	} else {
+		return write(c, http.StatusOK, NewApiResultError(apierror.RoomIdExist))
+	}
 }
 
 func randCreator(l int) string {

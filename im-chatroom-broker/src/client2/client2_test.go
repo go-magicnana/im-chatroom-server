@@ -1,8 +1,6 @@
 package client2
 
-import (
-	"testing"
-)
+import "testing"
 
 func TestStart(t *testing.T) {
 	Start()

@@ -58,7 +58,13 @@ func listen(ctx context.Context, addr string) {
 	service.SetBrokerAlive(ctx, brokerAddress)
 
 
+
+
 	go service.AliveTask(ctx, brokerAddress)
+
+	service.ProbeBroker(ctx)
+	service.ProbeConn(ctx)
+	service.ProbeRoom(ctx)
 
 	//mq.Init()
 
@@ -95,6 +101,7 @@ func listen(ctx context.Context, addr string) {
 		}
 	}
 }
+
 
 func read(ctx context.Context, cancel context.CancelFunc, c *context2.Context) {
 
@@ -156,7 +163,7 @@ func read(ctx context.Context, cancel context.CancelFunc, c *context2.Context) {
 			return
 		}
 
-		zaplog.Logger.Debugf("ReadOK %s Go Process %s", c.Conn().RemoteAddr(), packet.ToString())
+		zaplog.Logger.Debugf("ReadOK %s Go Process %s %d %d %s", c.Conn().RemoteAddr(), packet.Header.MessageId, packet.Header.Command,packet.Header.Type,packet.Body)
 		go process(ctx, cancel, c, packet)
 	}
 

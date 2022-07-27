@@ -3,11 +3,12 @@ package client2
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
-	"im-chatroom-broker/context"
 	"im-chatroom-broker/protocol"
 	"im-chatroom-broker/serializer"
 	"im-chatroom-broker/util"
+	"im-chatroom-broker/zaplog"
 	"net"
 	"os"
 	"sync"
@@ -52,10 +53,6 @@ func Start() {
 
 func read(conn net.Conn) {
 
-	c := context.Context{
-		Conn: conn,
-	}
-
 	serializer := serializer.SingleJsonSerializer()
 
 	for {
@@ -63,7 +60,7 @@ func read(conn net.Conn) {
 		fmt.Println(util.CurrentSecond(), "Read waiting server")
 
 		meta := make([]byte, protocol.MetaVersionBytes+protocol.MetaLengthBytes)
-		ml, me := c.Connection.Read(meta)
+		ml, me := conn.Read(meta)
 
 		if me != nil {
 			continue
@@ -81,9 +78,9 @@ func read(conn net.Conn) {
 
 		length := binary.BigEndian.Uint32(meta[1:])
 		body := make([]byte, length)
-		c.Conn().Read(body)
+		conn.Read(body)
 
-		packet, e := serializer.DecodePacket(body, &c)
+		packet, e := serializer.DecodePacket(body, nil)
 
 		if e != nil || packet == nil {
 			return
@@ -95,31 +92,36 @@ func read(conn net.Conn) {
 
 }
 
-func write(packet *protocol.Packet, conn net.Conn) {
+func write(conn net.Conn, p *protocol.Packet) error {
 
-	c := context.Context{
-		Conn: conn,
+	j := serializer.SingleJsonSerializer()
+
+	bs, e := j.EncodePacket(p, nil)
+	if bs == nil {
+		return errors.New("empty packet")
 	}
 
-	serializer := serializer.SingleJsonSerializer()
-
-	bs, e := serializer.EncodePacket(packet, &c)
-
-	if bs == nil || e != nil {
-		return
+	if e != nil {
+		return e
 	}
 
 	buffer := new(bytes.Buffer)
 
-	binary.Write(buffer, binary.BigEndian, serializer.Version())
+	binary.Write(buffer, binary.BigEndian, j.Version())
 
 	length := uint32(len(bs))
 	binary.Write(buffer, binary.BigEndian, length)
 
 	buffer.Write(bs)
-	c.Connection.Write(buffer.Bytes())
+	_, err := conn.Write(buffer.Bytes())
 
-	fmt.Println(util.CurrentSecond(), "Write send server", packet)
+	zaplog.Logger.Debugf("WriteOK %s %s %d %d %s", conn.RemoteAddr().String(), p.Header.MessageId, p.Header.Command, p.Header.Type, p.Body)
+
+	if err != nil {
+		return errors.New("write response error +" + err.Error())
+	} else {
+		return nil
+	}
 
 }
 
@@ -133,6 +135,8 @@ func sendConnect(conn net.Conn) {
 	}
 
 	body := protocol.MessageBodySignalLogin{
+		Token:  "abcd",
+		Device: "MAC",
 		//UserId: "1001",
 		//Name:   "张三丰",
 		//Avatar: "https://img1.baidu.com/it/u=2848117662,2869906655&fm=253&fmt=auto&app=138&f=JPEG?w=500&h=501",
@@ -142,7 +146,7 @@ func sendConnect(conn net.Conn) {
 		Header: header, Body: body,
 	}
 
-	write(&packet, conn)
+	write(conn, &packet)
 
 }
 
@@ -156,15 +160,14 @@ func sendJoinRoom(conn net.Conn) {
 	}
 
 	body := protocol.MessageBodySignalJoinRoom{
-		UserId: "1001",
-		RoomId: "2001",
+		RoomId: "1",
 	}
 
 	packet := protocol.Packet{
 		Header: header, Body: body,
 	}
 
-	write(&packet, conn)
+	write(conn, &packet)
 
 }
 
@@ -176,19 +179,15 @@ func sendPing(conn net.Conn) {
 		Type:      protocol.TypeSignalPing,
 	}
 
-	body := protocol.MessageBodySignalPing{
-		UserId: "1001",
-	}
-
 	packet := protocol.Packet{
-		Header: header, Body: body,
+		Header: header, Body: nil,
 	}
 
-	write(&packet, conn)
+	write(conn, &packet)
 
 	for {
-		time.Sleep(time.Second * 1)
-		write(&packet, conn)
+		time.Sleep(time.Second * 10)
+		write(conn, &packet)
 	}
 
 }
