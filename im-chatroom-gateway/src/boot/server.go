@@ -3,6 +3,7 @@ package boot
 import (
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
+	"im-chatroom-gateway/config"
 	"im-chatroom-gateway/controllers"
 	"im-chatroom-gateway/domains"
 )
@@ -41,5 +42,5 @@ func Start() {
 	e.POST("/imchatroom/notice/unblock_room", controllers.NoticeUnblockRoom)
 
 	//启动http server, 并监听1324端口，冒号（:）前面为空的意思就是绑定网卡所有Ip地址，本机支持的所有ip地址都可以访问。
-	e.Start(":33110")
+	e.Start(":" + config.OP.Port)
 }

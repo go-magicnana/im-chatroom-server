@@ -8,6 +8,7 @@ import (
 	"github.com/apache/rocketmq-client-go/v2/primitive"
 	"github.com/apache/rocketmq-client-go/v2/producer"
 	"golang.org/x/net/context"
+	"im-chatroom-gateway/config"
 	"im-chatroom-gateway/protocol"
 	"im-chatroom-gateway/util"
 	"strings"
@@ -19,8 +20,6 @@ const (
 
 	OneGroup = "imchatroom_one_group_"
 	OneTopic = "imchatroom_one_topic_"
-
-	EndPoint = "192.168.3.242:9876"
 )
 
 var _producer rocketmq.Producer
@@ -35,7 +34,7 @@ func init() {
 
 func newProducer() rocketmq.Producer {
 	p, _ := rocketmq.NewProducer(
-		producer.WithNsResolver(primitive.NewPassthroughResolver([]string{EndPoint})),
+		producer.WithNsResolver(primitive.NewPassthroughResolver([]string{config.OP.RocketMQ.Address})),
 		producer.WithRetry(2),
 	)
 	err := p.Start()
@@ -47,7 +46,7 @@ func newProducer() rocketmq.Producer {
 }
 
 func createTopic(topicName string) {
-	endPoint := []string{EndPoint}
+	endPoint := []string{config.OP.RocketMQ.Address}
 	// 创建主题
 	testAdmin, err := admin.NewAdmin(admin.WithResolver(primitive.NewPassthroughResolver(endPoint)))
 	if err != nil {
