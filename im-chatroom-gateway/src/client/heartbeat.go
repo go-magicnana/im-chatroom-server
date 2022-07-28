@@ -45,6 +45,7 @@ func queryRedisAndStartHeartBeat(ctx context.Context) {
 func doHeartbeat(c context.Context, cancel context.CancelFunc, broker string) {
 
 	if broker == "" {
+		clearBroker(c, broker)
 		return
 	}
 
@@ -93,18 +94,25 @@ func connect(c context.Context, cancel context.CancelFunc, broker string) {
 
 func doReadAndHearBeat(c context.Context, cancel context.CancelFunc, broker string, conn net.Conn, ch chan string) {
 
-	defer close(c, cancel, broker, conn)
+	//defer close(c, cancel, broker, conn)
 
 	go doRead(c, ch, conn)
-	go doHeartBeat(c, conn, ch)
+	go doHeartBeat(c, cancel, broker, conn, ch)
 }
 
-func doHeartBeat(c context.Context, conn net.Conn, ch chan string) {
+func doHeartBeat(c context.Context, cancel context.CancelFunc, broker string, conn net.Conn, ch chan string) {
+
+	defer close(c, cancel, broker, conn)
+
 	for {
 		select {
 		case <-c.Done():
+			zaplog.Logger.Debugf("doHeartBeat return")
 			return
 		case body := <-ch:
+
+			zaplog.Logger.Debugf("doHeartBeat broker %s body %s", broker, body)
+
 			if "QUIT" == body {
 				return
 			} else {
@@ -185,8 +193,8 @@ func doRead(c context.Context, ch chan string, conn net.Conn) {
 }
 
 func close(c context.Context, cancel context.CancelFunc, broker string, conn net.Conn) {
-	cancel()
 	clearBroker(c, broker)
+	cancel()
 	conn.Close()
 	zaplog.Logger.Infof("Heartbeat %s cancel clear close", broker)
 
@@ -197,6 +205,8 @@ func clearBroker(ctx context.Context, broker string) {
 
 	service.DelBrokerInstance(ctx, broker)
 	service.DelBrokerCapacityAll(ctx, broker)
+
+	brokers.Delete(broker)
 }
 
 func sendHeartBeat(conn net.Conn) error {
@@ -248,6 +258,7 @@ func write(conn net.Conn, p *protocol.Packet) error {
 	zaplog.Logger.Debugf("Heartbeat %s WriteOK %s %d %d %s", conn.RemoteAddr().String(), p.Header.MessageId, p.Header.Command, p.Header.Type, p.Body)
 
 	if err != nil {
+		zaplog.Logger.Errorf("Heartbeat %s write %s error %s", conn.RemoteAddr().String(), p.Header.MessageId, err)
 		return errors.New("write response error +" + err.Error())
 	} else {
 		return nil
