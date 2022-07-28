@@ -14,7 +14,7 @@ var OP *Option
 
 func init() {
 
-	//os.Setenv("ROCKETMQ_GO_LOG_LEVEL", "error")
+	os.Setenv("ROCKETMQ_GO_LOG_LEVEL", "error")
 
 	OP = Singleton()
 }

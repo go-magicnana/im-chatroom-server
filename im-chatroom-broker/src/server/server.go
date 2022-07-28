@@ -59,7 +59,7 @@ func listen(ctx context.Context, addr string) {
 	service.SetBrokerInstance(ctx, brokerAddress)
 	//service.SetBrokerAlive(ctx, brokerAddress)
 
-	//go service.AliveTask(ctx, brokerAddress)
+	go service.AliveTask(ctx, brokerAddress)
 	//
 	////service.ProbeBroker(ctx)
 	//service.ProbeConn(ctx)

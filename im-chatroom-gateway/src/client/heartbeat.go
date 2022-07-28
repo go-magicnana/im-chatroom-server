@@ -3,7 +3,6 @@ package client
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
 	"github.com/hashicorp/go-uuid"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
@@ -13,70 +12,190 @@ import (
 	"im-chatroom-gateway/zaplog"
 	"io"
 	"net"
-	"os"
+	"sync"
 	"time"
 )
+
+
+var brokers sync.Map
 
 func Heartbeat() {
 
 	c := context.Background()
 
-	brokers := service.GetBrokerInstance(c)
+	go queryRedisAndStartHeartBeat(c)
 
-	if brokers != nil && len(brokers) > 0 {
+}
 
-		for _, broker := range brokers {
+func queryRedisAndStartHeartBeat(ctx context.Context) {
+	for {
+		brokers := service.GetBrokerInstance(ctx)
 
-			go doHeartbeat(c, broker)
+		if brokers != nil && len(brokers) > 0 {
+
+			for _, broker := range brokers {
+
+				root, beatCancel := context.WithCancel(ctx)
+
+				go doHeartbeat(root, beatCancel, broker)
+			}
 		}
 	}
-
 }
 
-func doHeartbeat(c context.Context, broker string) {
-	if service.Lock(c, broker) {
-		defer service.Unlock(c, broker)
-		connect(c,broker)
+func doHeartbeat(c context.Context, cancel context.CancelFunc, broker string) {
+
+	if broker=="" {
+		return
 	}
+
+	v,b := brokers.Load(broker)
+
+	if v=="OK" || b{
+		return
+	}
+
+	zaplog.Logger.Infof("Heartbeat %s Start", broker)
+	brokers.Store(broker,"OK")
+	connect(c, cancel, broker)
+	zaplog.Logger.Infof("Heartbeat %s Quit", broker)
+
 }
 
-func connect(c context.Context,broker string) {
+func connect(c context.Context, cancel context.CancelFunc, broker string) {
 
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", broker)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Fatal error: %s", err.Error())
-		clearBroker(c,broker)
+		zaplog.Logger.Debugf("Heartbeat %s ResloveError", broker)
+		clearBroker(c, broker)
+		cancel()
 		return
 	}
 
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Fatal error: %s", err.Error())
-		clearBroker(c,broker)
+		zaplog.Logger.Debugf("Heartbeat %s ConnectError", broker)
+		clearBroker(c, broker)
+		cancel()
 		return
 	}
 
-	zaplog.Logger.Infof("Heartbeat %s start ...", broker)
+	zaplog.Logger.Debugf("Heartbeat %s StartBeat", broker)
 
-	for {
-		time.Sleep(time.Second)
-		sendHeartBeat(broker, conn)
+	ch := make(chan string, 1)
+
+	if err := sendHeartBeat(conn); err != nil {
+		close(c, cancel, broker, conn)
 	}
 
+	doReadAndHearBeat(c, cancel, broker, conn, ch)
+
 }
 
-func close(broker string, conn net.Conn) {
-	clearBroker(context.Background(),broker)
+func doReadAndHearBeat(c context.Context, cancel context.CancelFunc, broker string, conn net.Conn, ch chan string) {
+
+	defer close(c, cancel, broker, conn)
+
+	go doRead(c, ch, conn)
+	go doHeartBeat(c, conn, ch)
+}
+
+func doHeartBeat(c context.Context, conn net.Conn, ch chan string) {
+	for {
+		select {
+		case <-c.Done():
+			return
+		case <-ch:
+			time.Sleep(time.Second * 5)
+			if err := sendHeartBeat(conn); err != nil {
+				return
+			} else {
+				break
+			}
+		default:
+			break
+		}
+	}
+}
+
+func doRead(c context.Context, ch chan string, conn net.Conn) {
+
+	for {
+		select {
+		case <-c.Done():
+			return
+		default:
+
+			serializer := serializer.SingleJsonSerializer()
+
+			conn.SetReadDeadline(time.Now().Add(time.Second * 10))
+
+			meta := make([]byte, 5)
+			ml, me := conn.Read(meta)
+
+			switch me.(type) {
+			case *net.OpError:
+				zaplog.Logger.Errorf("Heartbeat %s ReadTimeOut", conn.RemoteAddr().String())
+				return
+			}
+
+			if me == io.EOF {
+
+				zaplog.Logger.Errorf("Heartbeat %s ReadClose", conn.RemoteAddr().String())
+				return
+			}
+
+			if me != nil {
+				zaplog.Logger.Errorf("Heartbeat %s ReadError", conn.RemoteAddr().String())
+				return
+			}
+
+			if ml != 5 {
+				zaplog.Logger.Errorf("Heartbeat %s MetaError", conn.RemoteAddr().String())
+				return
+			}
+
+			version := meta[0]
+
+			if version != serializer.Version() {
+				zaplog.Logger.Errorf("Heartbeat %s VersionError", conn.RemoteAddr().String())
+				return
+			}
+
+			length := binary.BigEndian.Uint32(meta[1:])
+			body := make([]byte, length)
+			conn.Read(body)
+
+			p, _ := serializer.DecodePacket(body)
+
+			zaplog.Logger.Debugf("Heartbeat %s ReadOK %s %d %d %s", conn.RemoteAddr().String(), p.Header.MessageId, p.Header.Command, p.Header.Type, p.Body)
+
+			ch <- p.Body.(string)
+
+		}
+	}
+}
+
+func close(c context.Context, cancel context.CancelFunc, broker string, conn net.Conn) {
+	cancel()
+	clearBroker(c, broker)
 	conn.Close()
+	zaplog.Logger.Infof("Heartbeat %s cancel clear close", broker)
+
 }
 
-func clearBroker(ctx context.Context,broker string){
-	service.DelBrokerInstance(ctx,broker)
-	service.DelBrokerCapacityAll(ctx,broker)
+func clearBroker(ctx context.Context, broker string) {
+	zaplog.Logger.Infof("Heartbeat %s ClearBroker", broker)
+
+	service.DelBrokerInstance(ctx, broker)
+	service.DelBrokerCapacityAll(ctx, broker)
 }
 
-func sendHeartBeat(broker string, conn net.Conn) {
+func sendHeartBeat(conn net.Conn) error {
+	return write(conn, heartBeatPacket())
+}
 
+func heartBeatPacket() *protocol.Packet {
 	uuid, _ := uuid.GenerateUUID()
 
 	header := protocol.MessageHeader{
@@ -90,18 +209,8 @@ func sendHeartBeat(broker string, conn net.Conn) {
 		Password: protocol.TypeDefaultHeartBeatPassword,
 	}
 
-	packet := protocol.Packet{
+	return &protocol.Packet{
 		Header: header, Body: body,
-	}
-
-	write(conn, &packet)
-
-	ret := read(conn)
-
-	if ret.Body.(string) == "OK" {
-
-	} else {
-		close(broker, conn)
 	}
 }
 
@@ -128,7 +237,7 @@ func write(conn net.Conn, p *protocol.Packet) error {
 	buffer.Write(bs)
 	_, err := conn.Write(buffer.Bytes())
 
-	zaplog.Logger.Debugf("WriteOK %s %s %d %d %s", conn.RemoteAddr().String(), p.Header.MessageId, p.Header.Command, p.Header.Type, p.Body)
+	zaplog.Logger.Debugf("Heartbeat %s WriteOK %s %d %d %s", conn.RemoteAddr().String(), p.Header.MessageId, p.Header.Command, p.Header.Type, p.Body)
 
 	if err != nil {
 		return errors.New("write response error +" + err.Error())
@@ -142,38 +251,37 @@ func read(conn net.Conn) *protocol.Packet {
 
 	serializer := serializer.SingleJsonSerializer()
 
-	conn.SetReadDeadline(time.Now().Add(time.Second * 3))
+	conn.SetReadDeadline(time.Now().Add(time.Second * 10))
 
 	meta := make([]byte, 5)
 	ml, me := conn.Read(meta)
 
 	switch me.(type) {
 	case *net.OpError:
-		zaplog.Logger.Errorf("ReadTimeOut %s Close Client", conn.RemoteAddr().String())
+		zaplog.Logger.Errorf("Heartbeat %s ReadTimeOut", conn.RemoteAddr().String())
 		return nil
 	}
 
 	if me == io.EOF {
 
-		zaplog.Logger.Errorf("ReadClose %s Close Client", conn.RemoteAddr().String())
+		zaplog.Logger.Errorf("Heartbeat %s ReadClose", conn.RemoteAddr().String())
 		return nil
 	}
 
 	if me != nil {
-
-		zaplog.Logger.Errorf("ReadError %s To Read Continue", conn.RemoteAddr().String())
+		zaplog.Logger.Errorf("Heartbeat %s ReadError", conn.RemoteAddr().String())
 		return nil
 	}
 
 	if ml != 5 {
-		zaplog.Logger.Errorf("MetaError %s To Read Continue", conn.RemoteAddr().String())
+		zaplog.Logger.Errorf("Heartbeat %s MetaError", conn.RemoteAddr().String())
 		return nil
 	}
 
 	version := meta[0]
 
 	if version != serializer.Version() {
-		zaplog.Logger.Errorf("MetaOfVersionError %s To Read Continue", conn.RemoteAddr().String())
+		zaplog.Logger.Errorf("Heartbeat %s VersionError", conn.RemoteAddr().String())
 		return nil
 	}
 
@@ -181,9 +289,9 @@ func read(conn net.Conn) *protocol.Packet {
 	body := make([]byte, length)
 	conn.Read(body)
 
-	packet, _ := serializer.DecodePacket(body)
+	p, _ := serializer.DecodePacket(body)
 
-	zaplog.Logger.Debugf("ReadOK %s Go Process %s %d %d %s", conn.RemoteAddr().String(), packet.Header.MessageId, packet.Header.Command, packet.Header.Type, packet.Body)
+	zaplog.Logger.Debugf("Heartbeat %s ReadOK %s %d %d %s", conn.RemoteAddr().String(), p.Header.MessageId, p.Header.Command, p.Header.Type, p.Body)
 
-	return packet
+	return p
 }

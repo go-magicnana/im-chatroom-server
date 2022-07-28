@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/robfig/cron/v3"
 	"golang.org/x/net/context"
 	context2 "im-chatroom-broker/context"
 	"im-chatroom-broker/redis"
@@ -64,36 +65,37 @@ func DelBrokerInstance(ctx context.Context, broker string) {
 //	return cmd.Val()
 //}
 //
-//func AliveTask(ctx context.Context, broker string) {
-//
-//	c := cron.New()
-//
-//	////0/5 * * * * ? 	每5秒钟1次
-//	//c.AddFunc("*/1 * * * *", func() { //1分钟1次
-//	//	SetBrokerAlive(ctx, broker)
-//	//	zaplog.Logger.Debugf("Task SetBrokerAlive %s", broker)
-//	//
-//	//})
-//
-//	//c.AddFunc("@every 1m", func() {
-//	//	ProbeBroker(ctx)
-//	//	zaplog.Logger.Debugf("Task ProbeBroker %s", broker)
-//	//})
-//
-//	c.AddFunc("@every 1m", func() {
-//		ProbeConn(ctx)
-//		zaplog.Logger.Debugf("Task ProbeConns %s", broker)
-//	})
-//
-//	c.AddFunc("@every 1m", func() {
-//		ProbeRoom(ctx)
-//		zaplog.Logger.Debugf("Task ProbeRoom %s", broker)
-//	})
-//
-//	c.Start()
-//	zaplog.Logger.Infof("Task Running %s", broker)
-//
-//}
+func AliveTask(ctx context.Context, broker string) {
+
+	c := cron.New()
+
+	////0/5 * * * * ? 	每5秒钟1次
+	//c.AddFunc("*/1 * * * *", func() { //1分钟1次
+	//	SetBrokerAlive(ctx, broker)
+	//	zaplog.Logger.Debugf("Task SetBrokerAlive %s", broker)
+	//
+	//})
+
+	c.AddFunc("@every 1s", func() {
+		//ProbeBroker(ctx)
+		SetBrokerInstance(ctx, broker)
+		zaplog.Logger.Debugf("Task SetBrokerInstance %s", broker)
+	})
+
+	//c.AddFunc("@every 1m", func() {
+	//	ProbeConn(ctx)
+	//	zaplog.Logger.Debugf("Task ProbeConns %s", broker)
+	//})
+	//
+	//c.AddFunc("@every 1m", func() {
+	//	ProbeRoom(ctx)
+	//	zaplog.Logger.Debugf("Task ProbeRoom %s", broker)
+	//})
+
+	c.Start()
+	zaplog.Logger.Infof("Task Running %s", broker)
+
+}
 
 //func ProbeRoom(ctx context.Context) {
 //	roomList := GetRoomInstance(ctx)
@@ -181,7 +183,7 @@ func Close(ctx context.Context, c *context2.Context) {
 
 	DelUserContext(c.ClientName())
 
-	DelRoomClients(c.RoomId(),c.ClientName())
+	DelRoomClients(c.RoomId(), c.ClientName())
 
 	DelBrokerCapacity(ctx, c.Broker(), c.ClientName())
 

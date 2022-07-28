@@ -36,7 +36,7 @@ func (d DefaultHandler) Handle(ctx context.Context, c *context2.Context, packet 
 
 func heartbeat(ctx context.Context, c *context2.Context, packet *protocol.Packet) (*protocol.Packet, error) {
 
-	body := packet.Body.(protocol.MessageBodyDefaultHeartBeat)
+	body := packet.Body.(*protocol.MessageBodyDefaultHeartBeat)
 
 	if body.Password == protocol.TypeDefaultHeartBeatPassword {
 		return protocol.NewResponseOK(packet, "OK"), nil
