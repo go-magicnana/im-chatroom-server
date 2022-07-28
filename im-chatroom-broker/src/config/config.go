@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"im-chatroom-broker/util"
+	"im-chatroom-broker/zaplog"
 	"os"
 	"sync"
 )
@@ -22,7 +23,7 @@ func init() {
 func Singleton() *Option {
 	once.Do(func() {
 		OP = LoadConf("../conf/conf.json")
-
+		zaplog.Logger.Infof("Init Config %v",OP)
 	})
 
 	return OP

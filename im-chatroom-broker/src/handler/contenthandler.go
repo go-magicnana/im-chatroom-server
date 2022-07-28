@@ -6,6 +6,7 @@ import (
 	err "im-chatroom-broker/error"
 	"im-chatroom-broker/mq"
 	"im-chatroom-broker/service"
+	"im-chatroom-broker/zaplog"
 
 	//"im-chatroom-broker/mq"
 	"im-chatroom-broker/protocol"
@@ -74,28 +75,32 @@ func deliver(ctx context.Context, c *context2.Context, packet *protocol.Packet) 
 	packet.Header.Code = err.OK.Code
 	packet.Header.Message = err.OK.Message
 
+
+	zaplog.Logger.Debugf("Deliver RoomTopic %s C:%d T:%d F:%d %v", packet.Header.MessageId, packet.Header.Command, packet.Header.Type, packet.Header.Flow, packet.Body)
+
+
 	if packet.Header.Target == protocol.TargetRoom {
 		mq.SendSync2Room(packet)
 	} else {
 
-		ret := service.GetUserClients(ctx, packet.Header.To)
-
-		for _, v := range ret {
-
-			if v == c.ClientName() {
-				continue
-			}
-
-			msg := &protocol.PacketMessage{
-				ClientName: v,
-				Packet:  *packet,
-			}
-
-			broker, _ := service.GetUserDeviceBroker(ctx, v)
-
-			mq.SendSync2One(broker, msg)
-			//fmt.Println(msg,broker)
-		}
+		//ret := service.GetUserClients(ctx, packet.Header.To)
+		//
+		//for _, v := range ret {
+		//
+		//	if v == c.ClientName() {
+		//		continue
+		//	}
+		//
+		//	msg := &protocol.PacketMessage{
+		//		ClientName: v,
+		//		Packet:  *packet,
+		//	}
+		//
+		//	broker, _ := service.GetUserDeviceBroker(ctx, v)
+		//
+		//	mq.SendSync2One(broker, msg)
+		//	//fmt.Println(msg,broker)
+		//}
 
 	}
 

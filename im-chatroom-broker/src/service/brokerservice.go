@@ -1,7 +1,6 @@
 package service
 
 import (
-	"github.com/robfig/cron/v3"
 	"golang.org/x/net/context"
 	context2 "im-chatroom-broker/context"
 	"im-chatroom-broker/redis"
@@ -9,7 +8,6 @@ import (
 )
 
 const (
-	BrokerAlive    string = "imchatroom:broker.alive:"
 	BrokerCapacity string = "imchatroom:broker.capacity:"
 	BrokerInstance string = "imchatroom:broker.instance"
 )
@@ -65,58 +63,58 @@ func DelBrokerInstance(ctx context.Context, broker string) {
 //
 //	return cmd.Val()
 //}
+//
+//func AliveTask(ctx context.Context, broker string) {
+//
+//	c := cron.New()
+//
+//	////0/5 * * * * ? 	每5秒钟1次
+//	//c.AddFunc("*/1 * * * *", func() { //1分钟1次
+//	//	SetBrokerAlive(ctx, broker)
+//	//	zaplog.Logger.Debugf("Task SetBrokerAlive %s", broker)
+//	//
+//	//})
+//
+//	//c.AddFunc("@every 1m", func() {
+//	//	ProbeBroker(ctx)
+//	//	zaplog.Logger.Debugf("Task ProbeBroker %s", broker)
+//	//})
+//
+//	c.AddFunc("@every 1m", func() {
+//		ProbeConn(ctx)
+//		zaplog.Logger.Debugf("Task ProbeConns %s", broker)
+//	})
+//
+//	c.AddFunc("@every 1m", func() {
+//		ProbeRoom(ctx)
+//		zaplog.Logger.Debugf("Task ProbeRoom %s", broker)
+//	})
+//
+//	c.Start()
+//	zaplog.Logger.Infof("Task Running %s", broker)
+//
+//}
 
-func AliveTask(ctx context.Context, broker string) {
-
-	c := cron.New()
-
-	////0/5 * * * * ? 	每5秒钟1次
-	//c.AddFunc("*/1 * * * *", func() { //1分钟1次
-	//	SetBrokerAlive(ctx, broker)
-	//	zaplog.Logger.Debugf("Task SetBrokerAlive %s", broker)
-	//
-	//})
-
-	//c.AddFunc("@every 1m", func() {
-	//	ProbeBroker(ctx)
-	//	zaplog.Logger.Debugf("Task ProbeBroker %s", broker)
-	//})
-
-	c.AddFunc("@every 1m", func() {
-		ProbeConn(ctx)
-		zaplog.Logger.Debugf("Task ProbeConns %s", broker)
-	})
-
-	c.AddFunc("@every 1m", func() {
-		ProbeRoom(ctx)
-		zaplog.Logger.Debugf("Task ProbeRoom %s", broker)
-	})
-
-	c.Start()
-	zaplog.Logger.Infof("Task Running %s", broker)
-
-}
-
-func ProbeRoom(ctx context.Context) {
-	roomList := GetRoomInstance(ctx)
-
-	if roomList != nil && len(roomList) > 0 {
-		for _, v := range roomList {
-			members, err := GetRoomMembers(ctx, v)
-
-			if (err == nil || err == redis.Nil) && len(members) < 10 && len(members) > 0 {
-				for _, vv := range members {
-					userDevice, e := GetUserDevice(ctx, vv)
-
-					if (e == nil || e == redis.Nil) && userDevice == nil {
-						DelRoomUser(ctx, v, vv)
-					}
-				}
-			}
-		}
-	}
-
-}
+//func ProbeRoom(ctx context.Context) {
+//	roomList := GetRoomInstance(ctx)
+//
+//	if roomList != nil && len(roomList) > 0 {
+//		for _, v := range roomList {
+//			members, err := GetRoomMembers(ctx, v)
+//
+//			if (err == nil || err == redis.Nil) && len(members) < 10 && len(members) > 0 {
+//				for _, vv := range members {
+//					userDevice, e := GetUserDevice(ctx, vv)
+//
+//					if (e == nil || e == redis.Nil) && userDevice == nil {
+//						DelRoomUser(ctx, v, vv)
+//					}
+//				}
+//			}
+//		}
+//	}
+//
+//}
 
 //func ProbeBroker(ctx context.Context) {
 //	redis := redis.Rdb
@@ -153,35 +151,37 @@ func ProbeRoom(ctx context.Context) {
 //	}
 //}
 
-func ProbeConn(ctx context.Context) {
-	RangeUserContextAll(func(key, value any) bool {
-
-		user, e := GetUserDevice(ctx, key.(string))
-
-		if e != nil || user == nil {
-			c, f := DelUserContext(key.(string))
-
-			if f && c != nil {
-				Close(ctx, c)
-			}
-
-		}
-
-		return true
-	})
-}
+//func ProbeConn(ctx context.Context) {
+//	RangeUserContextAll(func(key, value any) bool {
+//
+//		user, e := GetUserDevice(ctx, key.(string))
+//
+//		if e != nil || user == nil {
+//			c, f := DelUserContext(key.(string))
+//
+//			if f && c != nil {
+//				Close(ctx, c)
+//			}
+//
+//		}
+//
+//		return true
+//	})
+//}
 
 func Close(ctx context.Context, c *context2.Context) {
 
-	DelUserInfo(ctx, c.ClientName())
+	//DelUserInfo(ctx, c.UserId())
 
-	DelUserDevice(ctx, c.ClientName())
+	//DelUserDevice(ctx, c.ClientName())
 
 	DelUserClient(ctx, c.UserId(), c.ClientName())
 
-	DelRoomUser(ctx, c.RoomId(), c.ClientName())
+	//DelRoomUser(ctx, c.RoomId(), c.ClientName())
 
 	DelUserContext(c.ClientName())
+
+	DelRoomClients(c.RoomId(),c.ClientName())
 
 	DelBrokerCapacity(ctx, c.Broker(), c.ClientName())
 

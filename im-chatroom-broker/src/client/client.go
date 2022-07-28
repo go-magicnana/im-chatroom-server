@@ -3,12 +3,12 @@ package client
 import (
 	"bytes"
 	"encoding/binary"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"im-chatroom-broker/protocol"
 	"im-chatroom-broker/serializer"
 	"im-chatroom-broker/util"
+	"im-chatroom-broker/zaplog"
 	"net"
 	"os"
 	"sync"
@@ -38,16 +38,18 @@ func Start(serverIp string) {
 
 	go read(conn)
 
-	time.Sleep(time.Second * 5)
-	sendConnect(conn)
+	SendLogin(conn)
+	time.Sleep(time.Second*10)
+
+
+	sendJoinRoom(conn)
+	time.Sleep(time.Second*2)
 
 	//
-	time.Sleep(time.Second * 5)
-	sendJoinRoom(conn)
 	//
-	//
-	time.Sleep(time.Second * 5)
-	sendPing(conn)
+	go sendPing(conn)
+
+	go sendMsg(conn)
 	wg.Wait()
 }
 
@@ -56,8 +58,6 @@ func read(conn net.Conn) {
 	serializer := serializer.SingleJsonSerializer()
 
 	for {
-
-		fmt.Println(util.CurrentSecond(), "Read waiting server")
 
 		meta := make([]byte, protocol.MetaVersionBytes+protocol.MetaLengthBytes)
 		ml, me := conn.Read(meta)
@@ -80,17 +80,20 @@ func read(conn net.Conn) {
 		body := make([]byte, length)
 		conn.Read(body)
 
-		packet, e := serializer.DecodePacket(body, nil)
+		p, e := serializer.DecodePacket(body, nil)
 
-		if e != nil || packet == nil {
+		if e != nil || p == nil {
 			return
 		}
 
 
-		if packet.Header.Command == protocol.CommandContent && packet.Header.Flow == protocol.FlowDeliver {
-			responseBody, _ := json.Marshal(packet.Body)
-			fmt.Println(util.CurrentSecond(), "Read receive server", string(responseBody))
-		}
+		zaplog.Logger.Debugf("ReadOK %s %s C:%d T:%d F:%d %s", conn.RemoteAddr().String(), p.Header.MessageId, p.Header.Command, p.Header.Type,p.Header.Flow, p.Body)
+
+
+		//if packet.Header.Command == protocol.CommandContent && packet.Header.Flow == protocol.FlowDeliver {
+			//responseBody, _ := json.Marshal(packet.Body)
+			//fmt.Println(util.CurrentSecond(), "Read receive server", string(responseBody))
+		//}
 
 
 
@@ -121,7 +124,7 @@ func write(conn net.Conn, p *protocol.Packet) error {
 	buffer.Write(bs)
 	_, err := conn.Write(buffer.Bytes())
 
-	//zaplog.Logger.Debugf("WriteOK %s %s %d %d %s", conn.RemoteAddr().String(), p.Header.MessageId, p.Header.Command, p.Header.Type, p.Body)
+	zaplog.Logger.Debugf("WriteOK %s %s C:%d T:%d F:%d %s", conn.RemoteAddr().String(), p.Header.MessageId, p.Header.Command, p.Header.Type,p.Header.Flow, p.Body)
 
 	if err != nil {
 		return errors.New("write response error +" + err.Error())
@@ -131,7 +134,7 @@ func write(conn net.Conn, p *protocol.Packet) error {
 
 }
 
-func sendConnect(conn net.Conn) {
+func SendLogin(conn net.Conn) {
 
 	header := protocol.MessageHeader{
 		MessageId: "e10adc3949ba59abbe56e057f20f883a",
@@ -189,11 +192,32 @@ func sendPing(conn net.Conn) {
 		Header: header, Body: nil,
 	}
 
-	write(conn, &packet)
+	for {
+		write(conn, &packet)
+		time.Sleep(time.Second * 10)
+	}
+
+}
+
+func sendMsg(conn net.Conn) {
+	header := protocol.MessageHeader{
+		MessageId: "e10adc3949ba59abbe56e057f20f883c",
+		Command:   protocol.CommandContent,
+		Flow:      protocol.FlowUp,
+		Type:      protocol.TypeContentText,
+	}
+
+	body := protocol.MessageBodyContentText{
+		Content: "你好 世界",
+	}
+
+	packet := protocol.Packet{
+		Header: header, Body: body,
+	}
 
 	for {
-		time.Sleep(time.Second * 10)
 		write(conn, &packet)
+		time.Sleep(time.Second * 10)
 	}
 
 }

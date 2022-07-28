@@ -17,7 +17,7 @@ func getEncoder() zapcore.Encoder {
 	encoderConfig := zap.NewProductionEncoderConfig()
 	encoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02 15:04:05.000")
 	encoderConfig.EncodeLevel = zapcore.CapitalLevelEncoder
-	encoderConfig.FunctionKey = "printMethodName"
+	//encoderConfig.FunctionKey = "printMethodName"
 	encoderConfig.ConsoleSeparator = " "
 
 	return zapcore.NewConsoleEncoder(encoderConfig)

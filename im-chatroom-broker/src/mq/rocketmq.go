@@ -39,7 +39,7 @@ func init() {
 
 	_producer = newProducer()
 	_consumer1 = newConsumerRoom()
-	_consumer2 = newConsumerOne()
+	//_consumer2 = newConsumerOne()
 }
 
 func newProducer() rocketmq.Producer {
@@ -70,29 +70,41 @@ func newConsumerRoom() rocketmq.PushConsumer {
 				p := &protocol.Packet{}
 				json.Unmarshal(msgs[i].Body, p)
 
-				zaplog.Logger.Debugf("ConsumeRoom %s %s %v", RoomTopic, msgs[i].MsgId, p)
+				zaplog.Logger.Debugf("CsumRoom %s %s C:%d T:%d F:%d %v %v", RoomTopic, p.Header.MessageId, p.Header.Command, p.Header.Type, p.Header.Flow, p.Body, msgs[i].MsgId)
+
 
 				if p.Header.Target == protocol.TargetRoom {
-					b, e := service.GetRoomMembers(ctx, p.Header.To)
+					go service.RangeRoom(p.Header.To, func(key, value any) bool {
 
-					if e == nil {
-						for _, v := range b {
-
-							broker, _ := service.GetUserDeviceBroker(ctx, v)
-
-							if util.IsEmpty(broker) {
-								continue
-							}
-
-							m := protocol.PacketMessage{
-								ClientName: v,
-								Packet:     *p,
-							}
-
-							SendSync2One(broker, &m)
-
+						c,b:=service.GetUserContext(key.(string))
+						if !b || c==nil {
+							serializer.SingleJsonSerializer().Write(c, p)
 						}
-					}
+						return true
+
+
+					})
+
+					//b, e := service.GetRoomMembers(ctx, p.Header.To)
+					//
+					//if e == nil {
+					//	for _, v := range b {
+					//
+					//		broker, _ := service.GetUserDeviceBroker(ctx, v)
+					//
+					//		if util.IsEmpty(broker) {
+					//			continue
+					//		}
+					//
+					//		m := protocol.PacketMessage{
+					//			ClientName: v,
+					//			Packet:     *p,
+					//		}
+					//
+					//		SendSync2One(broker, &m)
+					//
+					//	}
+					//}
 
 				}
 
@@ -113,6 +125,42 @@ func newConsumerRoom() rocketmq.PushConsumer {
 
 	return c
 }
+
+//
+//func write2queue(queue *context2.Queue,packet *protocol.Packet){
+//	/*
+//
+//	var next *list.Element
+//	for e := l.Front(); e != nil; e = next {
+//	    next = e.Next()
+//	    l.Remove(e)
+//	}
+//
+//	for {
+//	    e := l.Front()
+//	    if e == nil {
+//	            break
+//	    }
+//	    l.Remove(e)
+//	}
+//
+//	 */
+//
+//
+//	for {
+//		e := queue.Front()
+//		if e == nil {
+//			break
+//		}
+//
+//		c,b:=service.GetUserContext(e.(string))
+//		if !b || c==nil {
+//			continue
+//		}
+//
+//		serializer.SingleJsonSerializer().Write(c, packet)
+//	}
+//}
 
 func newConsumerOne() rocketmq.PushConsumer {
 
@@ -176,20 +224,20 @@ func sendSync(topic string, message []byte) (*primitive.SendResult, error) {
 	return res, err
 }
 
-func SendSync2One(broker string, p *protocol.PacketMessage) {
+func SendSync2One(broker string, packet *protocol.PacketMessage) {
 
 	topic := OneTopic + broker2name(broker)
-
-	msg, _ := json.Marshal(p)
+	msg, _ := json.Marshal(packet)
 	_, err := sendSync(topic, msg)
-	zaplog.Logger.Debugf("SendSync %s %s %d %d %d %v %s %v", topic, p.Packet.Header.MessageId, p.Packet.Header.Command, p.Packet.Header.Type, p.Packet.Header.Code, p.Packet.Body, p.ClientName, err)
+	p := packet.Packet
+	zaplog.Logger.Debugf("SendSync %s %s C:%d T:%d F:%d %v %v", topic, p.Header.MessageId, p.Header.Command, p.Header.Type, p.Header.Flow, p.Body, err)
 }
 
 func SendSync2Room(p *protocol.Packet) {
 
 	msg, _ := json.Marshal(p)
 	_, err := sendSync(RoomTopic, msg)
-	zaplog.Logger.Debugf("SendSync %s %s %d %d %d %v %v", RoomTopic, p.Header.MessageId, p.Header.Command, p.Header.Type, p.Header.Code, p.Body, err)
+	zaplog.Logger.Debugf("SendSync %s %s C:%d T:%d F:%d %v %v", RoomTopic, p.Header.MessageId, p.Header.Command, p.Header.Type, p.Header.Flow, p.Body, err)
 }
 
 func broker2name(broker string) string {

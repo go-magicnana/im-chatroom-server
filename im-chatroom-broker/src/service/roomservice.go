@@ -16,30 +16,30 @@ const (
 )
 
 
-func GetRoomInstance(ctx context.Context) []string{
-	return redis.Rdb.SMembers(ctx,RoomInstance).Val()
-}
+//func GetRoomInstance(ctx context.Context) []string{
+//	return redis.Rdb.SMembers(ctx,RoomInstance).Val()
+//}
+//
+//func DelRoomInstance(ctx context.Context,roomId string){
+//	redis.Rdb.SRem(ctx,RoomInstance,roomId)
+//}
 
-func DelRoomInstance(ctx context.Context,roomId string){
-	redis.Rdb.SRem(ctx,RoomInstance,roomId)
-}
-
-func SetRoomUser(ctx context.Context, roomId string, clientName string) {
-	redis.Rdb.SAdd(ctx, RoomMembers+roomId, clientName)
-}
-
-func GetRoomMembers(ctx context.Context, roomId string) ([]string, error) {
-	cmd := redis.Rdb.SMembers(ctx, RoomMembers+roomId)
-	m, e := cmd.Result()
-	if e != nil {
-		return nil, e
-	}
-	return m, nil
-}
-
-func DelRoomUser(ctx context.Context, roomId string, clientName string) {
-	redis.Rdb.SRem(ctx, RoomMembers+roomId, clientName)
-}
+//func SetRoomUser(ctx context.Context, roomId string, clientName string) {
+//	redis.Rdb.SAdd(ctx, RoomMembers+roomId, clientName)
+//}
+//
+//func GetRoomMembers(ctx context.Context, roomId string) ([]string, error) {
+//	cmd := redis.Rdb.SMembers(ctx, RoomMembers+roomId)
+//	m, e := cmd.Result()
+//	if e != nil {
+//		return nil, e
+//	}
+//	return m, nil
+//}
+//
+//func DelRoomUser(ctx context.Context, roomId string, clientName string) {
+//	redis.Rdb.SRem(ctx, RoomMembers+roomId, clientName)
+//}
 
 func GetRoomBlocked(ctx context.Context, roomId string) int {
 	cmd := redis.Rdb.HGet(ctx, RoomInfo+roomId, "blocked")

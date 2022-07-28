@@ -3,6 +3,7 @@ package redis
 import (
 	"github.com/go-redis/redis/v8"
 	"im-chatroom-broker/config"
+	"im-chatroom-broker/zaplog"
 	"sync"
 )
 
@@ -17,6 +18,8 @@ func singleton() *redis.Client {
 			Password: config.OP.Redis.Password, // no password set
 			DB:       config.OP.Redis.Db,       // use default DB
 		})
+		zaplog.Logger.Infof("Init Redis %v",config.OP)
+
 	})
 
 	return Rdb

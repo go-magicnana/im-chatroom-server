@@ -69,7 +69,8 @@ func (j JsonSerializer) Write(c *context.Context, p *protocol.Packet) error {
 	buffer.Write(bs)
 	_, err := c.Conn().Write(buffer.Bytes())
 
-	zaplog.Logger.Debugf("WriteOK %s %s %d %d %s", c.Conn().RemoteAddr(), p.Header.MessageId,p.Header.Command,p.Header.Type,p.Body)
+	zaplog.Logger.Debugf("WriteOK %s %s C:%d T:%d F:%d %s", c.Conn().RemoteAddr().String(), p.Header.MessageId, p.Header.Command, p.Header.Type,p.Header.Flow, p.Body)
+
 
 
 

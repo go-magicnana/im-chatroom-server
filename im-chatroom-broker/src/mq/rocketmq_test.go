@@ -103,5 +103,5 @@ func TestRocket(t *testing.T) {
 }
 
 func TestMQ2(t *testing.T) {
-	SendSync2Room(nil)
+	createTopic("192_168_1_73_33121")
 }

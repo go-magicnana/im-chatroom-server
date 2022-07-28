@@ -15,7 +15,6 @@ import (
 	"im-chatroom-broker/util"
 	"io"
 	"net"
-	"sync"
 	"time"
 )
 
@@ -23,7 +22,6 @@ var counter = 100
 
 //var wg sync.WaitGroup
 
-var conns sync.Map
 
 func Start() {
 
@@ -60,11 +58,11 @@ func listen(ctx context.Context, addr string) {
 
 
 
-	go service.AliveTask(ctx, brokerAddress)
-
-	//service.ProbeBroker(ctx)
-	service.ProbeConn(ctx)
-	service.ProbeRoom(ctx)
+	//go service.AliveTask(ctx, brokerAddress)
+	//
+	////service.ProbeBroker(ctx)
+	//service.ProbeConn(ctx)
+	//service.ProbeRoom(ctx)
 
 	//mq.Init()
 
@@ -163,7 +161,8 @@ func read(ctx context.Context, cancel context.CancelFunc, c *context2.Context) {
 			return
 		}
 
-		zaplog.Logger.Debugf("ReadOK %s Go Process %s %d %d %s", c.Conn().RemoteAddr(), packet.Header.MessageId, packet.Header.Command,packet.Header.Type,packet.Body)
+		zaplog.Logger.Debugf("ReadOK %s %s C:%d T:%d F:%d %s", c.Conn().RemoteAddr().String(), packet.Header.MessageId, packet.Header.Command, packet.Header.Type,packet.Header.Flow, packet.Body)
+
 		go process(ctx, cancel, c, packet)
 	}
 
