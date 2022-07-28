@@ -76,10 +76,9 @@ func deliver(ctx context.Context, c *context2.Context, packet *protocol.Packet) 
 	packet.Header.Message = err.OK.Message
 
 
-	zaplog.Logger.Debugf("Deliver RoomTopic %s C:%d T:%d F:%d %v", packet.Header.MessageId, packet.Header.Command, packet.Header.Type, packet.Header.Flow, packet.Body)
-
-
 	if packet.Header.Target == protocol.TargetRoom {
+		zaplog.Logger.Debugf("Deliver RoomTopic %s C:%d T:%d F:%d %v", packet.Header.MessageId, packet.Header.Command, packet.Header.Type, packet.Header.Flow, packet.Body)
+
 		mq.SendSync2Room(packet)
 	} else {
 

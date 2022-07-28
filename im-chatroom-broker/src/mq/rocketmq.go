@@ -72,16 +72,14 @@ func newConsumerRoom() rocketmq.PushConsumer {
 
 				zaplog.Logger.Debugf("CsumRoom %s %s C:%d T:%d F:%d %v %v", RoomTopic, p.Header.MessageId, p.Header.Command, p.Header.Type, p.Header.Flow, p.Body, msgs[i].MsgId)
 
-
 				if p.Header.Target == protocol.TargetRoom {
 					go service.RangeRoom(p.Header.To, func(key, value any) bool {
 
-						c,b:=service.GetUserContext(key.(string))
-						if !b || c==nil {
+						c, b := service.GetUserContext(key.(string))
+						if b && c != nil {
 							serializer.SingleJsonSerializer().Write(c, p)
 						}
 						return true
-
 
 					})
 
@@ -233,11 +231,12 @@ func SendSync2One(broker string, packet *protocol.PacketMessage) {
 	zaplog.Logger.Debugf("SendSync %s %s C:%d T:%d F:%d %v %v", topic, p.Header.MessageId, p.Header.Command, p.Header.Type, p.Header.Flow, p.Body, err)
 }
 
-func SendSync2Room(p *protocol.Packet) {
+func SendSync2Room(p *protocol.Packet) string {
 
 	msg, _ := json.Marshal(p)
-	_, err := sendSync(RoomTopic, msg)
-	zaplog.Logger.Debugf("SendSync %s %s C:%d T:%d F:%d %v %v", RoomTopic, p.Header.MessageId, p.Header.Command, p.Header.Type, p.Header.Flow, p.Body, err)
+	ret, _ := sendSync(RoomTopic, msg)
+	zaplog.Logger.Debugf("SendSync %s %s C:%d T:%d F:%d %v %v", RoomTopic, p.Header.MessageId, p.Header.Command, p.Header.Type, p.Header.Flow, p.Body, ret.MsgID)
+	return ret.MsgID
 }
 
 func broker2name(broker string) string {

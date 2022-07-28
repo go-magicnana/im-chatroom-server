@@ -39,11 +39,10 @@ func Start(serverIp string) {
 	go read(conn)
 
 	SendLogin(conn)
-	time.Sleep(time.Second*10)
-
+	time.Sleep(time.Second * 10)
 
 	sendJoinRoom(conn)
-	time.Sleep(time.Second*2)
+	time.Sleep(time.Second * 2)
 
 	//
 	//
@@ -86,16 +85,12 @@ func read(conn net.Conn) {
 			return
 		}
 
-
-		zaplog.Logger.Debugf("ReadOK %s %s C:%d T:%d F:%d %s", conn.RemoteAddr().String(), p.Header.MessageId, p.Header.Command, p.Header.Type,p.Header.Flow, p.Body)
-
+		zaplog.Logger.Debugf("ReadOK %s %s C:%d T:%d F:%d %s", conn.RemoteAddr().String(), p.Header.MessageId, p.Header.Command, p.Header.Type, p.Header.Flow, p.Body)
 
 		//if packet.Header.Command == protocol.CommandContent && packet.Header.Flow == protocol.FlowDeliver {
-			//responseBody, _ := json.Marshal(packet.Body)
-			//fmt.Println(util.CurrentSecond(), "Read receive server", string(responseBody))
+		//responseBody, _ := json.Marshal(packet.Body)
+		//fmt.Println(util.CurrentSecond(), "Read receive server", string(responseBody))
 		//}
-
-
 
 	}
 
@@ -124,7 +119,7 @@ func write(conn net.Conn, p *protocol.Packet) error {
 	buffer.Write(bs)
 	_, err := conn.Write(buffer.Bytes())
 
-	zaplog.Logger.Debugf("WriteOK %s %s C:%d T:%d F:%d %s", conn.RemoteAddr().String(), p.Header.MessageId, p.Header.Command, p.Header.Type,p.Header.Flow, p.Body)
+	zaplog.Logger.Debugf("WriteOK %s %s C:%d T:%d F:%d %s", conn.RemoteAddr().String(), p.Header.MessageId, p.Header.Command, p.Header.Type, p.Header.Flow, p.Body)
 
 	if err != nil {
 		return errors.New("write response error +" + err.Error())
@@ -201,10 +196,11 @@ func sendPing(conn net.Conn) {
 
 func sendMsg(conn net.Conn) {
 	header := protocol.MessageHeader{
-		MessageId: "e10adc3949ba59abbe56e057f20f883c",
+		MessageId: "e10adc3949ba59abbe56e057f20f883D",
 		Command:   protocol.CommandContent,
 		Flow:      protocol.FlowUp,
 		Type:      protocol.TypeContentText,
+		Target:    protocol.TargetRoom,
 	}
 
 	body := protocol.MessageBodyContentText{

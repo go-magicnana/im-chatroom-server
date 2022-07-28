@@ -8,7 +8,7 @@ import (
 func TestStart(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
-	for i := 0; i < 1; i++ {
+	for i := 0; i < 2; i++ {
 		go Start("127.0.0.1")
 	}
 	wg.Wait()
