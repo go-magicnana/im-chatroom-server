@@ -16,14 +16,13 @@ func init() {
 
 	//os.Setenv("ROCKETMQ_GO_LOG_LEVEL", "error")
 
-
 	OP = Singleton()
 }
 
 func Singleton() *Option {
 	once.Do(func() {
 		OP = LoadConf("../conf/conf.json")
-		zaplog.Logger.Infof("Init Config %v",OP)
+		zaplog.Logger.Infof("Init Config %v", OP)
 	})
 
 	return OP
@@ -46,6 +45,7 @@ func LoadConf(path string) *Option {
 }
 
 type Option struct {
+	Ip       string   `json:"ip"`
 	Port     string   `json:"port"`
 	RocketMQ RocketMQ `json:"rocketmq"`
 	Redis    Redis    `json:"redis"`

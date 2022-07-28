@@ -22,7 +22,6 @@ var counter = 100
 
 //var wg sync.WaitGroup
 
-
 func Start() {
 
 	zaplog.InitLogger()
@@ -50,13 +49,15 @@ func listen(ctx context.Context, addr string) {
 
 	util.Panic(err)
 
-	brokerAddress := util.GetBrokerIp() + addr
+	var brokerAddress string
+	if util.IsNotEmpty(config.OP.Ip) {
+		brokerAddress = config.OP.Ip + addr
+	} else {
+		brokerAddress = util.GetBrokerIp() + addr
+	}
 
 	service.SetBrokerInstance(ctx, brokerAddress)
 	//service.SetBrokerAlive(ctx, brokerAddress)
-
-
-
 
 	//go service.AliveTask(ctx, brokerAddress)
 	//
@@ -99,7 +100,6 @@ func listen(ctx context.Context, addr string) {
 		}
 	}
 }
-
 
 func read(ctx context.Context, cancel context.CancelFunc, c *context2.Context) {
 
@@ -161,7 +161,7 @@ func read(ctx context.Context, cancel context.CancelFunc, c *context2.Context) {
 			return
 		}
 
-		zaplog.Logger.Debugf("ReadOK %s %s C:%d T:%d F:%d %s", c.Conn().RemoteAddr().String(), packet.Header.MessageId, packet.Header.Command, packet.Header.Type,packet.Header.Flow, packet.Body)
+		zaplog.Logger.Debugf("ReadOK %s %s C:%d T:%d F:%d %s", c.Conn().RemoteAddr().String(), packet.Header.MessageId, packet.Header.Command, packet.Header.Type, packet.Header.Flow, packet.Body)
 
 		go process(ctx, cancel, c, packet)
 	}
