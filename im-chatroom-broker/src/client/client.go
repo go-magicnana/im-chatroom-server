@@ -1,23 +1,27 @@
 package client
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"im-chatroom-broker/protocol"
 	"im-chatroom-broker/serializer"
 	"im-chatroom-broker/util"
 	"im-chatroom-broker/zaplog"
+	"math/rand"
 	"net"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 )
 
 var wg sync.WaitGroup
 
-func Start(serverIp string) {
+func Start(role, serverIp string) {
 
 	wg.Add(1)
 
@@ -48,11 +52,20 @@ func Start(serverIp string) {
 	//
 	go sendPing(conn)
 
-	go sendMsg(conn)
+	if "send" == role {
+		go sendMsg(conn)
+	}
 	wg.Wait()
 }
 
 func read(conn net.Conn) {
+
+	filePath := "~/work/" + conn.LocalAddr().String() + ".txt"
+	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		fmt.Println("文件打开失败", err)
+	}
+	defer file.Close()
 
 	serializer := serializer.SingleJsonSerializer()
 
@@ -87,10 +100,16 @@ func read(conn net.Conn) {
 
 		zaplog.Logger.Debugf("ReadOK %s %s C:%d T:%d F:%d %s", conn.RemoteAddr().String(), p.Header.MessageId, p.Header.Command, p.Header.Type, p.Header.Flow, p.Body)
 
-		//if packet.Header.Command == protocol.CommandContent && packet.Header.Flow == protocol.FlowDeliver {
-		//responseBody, _ := json.Marshal(packet.Body)
-		//fmt.Println(util.CurrentSecond(), "Read receive server", string(responseBody))
-		//}
+		if p.Header.Command == protocol.CommandContent && p.Header.Flow == protocol.FlowDeliver {
+			responseBody, _ := json.Marshal(p.Body)
+			fmt.Println(util.CurrentSecond(), "Read receive server", string(responseBody))
+
+			write := bufio.NewWriter(file)
+			hi := protocol.JsonContentText(p.Body)
+			write.WriteString(p.Header.From.UserId + ":" + hi.Content + " \n")
+			//Flush将缓存的文件真正写入到文件中
+			write.Flush()
+		}
 
 	}
 
@@ -132,7 +151,7 @@ func write(conn net.Conn, p *protocol.Packet) error {
 func SendLogin(conn net.Conn) {
 
 	header := protocol.MessageHeader{
-		MessageId: "e10adc3949ba59abbe56e057f20f883a",
+		MessageId: "LoginMessageId-" + randCreator(8),
 		Command:   protocol.CommandSignal,
 		Flow:      protocol.FlowUp,
 		Type:      protocol.TypeSignalLogin,
@@ -157,7 +176,7 @@ func SendLogin(conn net.Conn) {
 func sendJoinRoom(conn net.Conn) {
 
 	header := protocol.MessageHeader{
-		MessageId: "e10adc3949ba59abbe56e057f20f883b",
+		MessageId: "JoinRoomMessageId-" + randCreator(8),
 		Command:   protocol.CommandSignal,
 		Flow:      protocol.FlowUp,
 		Type:      protocol.TypeSignalJoinRoom,
@@ -175,9 +194,26 @@ func sendJoinRoom(conn net.Conn) {
 
 }
 
+func randCreator(l int) string {
+	str := "0123456789abcdefghigklmnopqrstuvwxyz"
+	strList := []byte(str)
+
+	result := []byte{}
+	i := 0
+
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	for i < l {
+		new := strList[r.Intn(len(strList))]
+		result = append(result, new)
+		i = i + 1
+	}
+	return string(result)
+}
+
 func sendPing(conn net.Conn) {
+
 	header := protocol.MessageHeader{
-		MessageId: "e10adc3949ba59abbe56e057f20f883c",
+		MessageId: "PingMessageId-" + randCreator(8),
 		Command:   protocol.CommandSignal,
 		Flow:      protocol.FlowUp,
 		Type:      protocol.TypeSignalPing,
@@ -195,23 +231,25 @@ func sendPing(conn net.Conn) {
 }
 
 func sendMsg(conn net.Conn) {
-	header := protocol.MessageHeader{
-		MessageId: "e10adc3949ba59abbe56e057f20f883D",
-		Command:   protocol.CommandContent,
-		Flow:      protocol.FlowUp,
-		Type:      protocol.TypeContentText,
-		Target:    protocol.TargetRoom,
-	}
+	for i := 0; i < 10000; i++ {
 
-	body := protocol.MessageBodyContentText{
-		Content: "你好 世界",
-	}
+		header := protocol.MessageHeader{
+			MessageId: "ContentMessageId-" + randCreator(8),
+			Command:   protocol.CommandContent,
+			Flow:      protocol.FlowUp,
+			Type:      protocol.TypeContentText,
+			Target:    protocol.TargetRoom,
+			To:        "1",
+		}
 
-	packet := protocol.Packet{
-		Header: header, Body: body,
-	}
+		body := protocol.MessageBodyContentText{
+			Content: "Hi " + strconv.Itoa(i),
+		}
 
-	for {
+		packet := protocol.Packet{
+			Header: header, Body: body,
+		}
+
 		write(conn, &packet)
 		time.Sleep(time.Second * 10)
 	}
