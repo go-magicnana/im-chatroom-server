@@ -140,7 +140,7 @@ func joinRoom(ctx context.Context, c *context2.Context, packet *protocol.Packet,
 
 	//service.SetRoomUser(ctx, body.RoomId, c.ClientName())
 
-	noticeJoinRoom(ctx, c, body.RoomId)
+	noticeJoinRoom(ctx, c, packet.Header.MessageId,body.RoomId)
 
 	body.RoomBlocked = service.GetRoomBlocked(ctx, body.RoomId)
 	body.Blocked = service.GetRoomMemberBlocked(ctx, body.RoomId, c.UserId())
@@ -159,7 +159,7 @@ func leaveRoom(ctx context.Context, c *context2.Context, packet *protocol.Packet
 	//
 	//service.DelRoomUser(ctx, userDevice.RoomId, c.ClientName())
 
-	noticeLeaveRoom(ctx, c, roomId)
+	noticeLeaveRoom(ctx, c, packet.Header.MessageId,roomId)
 
 	return protocol.NewResponseOK(packet, nil), nil
 }
@@ -183,8 +183,8 @@ func changeRoom(ctx context.Context, c *context2.Context, packet *protocol.Packe
 	//
 	//service.SetUserDevice2InRoom(ctx, c.ClientName(), body.RoomId)
 
-	noticeLeaveRoom(ctx, c, oldRoomId)
-	noticeJoinRoom(ctx, c, body.RoomId)
+	noticeLeaveRoom(ctx, c, packet.Header.MessageId,oldRoomId)
+	noticeJoinRoom(ctx, c, packet.Header.MessageId,body.RoomId)
 
 	body.RoomBlocked = service.GetRoomBlocked(ctx, body.RoomId)
 	body.Blocked = service.GetRoomMemberBlocked(ctx, body.RoomId, c.UserId())

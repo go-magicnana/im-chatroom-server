@@ -38,32 +38,32 @@ import (
 //
 //}
 
-func noticeJoinRoom(ctx context.Context, c *context2.Context, roomId string) {
+func noticeJoinRoom(ctx context.Context, c *context2.Context, msgId,roomId string) {
 
 	if util.IsEmpty(roomId) {
 		return
 	}
 
-	packet := buildNoticePacket(roomId, c.UserId(), protocol.TypeNoticeJoinRoom)
+	packet := buildNoticePacket(msgId,roomId, c.UserId(), protocol.TypeNoticeJoinRoom)
 
 	deliver(ctx, c, &packet)
 }
 
-func noticeLeaveRoom(ctx context.Context, c *context2.Context, roomId string) {
+func noticeLeaveRoom(ctx context.Context, c *context2.Context, msgId,roomId string) {
 
 	if util.IsEmpty(roomId) {
 		return
 	}
 
-	packet := buildNoticePacket(roomId, c.UserId(), protocol.TypeNoticeLeaveRoom)
+	packet := buildNoticePacket(msgId,roomId, c.UserId(), protocol.TypeNoticeLeaveRoom)
 
 	deliver(ctx, c, &packet)
 }
 
-func buildNoticePacket(roomId string, userId string, noticeType uint32) protocol.Packet {
+func buildNoticePacket(msgId,roomId string, userId string, noticeType uint32) protocol.Packet {
 	packet := protocol.Packet{
 		Header: protocol.MessageHeader{
-			MessageId: "",
+			MessageId: msgId,
 			Command:   protocol.CommandNotice,
 			Target:    protocol.TargetRoom,
 			To:        roomId,
