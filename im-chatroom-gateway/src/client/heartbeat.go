@@ -16,14 +16,13 @@ import (
 	"time"
 )
 
-
 var brokers sync.Map
 
 func Heartbeat() {
 
 	c := context.Background()
 
-	go queryRedisAndStartHeartBeat(c)
+	queryRedisAndStartHeartBeat(c)
 
 }
 
@@ -45,18 +44,18 @@ func queryRedisAndStartHeartBeat(ctx context.Context) {
 
 func doHeartbeat(c context.Context, cancel context.CancelFunc, broker string) {
 
-	if broker=="" {
+	if broker == "" {
 		return
 	}
 
-	v,b := brokers.Load(broker)
+	v, b := brokers.Load(broker)
 
-	if v=="OK" || b{
+	if v == "OK" || b {
 		return
 	}
 
 	zaplog.Logger.Infof("Heartbeat %s Start", broker)
-	brokers.Store(broker,"OK")
+	brokers.Store(broker, "OK")
 	connect(c, cancel, broker)
 	zaplog.Logger.Infof("Heartbeat %s Quit", broker)
 
@@ -105,15 +104,19 @@ func doHeartBeat(c context.Context, conn net.Conn, ch chan string) {
 		select {
 		case <-c.Done():
 			return
-		case <-ch:
-			time.Sleep(time.Second * 5)
-			if err := sendHeartBeat(conn); err != nil {
+		case body := <-ch:
+			if "QUIT" == body {
 				return
 			} else {
-				break
+				time.Sleep(time.Second * 5)
+				if err := sendHeartBeat(conn); err != nil {
+					return
+				} else {
+					continue
+				}
 			}
 		default:
-			break
+			continue
 		}
 	}
 }
@@ -136,22 +139,26 @@ func doRead(c context.Context, ch chan string, conn net.Conn) {
 			switch me.(type) {
 			case *net.OpError:
 				zaplog.Logger.Errorf("Heartbeat %s ReadTimeOut", conn.RemoteAddr().String())
+				ch <- "QUIT"
 				return
 			}
 
 			if me == io.EOF {
 
 				zaplog.Logger.Errorf("Heartbeat %s ReadClose", conn.RemoteAddr().String())
+				ch <- "QUIT"
 				return
 			}
 
 			if me != nil {
 				zaplog.Logger.Errorf("Heartbeat %s ReadError", conn.RemoteAddr().String())
+				ch <- "QUIT"
 				return
 			}
 
 			if ml != 5 {
 				zaplog.Logger.Errorf("Heartbeat %s MetaError", conn.RemoteAddr().String())
+				ch <- "QUIT"
 				return
 			}
 
@@ -159,6 +166,7 @@ func doRead(c context.Context, ch chan string, conn net.Conn) {
 
 			if version != serializer.Version() {
 				zaplog.Logger.Errorf("Heartbeat %s VersionError", conn.RemoteAddr().String())
+				ch <- "QUIT"
 				return
 			}
 
