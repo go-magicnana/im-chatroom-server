@@ -1,4 +1,4 @@
-MAIN_CLASS=imchatroomgateway.go
+MAIN_CLASS=gateway.go
 APP_NAME=gateway
 CURRENT_PATH:=`pwd`
 
@@ -23,7 +23,7 @@ help:
 
 all:clean resources windows linux darwin
 
-build:clean resources linux
+build:clean resources linux zip
 
 windows:
 	@cd src && GOOS=windows go build -o ../bin/${APP_NAME}-windows.${version} ${MAINCLASS}
@@ -35,6 +35,9 @@ linux:
 
 darwin:
 	@cd src && GOOS=darwin go build -o ../bin/${APP_NAME}-darwin.${version} ${MAINCLASS}
+
+zip:
+	@tar -zcvf gateway.tar.gz bin conf
 
 clean:
 	@echo clean ...
