@@ -20,6 +20,9 @@ var brokers sync.Map
 
 func Heartbeat() {
 
+	zaplog.Logger.Infof("Heartbeat AllBroker Probe ...")
+
+
 	c := context.Background()
 
 	queryRedisAndStartHeartBeat(c)
@@ -58,8 +61,6 @@ func doHeartbeat(c context.Context, cancel context.CancelFunc, broker string) {
 	zaplog.Logger.Infof("Heartbeat %s Start", broker)
 	brokers.Store(broker, "OK")
 	connect(c, cancel, broker)
-	brokers.Delete(broker)
-	zaplog.Logger.Infof("Heartbeat %s Quit", broker)
 
 }
 
@@ -108,11 +109,11 @@ func doHeartBeat(c context.Context, cancel context.CancelFunc, broker string, co
 	for {
 		select {
 		case <-c.Done():
-			zaplog.Logger.Debugf("doHeartBeat return")
+			zaplog.Logger.Debugf("HeartBeat return")
 			return
 		case body := <-ch:
 
-			zaplog.Logger.Debugf("doHeartBeat broker %s body %s", broker, body)
+			zaplog.Logger.Debugf("HeartBeat broker %s body %s", broker, body)
 
 			if "QUIT" == body {
 				return
@@ -200,8 +201,8 @@ func close(c context.Context, cancel context.CancelFunc, broker string, conn net
 	clearBroker(c, broker)
 	cancel()
 	conn.Close()
+	brokers.Delete(broker)
 	zaplog.Logger.Infof("Heartbeat %s cancel clear close", broker)
-
 }
 
 func clearBroker(ctx context.Context, broker string) {
