@@ -57,6 +57,7 @@ func doHeartbeat(c context.Context, cancel context.CancelFunc, broker string) {
 	zaplog.Logger.Infof("Heartbeat %s Start", broker)
 	brokers.Store(broker, "OK")
 	connect(c, cancel, broker)
+	brokers.Delete(broker)
 	zaplog.Logger.Infof("Heartbeat %s Quit", broker)
 
 }
@@ -178,6 +179,9 @@ func doRead(c context.Context, ch chan string, conn net.Conn) {
 
 			zaplog.Logger.Debugf("Heartbeat %s ReadOK %s %d %d %s", conn.RemoteAddr().String(), p.Header.MessageId, p.Header.Command, p.Header.Type, p.Body)
 
+			if p.Header.Code!=200 {
+				continue
+			}
 			ch <- p.Body.(string)
 
 		}
