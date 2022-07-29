@@ -76,11 +76,11 @@ func AliveTask(ctx context.Context, broker string) {
 	//
 	//})
 
-	c.AddFunc("@every 1s", func() {
-		//ProbeBroker(ctx)
-		SetBrokerInstance(ctx, broker)
-		zaplog.Logger.Debugf("Task SetBrokerInstance %s", broker)
-	})
+	//c.AddFunc("@every 1s", func() {
+	//	//ProbeBroker(ctx)
+	//	SetBrokerInstance(ctx, broker)
+	//	zaplog.Logger.Debugf("Task SetBrokerInstance %s", broker)
+	//})
 
 	//c.AddFunc("@every 1m", func() {
 	//	ProbeConn(ctx)
