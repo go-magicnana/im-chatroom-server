@@ -141,7 +141,7 @@ func doRead(c context.Context, ch chan string, conn net.Conn) {
 
 			serializer := serializer.SingleJsonSerializer()
 
-			conn.SetReadDeadline(time.Now().Add(time.Second * 10))
+			conn.SetReadDeadline(time.Now().Add(time.Second * 30))
 
 			meta := make([]byte, 5)
 			ml, me := conn.Read(meta)
@@ -271,51 +271,3 @@ func write(conn net.Conn, p *protocol.Packet) error {
 
 }
 
-func read(conn net.Conn) *protocol.Packet {
-
-	serializer := serializer.SingleJsonSerializer()
-
-	conn.SetReadDeadline(time.Now().Add(time.Second * 10))
-
-	meta := make([]byte, 5)
-	ml, me := conn.Read(meta)
-
-	switch me.(type) {
-	case *net.OpError:
-		zaplog.Logger.Errorf("Heartbeat %s ReadTimeOut", conn.RemoteAddr().String())
-		return nil
-	}
-
-	if me == io.EOF {
-
-		zaplog.Logger.Errorf("Heartbeat %s ReadClose", conn.RemoteAddr().String())
-		return nil
-	}
-
-	if me != nil {
-		zaplog.Logger.Errorf("Heartbeat %s ReadError", conn.RemoteAddr().String())
-		return nil
-	}
-
-	if ml != 5 {
-		zaplog.Logger.Errorf("Heartbeat %s MetaError", conn.RemoteAddr().String())
-		return nil
-	}
-
-	version := meta[0]
-
-	if version != serializer.Version() {
-		zaplog.Logger.Errorf("Heartbeat %s VersionError", conn.RemoteAddr().String())
-		return nil
-	}
-
-	length := binary.BigEndian.Uint32(meta[1:])
-	body := make([]byte, length)
-	conn.Read(body)
-
-	p, _ := serializer.DecodePacket(body)
-
-	zaplog.Logger.Debugf("Heartbeat %s ReadOK %s %d %d %s", conn.RemoteAddr().String(), p.Header.MessageId, p.Header.Command, p.Header.Type, p.Body)
-
-	return p
-}
