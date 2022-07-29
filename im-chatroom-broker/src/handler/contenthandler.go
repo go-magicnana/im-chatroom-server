@@ -19,7 +19,7 @@ var onceContentHandler sync.Once
 var contentHandler *ContentHandler
 
 func SingleContentHandler() *ContentHandler {
-	onceDefaultHandler.Do(func() {
+	onceContentHandler.Do(func() {
 		contentHandler = &ContentHandler{}
 	})
 
@@ -74,7 +74,6 @@ func deliver(ctx context.Context, c *context2.Context, packet *protocol.Packet) 
 	packet.Header.Flow = protocol.FlowDeliver
 	packet.Header.Code = err.OK.Code
 	packet.Header.Message = err.OK.Message
-
 
 	if packet.Header.Target == protocol.TargetRoom {
 		zaplog.Logger.Debugf("Deliver RoomTopic %s C:%d T:%d F:%d %v", packet.Header.MessageId, packet.Header.Command, packet.Header.Type, packet.Header.Flow, packet.Body)

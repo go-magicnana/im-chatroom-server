@@ -6,12 +6,15 @@ import (
 	context2 "im-chatroom-broker/context"
 	err "im-chatroom-broker/error"
 	"im-chatroom-broker/protocol"
+	"sync"
 )
+
+var onceCustomHandler sync.Once
 
 var customHandler *CustomHandler
 
 func CustomContentHandler() *CustomHandler {
-	onceDefaultHandler.Do(func() {
+	onceCustomHandler.Do(func() {
 		customHandler = &CustomHandler{}
 	})
 

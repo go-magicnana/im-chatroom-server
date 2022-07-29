@@ -1,7 +1,6 @@
 package client
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
@@ -60,12 +59,12 @@ func Start(role, serverIp string) {
 
 func read(conn net.Conn) {
 
-	filePath := "~/work/" + conn.LocalAddr().String() + ".txt"
-	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0666)
-	if err != nil {
-		fmt.Println("文件打开失败", err)
-	}
-	defer file.Close()
+	//filePath := "~/work/" + conn.LocalAddr().String() + ".txt"
+	//file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0666)
+	//if err != nil {
+	//	fmt.Println("文件打开失败", err)
+	//}
+	//defer file.Close()
 
 	serializer := serializer.SingleJsonSerializer()
 
@@ -104,11 +103,11 @@ func read(conn net.Conn) {
 			responseBody, _ := json.Marshal(p.Body)
 			fmt.Println(util.CurrentSecond(), "Read receive server", string(responseBody))
 
-			write := bufio.NewWriter(file)
-			hi := protocol.JsonContentText(p.Body)
-			write.WriteString(p.Header.From.UserId + ":" + hi.Content + " \n")
-			//Flush将缓存的文件真正写入到文件中
-			write.Flush()
+			//write := bufio.NewWriter(file)
+			//hi := protocol.JsonContentText(p.Body)
+			//write.WriteString(p.Header.From.UserId + ":" + hi.Content + " \n")
+			////Flush将缓存的文件真正写入到文件中
+			//write.Flush()
 		}
 
 	}
@@ -231,7 +230,7 @@ func sendPing(conn net.Conn) {
 }
 
 func sendMsg(conn net.Conn) {
-	for i := 0; i < 10000; i++ {
+	for i := 0; i < 100; i++ {
 
 		header := protocol.MessageHeader{
 			MessageId: "ContentMessageId-" + randCreator(8),
@@ -251,7 +250,6 @@ func sendMsg(conn net.Conn) {
 		}
 
 		write(conn, &packet)
-		time.Sleep(time.Second * 10)
 	}
 
 }
