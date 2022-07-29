@@ -11,7 +11,6 @@ import (
 	"golang.org/x/net/context"
 	"im-chatroom-broker/config"
 	"im-chatroom-broker/protocol"
-	"im-chatroom-broker/serializer"
 	"im-chatroom-broker/service"
 	"im-chatroom-broker/util"
 	"im-chatroom-broker/zaplog"
@@ -91,7 +90,8 @@ func newConsumerRoom() rocketmq.PushConsumer {
 							//}
 
 							//SendSync2One(c.Broker(), &m)
-							serializer.SingleJsonSerializer().Write(c, p)
+							//serializer.SingleJsonSerializer().Write(c, p)
+							c.Write(protocol.NewResponse(p))
 						}
 
 						return true
@@ -195,7 +195,9 @@ func newConsumerOne() rocketmq.PushConsumer {
 				c, e := service.GetUserContext(p.ClientName)
 
 				if e {
-					serializer.SingleJsonSerializer().Write(c, &p.Packet)
+					//serializer.SingleJsonSerializer().Write(c, p.Packet)
+					c.Write(protocol.NewResponse(p.Packet))
+
 
 				}
 			}

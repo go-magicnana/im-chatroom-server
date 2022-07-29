@@ -3,7 +3,6 @@ package client
 import (
 	"bytes"
 	"encoding/binary"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"im-chatroom-broker/protocol"
@@ -68,6 +67,16 @@ func read(conn net.Conn) {
 
 	serializer := serializer.SingleJsonSerializer()
 
+	path := "/Users/jinsong/work/"+conn.LocalAddr().String()+".txt"
+
+	fi, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0664)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer fi.Close()
+
+
 	for {
 
 		meta := make([]byte, protocol.MetaVersionBytes+protocol.MetaLengthBytes)
@@ -100,8 +109,9 @@ func read(conn net.Conn) {
 		zaplog.Logger.Debugf("ReadOK %s %s C:%d T:%d F:%d %s", conn.RemoteAddr().String(), p.Header.MessageId, p.Header.Command, p.Header.Type, p.Header.Flow, p.Body)
 
 		if p.Header.Command == protocol.CommandContent && p.Header.Flow == protocol.FlowDeliver {
-			responseBody, _ := json.Marshal(p.Body)
-			fmt.Println(util.CurrentSecond(), "Read receive server", string(responseBody))
+			text := protocol.JsonContentText(p.Body)
+			fi.WriteString(text.Content)
+			//fw.Flush()
 
 			//write := bufio.NewWriter(file)
 			//hi := protocol.JsonContentText(p.Body)
@@ -230,7 +240,7 @@ func sendPing(conn net.Conn) {
 }
 
 func sendMsg(conn net.Conn) {
-	for i := 0; i < 10000; i++ {
+	for i := 0; i < 10; i++ {
 
 		header := protocol.MessageHeader{
 			MessageId: "ContentMessageId-" + randCreator(8),
@@ -242,7 +252,7 @@ func sendMsg(conn net.Conn) {
 		}
 
 		body := protocol.MessageBodyContentText{
-			Content: "Hi " + strconv.Itoa(i),
+			Content: strconv.Itoa(i)+"\n",
 		}
 
 		packet := protocol.Packet{
@@ -252,4 +262,28 @@ func sendMsg(conn net.Conn) {
 		write(conn, &packet)
 	}
 
+}
+
+func writeFile(path string) *os.File {
+	fi, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0664)
+	if err != nil {
+		util.Panic(err)
+	}
+	defer fi.Close()
+
+
+
+	//创建新Writer，其缓冲区有默认大小
+	//writer := bufio.NewWriter(fi)
+	//将信息写入缓存
+	//_,err = writer.WriteString(info)
+	//if err != nil {
+	//	return
+	//}
+	////将缓存数据写入文件
+	//err = writer.Flush()
+	//if err != nil {
+	//	return
+	//}
+	return fi
 }

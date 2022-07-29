@@ -2,6 +2,7 @@ package context
 
 import (
 	"go.uber.org/atomic"
+	"im-chatroom-broker/protocol"
 	"im-chatroom-broker/util"
 	"net"
 )
@@ -22,16 +23,42 @@ type Context struct {
 	conn       net.Conn
 	state      *atomic.Int32
 	pingTime   *atomic.Int64
+	readable   *atomic.Bool
+	writeable  *atomic.Bool
+	channel    chan *protocol.InnerPacket
 }
 
 func NewContext(brokerAddr string, conn net.Conn) *Context {
 
 	return &Context{
-		broker:   brokerAddr,
-		conn:     conn,
-		state:    atomic.NewInt32(Ready),
-		pingTime: atomic.NewInt64(0),
+		broker:    brokerAddr,
+		conn:      conn,
+		state:     atomic.NewInt32(Ready),
+		pingTime:  atomic.NewInt64(0),
+		readable:  atomic.NewBool(false),
+		writeable: atomic.NewBool(false),
+		channel:   make(chan *protocol.InnerPacket, 65535),
 	}
+}
+
+func (c *Context) Readable() {
+	c.readable.Store(true)
+}
+
+func (c *Context) UnReadable() {
+	c.readable.Store(false)
+}
+
+func (c *Context) Writeable() {
+	c.writeable.Store(true)
+}
+
+func (c *Context) Write(p *protocol.InnerPacket) {
+	c.channel <- p
+}
+
+func (c *Context) Read() <- chan *protocol.InnerPacket {
+	return c.channel
 }
 
 func (c *Context) ClientName() string {

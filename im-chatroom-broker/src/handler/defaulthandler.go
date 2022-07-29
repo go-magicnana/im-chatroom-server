@@ -58,7 +58,7 @@ func heartbeat(ctx context.Context, c *context2.Context, packet *protocol.Packet
 
 		return protocol.NewResponseOK(packet, "OK "+strconv.Itoa(cs)+" room1"+strconv.Itoa(rs)), nil
 	} else {
-		service.Close(ctx, c)
+		service.Close(ctx, c,nil)
 		return nil, nil
 	}
 }

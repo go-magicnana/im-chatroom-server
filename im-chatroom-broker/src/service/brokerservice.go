@@ -171,7 +171,7 @@ func AliveTask(ctx context.Context, broker string) {
 //	})
 //}
 
-func Close(ctx context.Context, c *context2.Context) {
+func Close(ctx context.Context, c *context2.Context, cancel context.CancelFunc) {
 
 	//DelUserInfo(ctx, c.UserId())
 
@@ -187,9 +187,12 @@ func Close(ctx context.Context, c *context2.Context) {
 
 	DelBrokerCapacity(ctx, c.Broker(), c.ClientName())
 
-	zaplog.Logger.Infof("CloseByClient %s", c.Conn().RemoteAddr())
+	if cancel != nil {
+		cancel()
+	}
 
 	c.Close()
 
 	c = nil
+	zaplog.Logger.Infof("CloseByClient %s", c.Conn().RemoteAddr())
 }

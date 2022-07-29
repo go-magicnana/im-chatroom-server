@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/binary"
+	"errors"
 	"im-chatroom-broker/config"
 	context2 "im-chatroom-broker/context"
 	err "im-chatroom-broker/error"
@@ -67,6 +68,8 @@ func listen(ctx context.Context, addr string) {
 
 	//mq.Init()
 
+	limit := make(chan bool, 2)
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -80,95 +83,146 @@ func listen(ctx context.Context, addr string) {
 				util.Panic(err)
 			}
 
-			//if s.readDDL != 0 {
-			//	_ = conn.SetReadDeadline(time.Now().Add(s.readDDL))
-			//}
-			//if s.writeDDL != 0 {
-			//	_ = conn.SetWriteDeadline(time.Now().Add(s.writeDDL))
-			//}
+			select {
+			case limit <- true:
 
-			ctx, cancel := context.WithCancel(ctx)
+				zaplog.Logger.Infof("Connected %s", conn.RemoteAddr())
 
-			c := context2.NewContext(brokerAddress, conn)
+				ctx, cancel := context.WithCancel(ctx)
 
-			c.Connect(conn.RemoteAddr().String())
+				c := context2.NewContext(brokerAddress, conn)
 
-			zaplog.Logger.Infof("Connected %s", conn.RemoteAddr())
+				c.Connect(conn.RemoteAddr().String())
 
-			go read(ctx, cancel, c)
 
+				go read(ctx, cancel, c)
+
+				go write(ctx, cancel, c)
+			default:
+				zaplog.Logger.Infof("Overflow %s", conn.RemoteAddr())
+				conn.Close()
+			}
 		}
+	}
+}
+
+func readReturn(c *context2.Context, ip *protocol.InnerPacket) {
+
+	if ip == nil {
+		util.Panic(errors.New("nil response in read thread"))
+	}
+
+	if ip.Cmd == protocol.CmdQuit {
+		c.UnReadable()
+	}
+
+	if ip != nil && ip.Packet != nil {
+		c.Write(ip)
 	}
 }
 
 func read(ctx context.Context, cancel context.CancelFunc, c *context2.Context) {
 
-	defer service.Close(ctx, c)
-
 	serializer := serializer.SingleJsonSerializer()
 
 	for {
 
-		c.Conn().SetReadDeadline(time.Now().Add(time.Second * 60))
+		select {
+		case <-ctx.Done():
+			zaplog.Logger.Infof("ReadDone %s", c.Conn().RemoteAddr())
+			return
+		default:
+			c.Readable()
 
-		meta := make([]byte, protocol.MetaVersionBytes+protocol.MetaLengthBytes)
-		ml, me := c.Conn().Read(meta)
+			c.Conn().SetReadDeadline(time.Now().Add(time.Second * 60))
 
-		switch me.(type) {
-		case *net.OpError:
-			if c.State() < context2.Login {
+			meta := make([]byte, protocol.MetaVersionBytes+protocol.MetaLengthBytes)
+			ml, me := c.Conn().Read(meta)
 
-				zaplog.Logger.Errorf("ReadTimeOut %s Close Client", c.Conn().RemoteAddr())
+			switch me.(type) {
+			case *net.OpError:
+				if c.State() < context2.Login {
+					zaplog.Logger.Errorf("ReadTimeOut %s Close Client", c.Conn().RemoteAddr())
+					readReturn(c, protocol.NewQuit())
+					return
+				} else {
+					zaplog.Logger.Errorf("ReadTimeOut %s To Read Continue", c.Conn().RemoteAddr())
+					continue
+				}
+			}
+
+			if me == io.EOF {
+				zaplog.Logger.Errorf("ReadClose %s Close Client", c.Conn().RemoteAddr())
+				readReturn(c, protocol.NewQuit())
 				return
-			} else {
+			}
 
-				zaplog.Logger.Errorf("ReadTimeOut %s To Read Continue", c.Conn().RemoteAddr())
+			if me != nil {
+				zaplog.Logger.Errorf("ReadError %s To Read Continue", c.Conn().RemoteAddr())
 				continue
 			}
+
+			if ml != protocol.MetaVersionBytes+protocol.MetaLengthBytes {
+				zaplog.Logger.Errorf("MetaError %s To Read Continue", c.Conn().RemoteAddr())
+				continue
+			}
+
+			version := meta[0]
+
+			if version != serializer.Version() {
+				zaplog.Logger.Errorf("MetaOfVersionError %s To Read Continue", c.Conn().RemoteAddr())
+				continue
+			}
+
+			length := binary.BigEndian.Uint32(meta[1:])
+			body := make([]byte, length)
+			c.Conn().Read(body)
+
+			packet, e := serializer.DecodePacket(body, c)
+
+			if e != nil || packet == nil {
+				readReturn(c, protocol.NewQuit())
+				return
+			}
+
+			zaplog.Logger.Debugf("ReadOK %s %s C:%d T:%d F:%d %s", c.Conn().RemoteAddr().String(), packet.Header.MessageId, packet.Header.Command, packet.Header.Type, packet.Header.Flow, packet.Body)
+
+			res := process(ctx, cancel, c, packet)
+
+			readReturn(c, protocol.NewResponse(res))
 		}
-
-		if me == io.EOF {
-
-			zaplog.Logger.Errorf("ReadClose %s Close Client", c.Conn().RemoteAddr())
-			break
-		}
-
-		if me != nil {
-
-			zaplog.Logger.Errorf("ReadError %s To Read Continue", c.Conn().RemoteAddr())
-			continue
-		}
-
-		if ml != protocol.MetaVersionBytes+protocol.MetaLengthBytes {
-			zaplog.Logger.Errorf("MetaError %s To Read Continue", c.Conn().RemoteAddr())
-			continue
-		}
-
-		version := meta[0]
-
-		if version != serializer.Version() {
-			zaplog.Logger.Errorf("MetaOfVersionError %s To Read Continue", c.Conn().RemoteAddr())
-			continue
-		}
-
-		length := binary.BigEndian.Uint32(meta[1:])
-		body := make([]byte, length)
-		c.Conn().Read(body)
-
-		packet, e := serializer.DecodePacket(body, c)
-
-		if e != nil || packet == nil {
-			return
-		}
-
-		zaplog.Logger.Debugf("ReadOK %s %s C:%d T:%d F:%d %s", c.Conn().RemoteAddr().String(), packet.Header.MessageId, packet.Header.Command, packet.Header.Type, packet.Header.Flow, packet.Body)
-
-		go process(ctx, cancel, c, packet)
 	}
 
 }
 
-func process(ctx context.Context, cancel context.CancelFunc, c *context2.Context, packet *protocol.Packet) {
+func write(ctx context.Context, cancel context.CancelFunc, c *context2.Context) {
+
+	defer service.Close(ctx, c, cancel)
+
+	for {
+		select {
+		case <-ctx.Done():
+			zaplog.Logger.Infof("WriteDone %s", c.Conn().RemoteAddr())
+			return
+		case res := <-c.Read():
+
+			zaplog.Logger.Debugf("WriteCmd %s ", res.Cmd)
+
+			if protocol.CmdQuit == res.Cmd {
+				return
+			} else {
+				if res.Packet != nil {
+					serializer.SingleJsonSerializer().Write(c, res.Packet)
+				}
+			}
+		default:
+			continue
+		}
+	}
+
+}
+
+func process(ctx context.Context, cancel context.CancelFunc, c *context2.Context, packet *protocol.Packet) *protocol.Packet {
 
 	var ret *protocol.Packet = nil
 	var e error = nil
@@ -194,7 +248,8 @@ func process(ctx context.Context, cancel context.CancelFunc, c *context2.Context
 	}
 
 	if ret != nil {
-		serializer.SingleJsonSerializer().Write(c, ret)
+		return ret
+	} else {
+		return nil
 	}
-
 }

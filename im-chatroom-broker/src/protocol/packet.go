@@ -67,7 +67,7 @@ func (p Packet) ToString() string {
 
 type PacketMessage struct {
 	ClientName string `json:"clientName"`
-	Packet     Packet `json:"packet"`
+	Packet     *Packet `json:"packet"`
 }
 
 type MessageHeader struct {
