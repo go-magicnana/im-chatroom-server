@@ -6,6 +6,7 @@ import (
 	err "im-chatroom-broker/error"
 	"im-chatroom-broker/protocol"
 	"im-chatroom-broker/service"
+	"strconv"
 	"sync"
 )
 
@@ -39,7 +40,23 @@ func heartbeat(ctx context.Context, c *context2.Context, packet *protocol.Packet
 	body := packet.Body.(*protocol.MessageBodyDefaultHeartBeat)
 
 	if body.Password == protocol.TypeDefaultHeartBeatPassword {
-		return protocol.NewResponseOK(packet, "OK"), nil
+
+
+		cs := 0
+		rs := 0
+
+		service.RangeUserContextAll(func(key, value any) bool {
+			cs ++
+			return true
+		})
+
+
+		service.RangeRoom("1", func(key, value any) bool {
+			rs ++
+			return true
+		})
+
+		return protocol.NewResponseOK(packet, "OK "+strconv.Itoa(cs)+" room1"+strconv.Itoa(rs)), nil
 	} else {
 		service.Close(ctx, c)
 		return nil, nil

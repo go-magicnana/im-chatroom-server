@@ -34,12 +34,18 @@ var _consumer2 rocketmq.PushConsumer
 
 func init() {
 
-	ip := util.GetBrokerIp()
-	MyName = broker2name(ip + ":" + config.OP.Port)
+	if util.IsNotEmpty(config.OP.Ip) {
+		MyName = broker2name(config.OP.Ip + ":" + config.OP.Port)
+
+	} else {
+		ip := util.GetBrokerIp()
+		MyName = broker2name(ip + ":" + config.OP.Port)
+
+	}
 
 	_producer = newProducer()
 	_consumer1 = newConsumerRoom()
-	//_consumer2 = newConsumerOne()
+	_consumer2 = newConsumerOne()
 }
 
 func newProducer() rocketmq.Producer {
@@ -60,6 +66,7 @@ func newConsumerRoom() rocketmq.PushConsumer {
 
 	c, _ := rocketmq.NewPushConsumer(
 		consumer.WithGroupName(RoomGroup),
+		consumer.WithConsumerModel(consumer.BroadCasting),
 		consumer.WithNsResolver(primitive.NewPassthroughResolver([]string{config.OP.RocketMQ.Address})),
 	)
 	err := c.Subscribe(RoomTopic, consumer.MessageSelector{},
@@ -77,8 +84,16 @@ func newConsumerRoom() rocketmq.PushConsumer {
 
 						c, b := service.GetUserContext(key.(string))
 						if b && c != nil {
+
+							//m := protocol.PacketMessage{
+							//	ClientName: c.ClientName(),
+							//	Packet:     *p,
+							//}
+
+							//SendSync2One(c.Broker(), &m)
 							serializer.SingleJsonSerializer().Write(c, p)
 						}
+
 						return true
 
 					})
@@ -107,6 +122,8 @@ func newConsumerRoom() rocketmq.PushConsumer {
 				}
 
 			}
+			zaplog.Logger.Debugf("---------------------------------------------------------")
+
 			return consumer.ConsumeSuccess, nil
 		})
 

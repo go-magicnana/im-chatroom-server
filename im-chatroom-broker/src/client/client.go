@@ -230,7 +230,7 @@ func sendPing(conn net.Conn) {
 }
 
 func sendMsg(conn net.Conn) {
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 10000; i++ {
 
 		header := protocol.MessageHeader{
 			MessageId: "ContentMessageId-" + randCreator(8),

@@ -1,7 +1,8 @@
 package zaplog
 
 import (
-	"fmt"
+	"im-chatroom-broker/client"
+	"sync"
 	"testing"
 )
 
@@ -15,5 +16,11 @@ func TestTest1(t *testing.T) {
 }
 
 func TestFoo(t *testing.T) {
-	fmt.Println("haha")
-}
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go client.Start("send","47.95.148.3")
+
+	//for i := 0; i < 200; i++ {
+	//	go Start("Receiver","47.95.148.3")
+	//}
+	wg.Wait()}

@@ -7,12 +7,12 @@ import (
 	"github.com/ziflex/lecho/v3"
 	"golang.org/x/net/context"
 	"im-chatroom-gateway/apierror"
-	"im-chatroom-gateway/mq"
+	"im-chatroom-gateway/domains"
 	"im-chatroom-gateway/protocol"
 	"im-chatroom-gateway/service"
+	"im-chatroom-gateway/zaplog"
 	"net/http"
 	"os"
-	"strconv"
 )
 
 var e echo.Echo
@@ -29,7 +29,7 @@ func init() {
 	)
 }
 
-func MessagePush(ct echo.Context) error {
+func MessagePush(c echo.Context) error {
 
 	/**
 	TypeNoticeBlockUser   = 3103
@@ -39,108 +39,48 @@ func MessagePush(ct echo.Context) error {
 	TypeNoticeUnblockRoom = 3107
 	*/
 
-	//获取post请求的表单参数，
-	// 类型 是何种通知
-	fromUserId := ct.FormValue("fromUserId")
-	fromUserName := ct.FormValue("fromUserName")
-	fromUserAvatar := ct.FormValue("fromUserAvatar")
-	// 类型 是何种通知
-	messageTarget := ct.FormValue("messageTarget")
-	messageTargetInt64, _ := strconv.ParseInt(messageTarget, 0, 64)
+	a, _ := c.FormParams()
+	zaplog.Logger.Debugf("%s %v", c.Request().RequestURI, a)
 
-	messageType := ct.FormValue("messageType")
-	messageTypeInt64, _ := strconv.ParseInt(messageType, 10, 64)
-
-	// 个人 userid，所有人 roomid
-	userId := ct.FormValue("userId")
-	// 信息
-	roomId := ct.FormValue("roomId")
-
-	messageId, _ := uuid.GenerateUUID()
-
-	//TypeNoticeBlockUser   = 3103
-	//TypeNoticeUnblockUser = 3104
-	//TypeNoticeCloseRoom   = 3105
-	//TypeNoticeBlockRoom   = 3106
-	//TypeNoticeUnblockRoom = 3107
-
-	header := protocol.MessageHeader{
-		MessageId: messageId,
-		Command:   protocol.CommandNotice,
-		Target:    uint32(messageTargetInt64),
-		From: protocol.UserInfo{
-			UserId: fromUserId,
-			Name:   fromUserName,
-			Avatar: fromUserAvatar,
-		},
-		To:   userId,
-		Flow: protocol.FlowDeliver,
-		Type: uint32(messageTypeInt64),
-		Code: 200,
+	if len(a) == 0 {
+		return write(c, http.StatusOK, NewApiResultError(apierror.InvalidParameter))
 	}
 
-	var body any
-	var userinfo *protocol.UserInfo
-	switch int(messageTypeInt64) {
-	case protocol.TypeNoticeBlockUser:
-		userinfo, _ = service.GetUserInfo(context.Background(), userId)
-		body = protocol.MessageBodyNoticeBlockUser{User: *userinfo, RoomId: roomId}
+	u := new(domains.BlockUser)
 
-	case protocol.TypeNoticeUnblockUser:
-		userinfo, _ = service.GetUserInfo(context.Background(), userId)
-		body = protocol.MessageBodyNoticeUnblockUser{User: *userinfo, RoomId: roomId}
-
-	case protocol.TypeNoticeCloseRoom:
-		body = protocol.MessageBodyNoticeCloseRoom{RoomId: roomId}
-
-	case protocol.TypeNoticeBlockRoom:
-		body = protocol.MessageBodyNoticeBlockRoom{RoomId: roomId}
-
-	case protocol.TypeNoticeUnblockRoom:
-		body = protocol.MessageBodyNoticeUnblockRoom{RoomId: roomId}
-
+	if err := c.Bind(u); err != nil {
+		return write(c, http.StatusOK, NewApiResultError(err))
 	}
+
+	if err := c.Validate(u); err != nil {
+		return write(c, http.StatusOK, NewApiResultError(err))
+	}
+
+	userInfo, err := service.GetUserInfo(context.Background(), u.UserId)
+	if err != nil {
+		return write(c, http.StatusOK, NewApiResultError(err))
+	}
+
+	msgId, _ := uuid.GenerateUUID()
 
 	packet := protocol.Packet{
-		Header: header, Body: body,
+		Header: protocol.MessageHeader{
+			MessageId: msgId,
+			Command:   protocol.CommandNotice,
+			Target:    protocol.TargetOne,
+			To:        u.UserId,
+			Flow:      protocol.FlowDeliver,
+			Type:      protocol.TypeNoticeBlockUser,
+		},
+		Body: protocol.MessageBodyNoticeBlockUser{
+			User:   *userInfo,
+			RoomId: u.RoomId,
+		},
 	}
+	service.SetRoomMemberBlocked(context.Background(), u.RoomId, u.UserId)
+	SendSync2User(context.Background(), &packet)
 
-	e.Logger.Info("send notice message ", packet)
+	return write(c, http.StatusOK, NewApiResultOK(nil))
 
-	result := deliver(context.Background(), &packet, roomId)
-	if result != nil {
-		e.Logger.Info("send notice message error:", result)
-		return ct.JSON(http.StatusOK, NewApiResultError(apierror.Default))
-	}
-
-	return ct.JSON(http.StatusOK, NewApiResultOK(nil))
 }
 
-func deliver(ctx context.Context, packet *protocol.Packet, roomId string) error {
-
-	packet.Header.Flow = protocol.FlowDeliver
-
-	if packet.Header.Target == protocol.TargetRoom {
-		packet.Header.To = roomId
-		mq.SendSync2Room(packet)
-	} else {
-
-		ret := service.GetUserClients(ctx, packet.Header.To)
-
-		for _, v := range ret {
-
-			msg := &protocol.PacketMessage{
-				ClientName: v,
-				Packet:  *packet,
-			}
-
-			broker, _ := service.GetUserDeviceBroker(ctx, v)
-
-			mq.SendSync2One(broker, msg)
-			//fmt.Println(msg,broker)
-		}
-
-	}
-
-	return nil
-}

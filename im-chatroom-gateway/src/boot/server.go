@@ -36,6 +36,7 @@ func Start() {
 	e.GET("/imchatroom/config", controllers.GetConfig)
 
 	e.POST("/imchatroom/room/create", controllers.CreateChatroom)
+	//e.POST("/imchatroom/message/push", controllers.MessagePush)
 
 	e.GET("/imchatroom/room/membersNum", controllers.GetRoomMembers)
 
