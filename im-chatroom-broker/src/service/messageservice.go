@@ -10,5 +10,5 @@ const (
 )
 
 func AddUserClientMessage(ctx context.Context, clientName string, msg string) int64 {
-	return redis.Rdb.RPush(ctx, UserClientMessage+clientName, msg, clientName).Val()
+	return redis.Rdb.RPush(ctx, UserClientMessage+clientName, msg).Val()
 }
