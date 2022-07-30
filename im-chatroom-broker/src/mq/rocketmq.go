@@ -88,6 +88,10 @@ func newConsumerRoom() rocketmq.PushConsumer {
 				p := &protocol.PacketMessage{}
 				json.Unmarshal(msgs[i].Body, p)
 
+				if p.Broker == thread.BrokerAddress {
+					continue
+				}
+
 				zaplog.Logger.Debugf("CsumRoom %s %s C:%d T:%d F:%d %v %v", RoomTopic, p.Packet.Header.MessageId, p.Packet.Header.Command, p.Packet.Header.Type, p.Packet.Header.Flow, p.Packet.Body, msgs[i].MsgId)
 
 				if p.Packet.Header.Target == protocol.TargetRoom {

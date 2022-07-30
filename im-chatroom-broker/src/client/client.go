@@ -71,15 +71,6 @@ func read(conn net.Conn) {
 
 	serializer := serializer.SingleJsonSerializer()
 
-	path := "/Users/jinsong/work/" + conn.LocalAddr().String() + ".txt"
-
-	fi, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0664)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer fi.Close()
-
 	for {
 
 		meta := make([]byte, protocol.MetaVersionBytes+protocol.MetaLengthBytes)
@@ -113,14 +104,7 @@ func read(conn net.Conn) {
 
 		if p.Header.Command == protocol.CommandContent && p.Header.Flow == protocol.FlowDeliver {
 			text := protocol.JsonContentText(p.Body)
-			fi.WriteString(text.Content)
-			//fw.Flush()
-
-			//write := bufio.NewWriter(file)
-			//hi := protocol.JsonContentText(p.Body)
-			//write.WriteString(p.Header.From.UserId + ":" + hi.Content + " \n")
-			////Flush将缓存的文件真正写入到文件中
-			//write.Flush()
+			service.AddUserClientMessage(context.Background(),conn.LocalAddr().String(),text.Content)
 		}
 
 	}
@@ -246,7 +230,7 @@ func sendPing(conn net.Conn) {
 }
 
 func sendMsg(conn net.Conn) {
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 100; i++ {
 
 		header := protocol.MessageHeader{
 			MessageId: "ContentMessageId-" + randCreator(8),

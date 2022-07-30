@@ -60,6 +60,8 @@ func listen(ctx context.Context, addr string) {
 		brokerAddress = util.GetBrokerIp() + addr
 	}
 
+	thread.BrokerAddress = brokerAddress
+
 	service.SetBrokerInstance(ctx, brokerAddress)
 	//service.SetBrokerAlive(ctx, brokerAddress)
 
@@ -93,7 +95,7 @@ func listen(ctx context.Context, addr string) {
 
 				ctx, cancel := context.WithCancel(ctx)
 
-				channel := make(chan *protocol.InnerPacket, 65535)
+				channel := make(chan *protocol.InnerPacket, 1)
 
 				//c := context2.NewContext(brokerAddress, conn)
 
@@ -172,12 +174,14 @@ func read(
 
 			if me != nil {
 				zaplog.Logger.Errorf("ReadError %s To Read Continue", conn.RemoteAddr())
-				continue
+				readReturn(cc.Channel, protocol.NewQuit())
+				return
 			}
 
 			if ml != protocol.MetaVersionBytes+protocol.MetaLengthBytes {
 				zaplog.Logger.Errorf("MetaError %s To Read Continue", conn.RemoteAddr())
-				continue
+				readReturn(cc.Channel, protocol.NewQuit())
+				return
 			}
 
 			version := meta[0]
@@ -198,9 +202,9 @@ func read(
 				return
 			}
 
-			//zaplog.Logger.Debugf("ReadOK %s %s C:%d T:%d F:%d %s", conn.RemoteAddr().String(), packet.Header.MessageId, packet.Header.Command, packet.Header.Type, packet.Header.Flow, packet.Body)
+			zaplog.Logger.Debugf("ReadOK %s %s C:%d T:%d F:%d %s", conn.RemoteAddr().String(), packet.Header.MessageId, packet.Header.Command, packet.Header.Type, packet.Header.Flow, packet.Body)
 
-			go process(ctx, cancel, cc, packet, conn)
+			process(ctx, cancel, cc, packet, conn)
 
 			//readReturn(c, protocol.NewResponse(res))
 		}

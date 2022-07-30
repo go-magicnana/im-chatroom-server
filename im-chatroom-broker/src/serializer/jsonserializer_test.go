@@ -19,12 +19,12 @@ func TestJsonSerializer_Decode(t *testing.T) {
 		Type:      protocol.TypeSignalPing,
 	}
 
-	body := protocol.MessageBodySignalPing{
-		UserId: "1001",
-	}
+	//body := protocol.MessageBodySignalPing{
+	//	UserId: "1001",
+	//}
 
 	packet := protocol.Packet{
-		header, body,
+		header, nil,
 	}
 
 

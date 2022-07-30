@@ -24,7 +24,7 @@ func SingleDefaultHandler() *DefaultHandler {
 
 type DefaultHandler struct{}
 
-func (d DefaultHandler) Handle(ctx context.Context, conn net.Conn, packet *protocol.Packet,c *thread.ConnectClient) (*protocol.Packet, error) {
+func (d DefaultHandler) Handle(ctx context.Context, conn net.Conn, packet *protocol.Packet, c *thread.ConnectClient) (*protocol.Packet, error) {
 	ret := protocol.NewResponseError(packet, err.CommandNotAllow)
 	switch packet.Header.Type {
 	case protocol.TypeDefaultHeartBeat:
@@ -41,16 +41,7 @@ func heartbeat(ctx context.Context, conn net.Conn, packet *protocol.Packet) (*pr
 
 	if body.Password == protocol.TypeDefaultHeartBeatPassword {
 
-		cs := 0
-
-		thread.RanChannel(func(key, value any) bool {
-			cs++
-
-			cc := value.(*thread.ConnectClient)
-			zaplog.Logger.Debugf("ThreadContext HeartBeat %s %v %d %d", key, cc,cs,thread.Count.Load())
-
-			return true
-		})
+		zaplog.Logger.Debugf("ThreadContext HeartBeat %d", thread.Count.Load())
 
 		return protocol.NewResponseOK(packet, "OK"), nil
 	} else {

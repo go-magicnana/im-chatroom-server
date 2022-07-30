@@ -2,6 +2,7 @@ package training
 
 import (
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -9,24 +10,33 @@ import (
 func Gochan() {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
-	ch := make(chan byte, 1)
-	ch2 := make(chan byte,1)
 
-	go func() {
-		ret := <-ch //如果没有内容，则阻塞
-		fmt.Println("read from chan", ret)
-		wg.Done()
+	for i := 1000; i < 1500; i++ {
 
-		rr := <- ch2
-		fmt.Println(rr)
-	}()
+		go func(i int) {
+			ch := make(chan string, 1)
+			go func() {
+				for {
+					select {
+					case data := <-ch:
+						fmt.Println(data)
+					default:
+						continue
+					}
+				}
+			}()
 
-	go func() {
-		for i := 0; i < 5; i++ {
-			time.Sleep(time.Second)
-		}
-		ch <- 1
-	}()
+			go func(i int) {
+				index := 0
+				for {
+					index++
+					ch <- strconv.Itoa(i)+" haha" + strconv.Itoa(index)
+					time.Sleep(time.Second)
+				}
+			}(i)
+		}(i)
+
+	}
 
 	wg.Wait()
 	fmt.Println("OK")

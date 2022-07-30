@@ -16,6 +16,8 @@ var roomLock sync.Mutex
 
 var Count *atomic.Int32
 
+var BrokerAddress string
+
 func init() {
 	Count = atomic.NewInt32(0)
 }
@@ -36,7 +38,7 @@ func (cc *ConnectClient) ToString() string {
 func SetChannel(clientName string, cc *ConnectClient) {
 	t.Store(clientName, cc)
 	Count.Inc()
-	zaplog.Logger.Debugf("ThreadContext SetChannel %s", cc.ToString())
+	//zaplog.Logger.Debugf("ThreadContext SetChannel %s", cc.ToString())
 
 }
 
@@ -59,9 +61,9 @@ func SetRoomChannels(roomId string, clientName string) {
 
 func GetChannel(clientName string) *ConnectClient {
 	k, b := t.Load(clientName)
-	zaplog.Logger.Debugf("ThreadContext GetChannel %s %v %v", clientName, k, b)
 
 	if k == nil {
+		zaplog.Logger.Debugf("ThreadContext GetChannel NotExist %s %v", clientName, b)
 		return nil
 	}
 
@@ -93,7 +95,7 @@ func RemRoomChannel(roomId, clientName string) {
 
 func RemChannel(clientName string) {
 	t.Delete(clientName)
-	zaplog.Logger.Debugf("ThreadContext RemChannel %s", clientName)
+	//zaplog.Logger.Debugf("ThreadContext RemChannel %s", clientName)
 
 	Count.Dec()
 

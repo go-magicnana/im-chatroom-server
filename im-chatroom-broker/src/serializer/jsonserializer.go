@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"im-chatroom-broker/protocol"
+	"im-chatroom-broker/zaplog"
 	"net"
 	"sync"
 )
@@ -68,7 +69,7 @@ func (j JsonSerializer) Write(conn net.Conn, p *protocol.Packet) error {
 	buffer.Write(bs)
 	_, err := conn.Write(buffer.Bytes())
 
-	//zaplog.Logger.Debugf("WriteOK %s %s C:%d T:%d F:%d %s", conn.RemoteAddr().String(), p.Header.MessageId, p.Header.Command, p.Header.Type,p.Header.Flow, p.Body)
+	zaplog.Logger.Debugf("WriteOK %s %s C:%d T:%d F:%d %s", conn.RemoteAddr().String(), p.Header.MessageId, p.Header.Command, p.Header.Type,p.Header.Flow, p.Body)
 
 
 

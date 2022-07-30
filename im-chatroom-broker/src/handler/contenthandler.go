@@ -6,7 +6,6 @@ import (
 	"im-chatroom-broker/mq"
 	"im-chatroom-broker/service"
 	"im-chatroom-broker/thread"
-	"im-chatroom-broker/zaplog"
 	"net"
 
 	//"im-chatroom-broker/mq"
@@ -77,14 +76,12 @@ func deliver(ctx context.Context, conn net.Conn, packet *protocol.Packet, c *thr
 	packet.Header.Message = err.OK.Message
 
 	if packet.Header.Target == protocol.TargetRoom {
-		zaplog.Logger.Debugf("Deliver RoomTopic %s C:%d T:%d F:%d %v", packet.Header.MessageId, packet.Header.Command, packet.Header.Type, packet.Header.Flow, packet.Body)
+		//zaplog.Logger.Debugf("Deliver RoomTopic %s C:%d T:%d F:%d %v", packet.Header.MessageId, packet.Header.Command, packet.Header.Type, packet.Header.Flow, packet.Body)
 
-		pm := &protocol.PacketMessage{
-			Broker:     c.Broker,
-			ClientName: conn.RemoteAddr().String(),
-			Packet:     packet,
-		}
-		mq.PushRoomChannel <- pm
+		//deliver2ConsumerRoom(c, conn, packet)
+
+		go deliver2BrokerRoom(packet)
+
 	} else {
 
 		//ret := service.GetUserClients(ctx, packet.Header.To)
@@ -109,6 +106,32 @@ func deliver(ctx context.Context, conn net.Conn, packet *protocol.Packet, c *thr
 	}
 
 	return protocol.NewResponseOK(packet, nil), nil
+}
+
+func deliver2ConsumerRoom(c *thread.ConnectClient, conn net.Conn, packet *protocol.Packet) {
+	pm := &protocol.PacketMessage{
+		Broker:     c.Broker,
+		ClientName: conn.RemoteAddr().String(),
+		Packet:     packet,
+	}
+	mq.PushRoomChannel <- pm
+}
+
+
+func deliver2BrokerRoom(packet *protocol.Packet) {
+	cs := thread.GetRoomChannels(packet.Header.To)
+	if cs != nil {
+		for _, v := range cs {
+			clientName := v.(string)
+
+			cc := thread.GetChannel(clientName)
+
+			if cc != nil && cc.Channel != nil {
+				cc.Channel <- protocol.NewResponse(packet)
+
+			}
+		}
+	}
 }
 
 func text(ctx context.Context, conn net.Conn, packet *protocol.Packet, c *thread.ConnectClient) (*protocol.Packet, error) {

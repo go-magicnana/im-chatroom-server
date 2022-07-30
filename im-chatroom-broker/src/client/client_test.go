@@ -14,10 +14,10 @@ func TestStart(t *testing.T) {
 	wg.Add(1)
 	go Start("send", "47.95.148.3")
 
-	//for i := 0; i < 400; i++ {
-	//	go Start("Receiver", "47.95.148.3")
-	//	//go Start("Receiver", "127.0.0.1",strconv.Itoa(i))
-	//}
+	for i := 0; i < 1000; i++ {
+		go Start("Receiver", "47.95.148.3")
+		//go Start("Receiver", "127.0.0.1",strconv.Itoa(i))
+	}
 	wg.Wait()
 
 }
@@ -27,7 +27,7 @@ func TestStart1(t *testing.T) {
 	wg.Add(1)
 	//go Start("send", "47.95.148.3")
 
-	for i := 0; i < 400; i++ {
+	for i := 0; i < 100; i++ {
 		go Start("Receiver", "47.95.148.3")
 		//go Start("Receiver", "127.0.0.1",strconv.Itoa(i))
 	}
