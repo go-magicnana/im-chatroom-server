@@ -2,11 +2,11 @@ package handler
 
 import (
 	"golang.org/x/net/context"
-	context2 "im-chatroom-broker/context"
 	err "im-chatroom-broker/error"
 	"im-chatroom-broker/protocol"
-	"im-chatroom-broker/service"
-	"strconv"
+	"im-chatroom-broker/thread"
+	"im-chatroom-broker/zaplog"
+	"net"
 	"sync"
 )
 
@@ -24,41 +24,37 @@ func SingleDefaultHandler() *DefaultHandler {
 
 type DefaultHandler struct{}
 
-func (d DefaultHandler) Handle(ctx context.Context, c *context2.Context, packet *protocol.Packet) (*protocol.Packet, error) {
+func (d DefaultHandler) Handle(ctx context.Context, conn net.Conn, packet *protocol.Packet,c *thread.ConnectClient) (*protocol.Packet, error) {
 	ret := protocol.NewResponseError(packet, err.CommandNotAllow)
 	switch packet.Header.Type {
 	case protocol.TypeDefaultHeartBeat:
 		a := protocol.JsonDefaultHearBeat(packet.Body)
 		packet.Body = a
-		return heartbeat(ctx, c, packet)
+		return heartbeat(ctx, conn, packet)
 	}
 	return ret, nil
 }
 
-func heartbeat(ctx context.Context, c *context2.Context, packet *protocol.Packet) (*protocol.Packet, error) {
+func heartbeat(ctx context.Context, conn net.Conn, packet *protocol.Packet) (*protocol.Packet, error) {
 
 	body := packet.Body.(*protocol.MessageBodyDefaultHeartBeat)
 
 	if body.Password == protocol.TypeDefaultHeartBeatPassword {
 
-
 		cs := 0
-		rs := 0
 
-		service.RangeUserContextAll(func(key, value any) bool {
-			cs ++
+		thread.RanChannel(func(key, value any) bool {
+			cs++
+
+			cc := value.(*thread.ConnectClient)
+			zaplog.Logger.Debugf("ThreadContext HeartBeat %s %v %d %d", key, cc,cs,thread.Count.Load())
+
 			return true
 		})
 
-
-		service.RangeRoom("1", func(key, value any) bool {
-			rs ++
-			return true
-		})
-
-		return protocol.NewResponseOK(packet, "OK "+strconv.Itoa(cs)+" room1"+strconv.Itoa(rs)), nil
+		return protocol.NewResponseOK(packet, "OK"), nil
 	} else {
-		service.Close(ctx, c,nil)
-		return nil, nil
+		return protocol.NewResponseOK(packet, "QUIT"), nil
+
 	}
 }

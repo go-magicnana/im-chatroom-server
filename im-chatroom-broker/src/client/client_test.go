@@ -3,17 +3,33 @@ package client
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"sync"
 	"testing"
+	"time"
 )
 
 func TestStart(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
-	go Start("send", "127.0.0.1")
+	go Start("send", "47.95.148.3")
 
-	for i := 0; i < 2; i++ {
-		go Start("Receiver", "127.0.0.1")
+	//for i := 0; i < 400; i++ {
+	//	go Start("Receiver", "47.95.148.3")
+	//	//go Start("Receiver", "127.0.0.1",strconv.Itoa(i))
+	//}
+	wg.Wait()
+
+}
+
+func TestStart1(t *testing.T) {
+	var wg sync.WaitGroup
+	wg.Add(1)
+	//go Start("send", "47.95.148.3")
+
+	for i := 0; i < 400; i++ {
+		go Start("Receiver", "47.95.148.3")
+		//go Start("Receiver", "127.0.0.1",strconv.Itoa(i))
 	}
 	wg.Wait()
 
@@ -22,11 +38,12 @@ func TestStart(t *testing.T) {
 func TestStart2(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
-	go Start("send", "47.95.148.3")
+	//go Start("send", "47.95.148.3")
 
-	//for i := 0; i < 200; i++ {
-	//	go Start("Receiver","47.95.148.3")
-	//}
+	for i := 0; i < 300; i++ {
+		go Start("Receiver", "47.95.148.3")
+		//go Start("Receiver", "127.0.0.1",strconv.Itoa(i))
+	}
 	wg.Wait()
 
 }
@@ -34,10 +51,12 @@ func TestStart2(t *testing.T) {
 func TestStart3(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
-	//go Start("send","47.95.148.3")
+	//go Start("send", "47.95.148.3")
 
-	for i := 0; i < 1; i++ {
+	for i := 0; i < 10; i++ {
 		go Start("Receiver", "47.95.148.3")
+		//go Start("Receiver", "127.0.0.1",strconv.Itoa(i))
+		time.Sleep(time.Second*5)
 	}
 	wg.Wait()
 
@@ -59,3 +78,12 @@ func Test_writeFile(t *testing.T) {
 		return
 	}
 }
+
+
+func TestSetUserAuth(t *testing.T){
+	for i := 1000; i < 2000; i++ {
+		SetUserAuth(strconv.Itoa(i))
+	}
+}
+
+

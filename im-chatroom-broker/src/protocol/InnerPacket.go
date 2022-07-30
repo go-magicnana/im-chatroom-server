@@ -6,8 +6,11 @@ const (
 )
 
 type InnerPacket struct {
-	Cmd    string
-	Packet *Packet
+	Cmd        string
+	Packet     *Packet
+	ClientName string
+	UserId     string
+	RoomId     string
 }
 
 func NewResponse(p *Packet) *InnerPacket {

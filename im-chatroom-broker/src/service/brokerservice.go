@@ -3,68 +3,39 @@ package service
 import (
 	"github.com/robfig/cron/v3"
 	"golang.org/x/net/context"
-	context2 "im-chatroom-broker/context"
 	"im-chatroom-broker/redis"
 	"im-chatroom-broker/zaplog"
 )
 
 const (
-	BrokerCapacity string = "imchatroom:broker.capacity:"
+	BrokerClients  string = "imchatroom:broker.clients:"
 	BrokerInstance string = "imchatroom:broker.instance"
 )
 
-func SetBrokerCapacity(ctx context.Context, broker, clientName string) {
-	redis := redis.Rdb
-	redis.SAdd(ctx, BrokerCapacity+broker, clientName)
+func SetBrokerClients(ctx context.Context, broker, clientName string) int64 {
+	return redis.Rdb.SAdd(ctx, BrokerClients+broker, clientName).Val()
 }
 
-func DelBrokerCapacity(ctx context.Context, broker, clientName string) {
-	redis := redis.Rdb
-	redis.SRem(ctx, BrokerCapacity+broker, clientName)
+func RemBrokerClients(ctx context.Context, broker, clientName string) int64 {
+	return redis.Rdb.SRem(ctx, BrokerClients+broker, clientName).Val()
 }
 
-func DelBrokerCapacityAll(ctx context.Context, broker string) {
-	redis := redis.Rdb
-	redis.Del(ctx, BrokerCapacity+broker)
+func DelBrokerClients(ctx context.Context, broker string) int64 {
+	return redis.Rdb.Del(ctx, BrokerClients+broker).Val()
 }
 
-func GetBrokerCapacityAll(ctx context.Context, broker string) []string {
-	redis := redis.Rdb
-	cmd := redis.SMembers(ctx, BrokerCapacity+broker)
-	if cmd != nil {
-		clients := cmd.Val()
-		if clients != nil && len(clients) > 0 {
-			return clients
-		}
-	}
-	return nil
+func GetBrokerClients(ctx context.Context, broker string) []string {
+	return redis.Rdb.SMembers(ctx, BrokerClients+broker).Val()
 }
 
-func SetBrokerInstance(ctx context.Context, broker string) {
-	redis := redis.Rdb
-	redis.SAdd(ctx, BrokerInstance, broker)
+func SetBrokerInstance(ctx context.Context, broker string) int64 {
+	return redis.Rdb.SAdd(ctx, BrokerInstance, broker).Val()
 }
 
-func DelBrokerInstance(ctx context.Context, broker string) {
-	redis := redis.Rdb
-	redis.SRem(ctx, BrokerInstance, broker)
+func RemBrokerInstance(ctx context.Context, broker string) int64 {
+	return redis.Rdb.SRem(ctx, BrokerInstance, broker).Val()
 }
 
-//func SetBrokerAlive(ctx context.Context, broker string) {
-//	redis := redis.Rdb
-//	redis.Set(ctx, BrokerAlive+broker, util.CurrentSecond(), time.Second*70)
-//}
-//
-//func GetBrokerAlive(ctx context.Context, broker string) string {
-//	redis := redis.Rdb
-//	cmd := redis.Get(ctx, BrokerAlive+broker)
-//	if cmd == nil {
-//		return ""
-//	}
-//
-//	return cmd.Val()
-//}
-//
 func AliveTask(ctx context.Context, broker string) {
 
 	c := cron.New()
@@ -79,7 +50,7 @@ func AliveTask(ctx context.Context, broker string) {
 	c.AddFunc("@every 1s", func() {
 		//ProbeBroker(ctx)
 		SetBrokerInstance(ctx, broker)
-		zaplog.Logger.Debugf("Task SetBrokerInstance %s", broker)
+		//zaplog.Logger.Debugf("Task SetBrokerInstance %s", broker)
 	})
 
 	//c.AddFunc("@every 1m", func() {
@@ -171,28 +142,3 @@ func AliveTask(ctx context.Context, broker string) {
 //	})
 //}
 
-func Close(ctx context.Context, c *context2.Context, cancel context.CancelFunc) {
-
-	//DelUserInfo(ctx, c.UserId())
-
-	//DelUserDevice(ctx, c.ClientName())
-
-	DelUserClient(ctx, c.UserId(), c.ClientName())
-
-	//DelRoomUser(ctx, c.RoomId(), c.ClientName())
-
-	DelUserContext(c.ClientName())
-
-	DelRoomClients(c.RoomId(), c.ClientName())
-
-	DelBrokerCapacity(ctx, c.Broker(), c.ClientName())
-
-	if cancel != nil {
-		cancel()
-	}
-
-	c.Close()
-
-	c = nil
-	zaplog.Logger.Infof("CloseByClient %s", c.Conn().RemoteAddr())
-}

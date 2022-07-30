@@ -1,8 +1,8 @@
 package serializer
 
 import (
-	"im-chatroom-broker/context"
 	"im-chatroom-broker/protocol"
+	"net"
 )
 
 const (
@@ -11,8 +11,8 @@ const (
 
 type Serializer interface {
 	Name() (string, error)
-	EncodePacket(packet *protocol.Packet, c *context.Context) ([]byte, error)
-	DecodePacket(bytes []byte, c *context.Context) (*protocol.Packet, error)
+	EncodePacket(packet *protocol.Packet) ([]byte, error)
+	DecodePacket(bytes []byte) (*protocol.Packet, error)
 	Version() byte
-	Write(c *context.Context, p *protocol.Packet) error
+	Write(conn net.Conn, p *protocol.Packet) error
 }

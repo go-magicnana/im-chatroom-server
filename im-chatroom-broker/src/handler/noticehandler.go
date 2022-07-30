@@ -2,9 +2,9 @@ package handler
 
 import (
 	"golang.org/x/net/context"
-	context2 "im-chatroom-broker/context"
 	"im-chatroom-broker/protocol"
 	"im-chatroom-broker/util"
+	"net"
 )
 
 //var onceNoticeHandler sync.Once
@@ -38,29 +38,29 @@ import (
 //
 //}
 
-func noticeJoinRoom(ctx context.Context, c *context2.Context, msgId,roomId string) {
+func noticeJoinRoom(ctx context.Context, conn net.Conn, msgId, userId, roomId string) {
 
 	if util.IsEmpty(roomId) {
 		return
 	}
 
-	packet := buildNoticePacket(msgId,roomId, c.UserId(), protocol.TypeNoticeJoinRoom)
+	//packet := buildNoticePacket(msgId, roomId, userId, protocol.TypeNoticeJoinRoom)
 
-	deliver(ctx, c, &packet)
+	//deliver(ctx, conn, &packet)
 }
 
-func noticeLeaveRoom(ctx context.Context, c *context2.Context, msgId,roomId string) {
+func noticeLeaveRoom(ctx context.Context, conn net.Conn, msgId, userId, roomId string) {
 
 	if util.IsEmpty(roomId) {
 		return
 	}
 
-	packet := buildNoticePacket(msgId,roomId, c.UserId(), protocol.TypeNoticeLeaveRoom)
-
-	deliver(ctx, c, &packet)
+	//packet := buildNoticePacket(msgId, roomId, userId, protocol.TypeNoticeLeaveRoom)
+	//
+	//deliver(ctx, conn, &packet)
 }
 
-func buildNoticePacket(msgId,roomId string, userId string, noticeType uint32) protocol.Packet {
+func buildNoticePacket(msgId, roomId string, userId string, noticeType uint32) protocol.Packet {
 	packet := protocol.Packet{
 		Header: protocol.MessageHeader{
 			MessageId: msgId,

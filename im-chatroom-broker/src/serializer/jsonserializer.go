@@ -5,9 +5,8 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
-	"im-chatroom-broker/context"
 	"im-chatroom-broker/protocol"
-	"im-chatroom-broker/zaplog"
+	"net"
 	"sync"
 )
 
@@ -36,21 +35,21 @@ func (j JsonSerializer) Name() (string, error) {
 	return Name, nil
 }
 
-func (j JsonSerializer) EncodePacket(packet *protocol.Packet, c *context.Context) ([]byte, error) {
+func (j JsonSerializer) EncodePacket(packet *protocol.Packet) ([]byte, error) {
 	bs, e := json.Marshal(packet)
 	return bs, e
 
 }
 
-func (j JsonSerializer) DecodePacket(bytes []byte, c *context.Context) (*protocol.Packet, error) {
+func (j JsonSerializer) DecodePacket(bytes []byte) (*protocol.Packet, error) {
 	message := protocol.Packet{}
 	e := json.Unmarshal(bytes, &message)
 	return &message, e
 }
 
-func (j JsonSerializer) Write(c *context.Context, p *protocol.Packet) error {
+func (j JsonSerializer) Write(conn net.Conn, p *protocol.Packet) error {
 
-	bs, e := j.EncodePacket(p, c)
+	bs, e := j.EncodePacket(p)
 	if bs == nil {
 		return errors.New("empty packet")
 	}
@@ -67,9 +66,9 @@ func (j JsonSerializer) Write(c *context.Context, p *protocol.Packet) error {
 	binary.Write(buffer, binary.BigEndian, length)
 
 	buffer.Write(bs)
-	_, err := c.Conn().Write(buffer.Bytes())
+	_, err := conn.Write(buffer.Bytes())
 
-	zaplog.Logger.Debugf("WriteOK %s %s C:%d T:%d F:%d %s", c.Conn().RemoteAddr().String(), p.Header.MessageId, p.Header.Command, p.Header.Type,p.Header.Flow, p.Body)
+	//zaplog.Logger.Debugf("WriteOK %s %s C:%d T:%d F:%d %s", conn.RemoteAddr().String(), p.Header.MessageId, p.Header.Command, p.Header.Type,p.Header.Flow, p.Body)
 
 
 
@@ -81,25 +80,3 @@ func (j JsonSerializer) Write(c *context.Context, p *protocol.Packet) error {
 	}
 
 }
-
-//tmpBuffer := make([]byte, 0)
-//
-//buffer := make([]byte, 1024)
-//messnager := make(chan byte)
-//for {
-//	n, err := context.Conn.Read(buffer)
-//	if err != nil {
-//		Log(context.Conn.RemoteAddr().String(), " connection error: ", err)
-//		return
-//	}
-//
-//	tmpBuffer = protocol.Depack(append(tmpBuffer, buffer[:n]...))
-//	Log("receive data string:", string(tmpBuffer))
-//	TaskDeliver(tmpBuffer, context)
-//	//start heartbeating
-//	go HeartBeating(context, messnager, 10)
-//	//check if get message from client
-//	go GravelChannel(tmpBuffer, messnager)
-//
-//}
-//defer context.Conn.Close()

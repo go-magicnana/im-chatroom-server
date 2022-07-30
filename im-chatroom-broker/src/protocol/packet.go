@@ -66,7 +66,8 @@ func (p Packet) ToString() string {
 }
 
 type PacketMessage struct {
-	ClientName string `json:"clientName"`
+	Broker     string  `json:"broker"`
+	ClientName string  `json:"clientName"`
 	Packet     *Packet `json:"packet"`
 }
 
@@ -129,13 +130,12 @@ type UserAuth struct {
 }
 
 type UserInfo struct {
-	UserId string   `json:"userId"`
-	Token  string   `json:"token"`
-	Device []string `json:"device"`
-	Name   string   `json:"name"`
-	Avatar string   `json:"avatar"`
-	Gender string   `json:"gender"`
-	Role   string   `json:"role"`
+	UserId string `json:"userId"`
+	Token  string `json:"token"`
+	Name   string `json:"name"`
+	Avatar string `json:"avatar"`
+	Gender string `json:"gender"`
+	Role   string `json:"role"`
 }
 
 type RoomInfo struct {
@@ -158,13 +158,21 @@ type MessageBodySignalLoginRes struct {
 }
 
 type MessageBodySignalJoinRoom struct {
+	UserId      string `json:"userId"`
 	RoomId      string `json:"roomId"`
 	Blocked     int    `json:"blocked"`
 	RoomBlocked int    `json:"roomBlocked"`
 }
 
+type MessageBodySignalLeaveRoom struct {
+	UserId string `json:"userId"`
+	RoomId string `json:"roomId"`
+}
+
 type MessageBodySignalChangeRoom struct {
-	RoomId      string `json:"newRoomId"`
+	UserId      string `json:"userId"`
+	NewRoomId   string `json:"newRoomId"`
+	OldRoomId   string `json:"OldRoomId"`
 	Blocked     int    `json:"blocked"`
 	RoomBlocked int    `json:"roomBlocked"`
 }
@@ -238,6 +246,13 @@ func JsonSignalLogin(any any) *MessageBodySignalLogin {
 func JsonSignalJoinRoom(any any) *MessageBodySignalJoinRoom {
 	bs, _ := json.Marshal(any)
 	ret := MessageBodySignalJoinRoom{}
+	json.Unmarshal(bs, &ret)
+	return &ret
+}
+
+func JsonSignalLeaveRoom(any any) *MessageBodySignalLeaveRoom {
+	bs, _ := json.Marshal(any)
+	ret := MessageBodySignalLeaveRoom{}
 	json.Unmarshal(bs, &ret)
 	return &ret
 }

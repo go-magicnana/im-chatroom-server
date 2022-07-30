@@ -3,10 +3,14 @@ package client
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"golang.org/x/net/context"
 	"im-chatroom-broker/protocol"
+	"im-chatroom-broker/redis"
 	"im-chatroom-broker/serializer"
+	"im-chatroom-broker/service"
 	"im-chatroom-broker/util"
 	"im-chatroom-broker/zaplog"
 	"math/rand"
@@ -44,7 +48,7 @@ func Start(role, serverIp string) {
 	time.Sleep(time.Second * 10)
 
 	sendJoinRoom(conn)
-	time.Sleep(time.Second * 2)
+	time.Sleep(time.Second * 1)
 
 	//
 	//
@@ -67,7 +71,7 @@ func read(conn net.Conn) {
 
 	serializer := serializer.SingleJsonSerializer()
 
-	path := "/Users/jinsong/work/"+conn.LocalAddr().String()+".txt"
+	path := "/Users/jinsong/work/" + conn.LocalAddr().String() + ".txt"
 
 	fi, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0664)
 	if err != nil {
@@ -75,7 +79,6 @@ func read(conn net.Conn) {
 		return
 	}
 	defer fi.Close()
-
 
 	for {
 
@@ -100,7 +103,7 @@ func read(conn net.Conn) {
 		body := make([]byte, length)
 		conn.Read(body)
 
-		p, e := serializer.DecodePacket(body, nil)
+		p, e := serializer.DecodePacket(body)
 
 		if e != nil || p == nil {
 			return
@@ -128,7 +131,7 @@ func write(conn net.Conn, p *protocol.Packet) error {
 
 	j := serializer.SingleJsonSerializer()
 
-	bs, e := j.EncodePacket(p, nil)
+	bs, e := j.EncodePacket(p)
 	if bs == nil {
 		return errors.New("empty packet")
 	}
@@ -158,6 +161,8 @@ func write(conn net.Conn, p *protocol.Packet) error {
 }
 
 func SendLogin(conn net.Conn) {
+
+	//SetUserAuth(i)
 
 	header := protocol.MessageHeader{
 		MessageId: "LoginMessageId-" + randCreator(8),
@@ -193,6 +198,7 @@ func sendJoinRoom(conn net.Conn) {
 
 	body := protocol.MessageBodySignalJoinRoom{
 		RoomId: "1",
+		UserId: "1001",
 	}
 
 	packet := protocol.Packet{
@@ -252,7 +258,7 @@ func sendMsg(conn net.Conn) {
 		}
 
 		body := protocol.MessageBodyContentText{
-			Content: strconv.Itoa(i)+"\n",
+			Content: strconv.Itoa(i) + "\n",
 		}
 
 		packet := protocol.Packet{
@@ -271,8 +277,6 @@ func writeFile(path string) *os.File {
 	}
 	defer fi.Close()
 
-
-
 	//创建新Writer，其缓冲区有默认大小
 	//writer := bufio.NewWriter(fi)
 	//将信息写入缓存
@@ -286,4 +290,21 @@ func writeFile(path string) *os.File {
 	//	return
 	//}
 	return fi
+}
+
+func SetUserAuth(userId string) error {
+
+	u := protocol.UserInfo{
+
+		UserId: userId,
+		Token:  userId,
+		Name:   "name-" + userId,
+	}
+
+	data, _ := json.Marshal(u)
+
+	redis.Rdb.Set(context.Background(), service.UserAuth+u.Token, data, time.Minute*30)
+
+	return nil
+
 }

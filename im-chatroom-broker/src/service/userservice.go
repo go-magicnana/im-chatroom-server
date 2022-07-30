@@ -10,38 +10,22 @@ import (
 )
 
 const (
-	//UserDevice string = "imchatroom:user.device:"
 	UserInfo    string = "imchatroom:user.info:"
 	UserAuth    string = "imchatroom:user.auth:"
 	UserClients string = "imchatroom:user.clients:"
 )
 
 func SetUserClient(ctx context.Context, userId string, clientName string) int64 {
-	cmd := redis.Rdb.HSet(ctx, UserClients+userId, clientName, util.CurrentSecond())
-
-	if cmd == nil {
-		return 0
-	}
-
-	return cmd.Val()
+	return redis.Rdb.SAdd(ctx, UserClients+userId, clientName).Val()
 }
 
 func GetUserClients(ctx context.Context, userId string) []string {
-	cmd := redis.Rdb.HGetAll(ctx, UserClients+userId)
+	return redis.Rdb.SMembers(ctx, UserClients+userId).Val()
 
-	m := cmd.Val()
-
-	ret := make([]string, 0)
-
-	for k, _ := range m {
-		ret = append(ret, k)
-	}
-
-	return ret
 }
 
-func DelUserClient(ctx context.Context, userId, clientName string) {
-	redis.Rdb.HDel(ctx, UserClients+userId, clientName)
+func RemUserClient(ctx context.Context, userId, clientName string) int64 {
+	return redis.Rdb.SRem(ctx, UserClients+userId, clientName).Val()
 
 }
 
@@ -50,9 +34,7 @@ func RefreshUserClient(ctx context.Context, userId string) {
 }
 
 func GetUserAuth(ctx context.Context, token string) (*protocol.UserAuth, error) {
-	cmd := redis.Rdb.Get(ctx, UserAuth+token)
-
-	bs, err := cmd.Bytes()
+	bs, err := redis.Rdb.Get(ctx, UserAuth+token).Bytes()
 	if err != nil {
 		return nil, err
 	} else {
@@ -71,7 +53,7 @@ func DelUserAuth(ctx context.Context, token string) {
 	//redis.Del(ctx, UserAuth+token)
 }
 
-func SetUserInfo(ctx context.Context, info protocol.UserInfo) {
+func SetUserInfo(ctx context.Context, info protocol.UserInfo) string {
 	bs, e := json.Marshal(info)
 
 	if e != nil {
@@ -80,24 +62,24 @@ func SetUserInfo(ctx context.Context, info protocol.UserInfo) {
 
 	json := string(bs)
 
-	redis.Rdb.Set(ctx, UserInfo+info.UserId, json, time.Minute)
+	return redis.Rdb.Set(ctx, UserInfo+info.UserId, json, time.Minute).Val()
 }
 
-func GetUserInfo(ctx context.Context, userId string) (*protocol.UserInfo, error) {
+func GetUserInfo(ctx context.Context, userId string) *protocol.UserInfo {
 	cmd := redis.Rdb.Get(ctx, UserInfo+userId)
 
 	bs, err := cmd.Bytes()
 	if err != nil {
-		return nil, err
+		return nil
 	}
 
 	if len(bs) == 0 {
-		return nil, nil
+		return nil
 	}
 
 	user := &protocol.UserInfo{}
-	e2 := json.Unmarshal(bs, user)
-	return user, e2
+	json.Unmarshal(bs, user)
+	return user
 }
 
 func RefreshUserInfo(ctx context.Context, userId string) {
