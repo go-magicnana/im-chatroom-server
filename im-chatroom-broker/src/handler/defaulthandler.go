@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"golang.org/x/net/context"
 	err "im-chatroom-broker/error"
 	"im-chatroom-broker/protocol"
@@ -43,7 +44,7 @@ func heartbeat(ctx context.Context, conn net.Conn, packet *protocol.Packet) (*pr
 
 		zaplog.Logger.Debugf("ThreadContext HeartBeat %d", thread.Count.Load())
 
-		return protocol.NewResponseOK(packet, "OK"), nil
+		return protocol.NewResponseOK(packet, "OK "+fmt.Sprint(thread.Count.Load())), nil
 	} else {
 		return protocol.NewResponseOK(packet, "QUIT"), nil
 

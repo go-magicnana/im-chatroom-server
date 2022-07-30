@@ -80,7 +80,7 @@ func login(ctx context.Context, conn net.Conn, packet *protocol.Packet, body *pr
 	//}
 
 	c.UserId = user.UserId
-	service.SetUserClient(ctx, user.UserId, conn.RemoteAddr().String())
+	//service.SetUserClient(ctx, user.UserId, conn.RemoteAddr().String())
 
 	//devices := service.GetUserClients(ctx, user.UserId)
 	//
@@ -106,7 +106,7 @@ func login(ctx context.Context, conn net.Conn, packet *protocol.Packet, body *pr
 
 	//service.SetUserContext(c.ClientName(), c)
 
-	service.SetBrokerClients(ctx, conn.LocalAddr().String(), conn.RemoteAddr().String())
+	//service.SetBrokerClients(ctx, conn.LocalAddr().String(), conn.RemoteAddr().String())
 
 	loginUser := protocol.MessageBodySignalLoginRes{
 		User: userInfo,

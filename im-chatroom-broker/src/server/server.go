@@ -19,7 +19,6 @@ import (
 	"im-chatroom-broker/util"
 	"io"
 	"net"
-	"time"
 )
 
 var counter = 100
@@ -95,7 +94,7 @@ func listen(ctx context.Context, addr string) {
 
 				ctx, cancel := context.WithCancel(ctx)
 
-				channel := make(chan *protocol.InnerPacket, 1)
+				channel := make(chan *protocol.InnerPacket, 10)
 
 				//c := context2.NewContext(brokerAddress, conn)
 
@@ -140,6 +139,11 @@ func read(
 
 	serializer := serializer.SingleJsonSerializer()
 
+	defer func() {
+		zaplog.Logger.Errorf("ReadRecover %s Close Client %v", conn.RemoteAddr(), recover())
+		readReturn(cc.Channel, protocol.NewQuit())
+	}()
+
 	for {
 
 		select {
@@ -149,7 +153,7 @@ func read(
 		default:
 			//c.Readable()
 
-			conn.SetReadDeadline(time.Now().Add(time.Second * 60))
+			//conn.SetReadDeadline(time.Now().Add(time.Minute * 11))
 
 			meta := make([]byte, protocol.MetaVersionBytes+protocol.MetaLengthBytes)
 			ml, me := conn.Read(meta)
@@ -202,7 +206,7 @@ func read(
 				return
 			}
 
-			zaplog.Logger.Debugf("ReadOK %s %s C:%d T:%d F:%d %s", conn.RemoteAddr().String(), packet.Header.MessageId, packet.Header.Command, packet.Header.Type, packet.Header.Flow, packet.Body)
+			//zaplog.Logger.Debugf("ReadOK %s %s C:%d T:%d F:%d %s", conn.RemoteAddr().String(), packet.Header.MessageId, packet.Header.Command, packet.Header.Type, packet.Header.Flow, packet.Body)
 
 			process(ctx, cancel, cc, packet, conn)
 
@@ -214,8 +218,9 @@ func read(
 
 func close(ctx context.Context, cancel context.CancelFunc, conn net.Conn, cc *thread.ConnectClient) {
 
-	service.RemUserClient(ctx, cc.UserId, conn.RemoteAddr().String())
-	service.RemBrokerClients(ctx, conn.LocalAddr().String(), conn.RemoteAddr().String())
+	zaplog.Logger.Errorf("WriteRecover %s %v", conn.RemoteAddr(), recover())
+	//service.RemUserClient(ctx, cc.UserId, conn.RemoteAddr().String())
+	//service.RemBrokerClients(ctx, conn.LocalAddr().String(), conn.RemoteAddr().String())
 	thread.RemChannel(conn.RemoteAddr().String())
 	thread.RemRoomChannel(cc.RoomId, conn.RemoteAddr().String())
 
@@ -248,7 +253,9 @@ func write(ctx context.Context,
 				return
 			} else {
 				if res.Packet != nil {
-					serializer.SingleJsonSerializer().Write(conn, res.Packet)
+					if err := serializer.SingleJsonSerializer().Write(conn, res.Packet); err != nil {
+						return
+					}
 				}
 			}
 		default:

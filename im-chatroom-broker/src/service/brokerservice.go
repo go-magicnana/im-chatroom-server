@@ -8,25 +8,26 @@ import (
 )
 
 const (
-	BrokerClients  string = "imchatroom:broker.clients:"
+	//BrokerClients  string = "imchatroom:broker.clients:"
 	BrokerInstance string = "imchatroom:broker.instance"
 )
 
-func SetBrokerClients(ctx context.Context, broker, clientName string) int64 {
-	return redis.Rdb.SAdd(ctx, BrokerClients+broker, clientName).Val()
-}
-
-func RemBrokerClients(ctx context.Context, broker, clientName string) int64 {
-	return redis.Rdb.SRem(ctx, BrokerClients+broker, clientName).Val()
-}
-
-func DelBrokerClients(ctx context.Context, broker string) int64 {
-	return redis.Rdb.Del(ctx, BrokerClients+broker).Val()
-}
-
-func GetBrokerClients(ctx context.Context, broker string) []string {
-	return redis.Rdb.SMembers(ctx, BrokerClients+broker).Val()
-}
+//
+//func SetBrokerClients(ctx context.Context, broker, clientName string) int64 {
+//	return redis.Rdb.SAdd(ctx, BrokerClients+broker, clientName).Val()
+//}
+//
+//func RemBrokerClients(ctx context.Context, broker, clientName string) int64 {
+//	return redis.Rdb.SRem(ctx, BrokerClients+broker, clientName).Val()
+//}
+//
+//func DelBrokerClients(ctx context.Context, broker string) int64 {
+//	return redis.Rdb.Del(ctx, BrokerClients+broker).Val()
+//}
+//
+//func GetBrokerClients(ctx context.Context, broker string) []string {
+//	return redis.Rdb.SMembers(ctx, BrokerClients+broker).Val()
+//}
 
 func SetBrokerInstance(ctx context.Context, broker string) int64 {
 	return redis.Rdb.SAdd(ctx, BrokerInstance, broker).Val()
@@ -37,6 +38,10 @@ func RemBrokerInstance(ctx context.Context, broker string) int64 {
 }
 
 func AliveTask(ctx context.Context, broker string) {
+
+	defer func() {
+		zaplog.Logger.Errorf("TaskRecover %v", recover())
+	}()
 
 	c := cron.New()
 
@@ -141,4 +146,3 @@ func AliveTask(ctx context.Context, broker string) {
 //		return true
 //	})
 //}
-

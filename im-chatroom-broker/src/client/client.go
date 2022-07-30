@@ -48,14 +48,14 @@ func Start(role, serverIp string) {
 	time.Sleep(time.Second * 10)
 
 	sendJoinRoom(conn)
-	time.Sleep(time.Second * 1)
+	time.Sleep(time.Second * 10)
 
 	//
 	//
-	go sendPing(conn)
+	//go sendPing(conn)
 
 	if "send" == role {
-		go sendMsg(conn)
+		sendMsg(conn)
 	}
 	wg.Wait()
 }

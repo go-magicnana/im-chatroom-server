@@ -4,7 +4,7 @@ const (
 	// hash
 	//RoomInfo string = "imchatroom:room.info:"
 	// set
-	RoomClients string = "imchatroom:room.clients:"
+	//RoomClients string = "imchatroom:room.clients:"
 	//RoomBlacks  string = "imchatroom:room.blacks:"
 	//RoomInstance  string = "imchatroom:room.instance"
 )

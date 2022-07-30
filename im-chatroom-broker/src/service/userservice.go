@@ -15,23 +15,23 @@ const (
 	UserClients string = "imchatroom:user.clients:"
 )
 
-func SetUserClient(ctx context.Context, userId string, clientName string) int64 {
-	return redis.Rdb.SAdd(ctx, UserClients+userId, clientName).Val()
-}
+//func SetUserClient(ctx context.Context, userId string, clientName string) int64 {
+//	return redis.Rdb.SAdd(ctx, UserClients+userId, clientName).Val()
+//}
+//
+//func GetUserClients(ctx context.Context, userId string) []string {
+//	return redis.Rdb.SMembers(ctx, UserClients+userId).Val()
+//
+//}
+//
+//func RemUserClient(ctx context.Context, userId, clientName string) int64 {
+//	return redis.Rdb.SRem(ctx, UserClients+userId, clientName).Val()
+//
+//}
 
-func GetUserClients(ctx context.Context, userId string) []string {
-	return redis.Rdb.SMembers(ctx, UserClients+userId).Val()
-
-}
-
-func RemUserClient(ctx context.Context, userId, clientName string) int64 {
-	return redis.Rdb.SRem(ctx, UserClients+userId, clientName).Val()
-
-}
-
-func RefreshUserClient(ctx context.Context, userId string) {
-	redis.Rdb.Expire(ctx, UserClients+userId, time.Minute)
-}
+//func RefreshUserClient(ctx context.Context, userId string) {
+//	redis.Rdb.Expire(ctx, UserClients+userId, time.Minute)
+//}
 
 func GetUserAuth(ctx context.Context, token string) (*protocol.UserAuth, error) {
 	bs, err := redis.Rdb.Get(ctx, UserAuth+token).Bytes()

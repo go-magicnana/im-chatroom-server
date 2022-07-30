@@ -36,25 +36,25 @@ var Push2OneChannel chan *protocol.PacketMessage
 
 func init() {
 
-	if util.IsNotEmpty(config.OP.Ip) {
-		MyName = broker2name(config.OP.Ip + ":" + config.OP.Port)
-
-	} else {
-		ip := util.GetBrokerIp()
-		MyName = broker2name(ip + ":" + config.OP.Port)
-
-	}
-
-	PushRoomChannel = make(chan *protocol.PacketMessage, 500)
-	Push2OneChannel = make(chan *protocol.PacketMessage, 1500)
-	_producer = newProducer()
-	_consumer1 = newConsumerRoom()
-	_consumer2 = newConsumerOne()
-
-	c, _ := context.WithCancel(context.Background())
-
-	go SendSync2Room(c)
-	go SendSync2One(c)
+	//if util.IsNotEmpty(config.OP.Ip) {
+	//	MyName = broker2name(config.OP.Ip + ":" + config.OP.Port)
+	//
+	//} else {
+	//	ip := util.GetBrokerIp()
+	//	MyName = broker2name(ip + ":" + config.OP.Port)
+	//
+	//}
+	//
+	//PushRoomChannel = make(chan *protocol.PacketMessage, 500)
+	//Push2OneChannel = make(chan *protocol.PacketMessage, 1500)
+	//_producer = newProducer()
+	//_consumer1 = newConsumerRoom()
+	//_consumer2 = newConsumerOne()
+	//
+	//c, _ := context.WithCancel(context.Background())
+	//
+	//go SendSync2Room(c)
+	//go SendSync2One(c)
 
 }
 

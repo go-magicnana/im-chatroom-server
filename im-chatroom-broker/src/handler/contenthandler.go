@@ -6,6 +6,8 @@ import (
 	"im-chatroom-broker/mq"
 	"im-chatroom-broker/service"
 	"im-chatroom-broker/thread"
+	"im-chatroom-broker/zaplog"
+	"math"
 	"net"
 
 	//"im-chatroom-broker/mq"
@@ -76,11 +78,11 @@ func deliver(ctx context.Context, conn net.Conn, packet *protocol.Packet, c *thr
 	packet.Header.Message = err.OK.Message
 
 	if packet.Header.Target == protocol.TargetRoom {
-		//zaplog.Logger.Debugf("Deliver RoomTopic %s C:%d T:%d F:%d %v", packet.Header.MessageId, packet.Header.Command, packet.Header.Type, packet.Header.Flow, packet.Body)
+		zaplog.Logger.Debugf("Deliver %s C:%d T:%d F:%d %v", packet.Header.MessageId, packet.Header.Command, packet.Header.Type, packet.Header.Flow, packet.Body)
 
 		//deliver2ConsumerRoom(c, conn, packet)
 
-		go deliver2BrokerRoom(packet)
+		go deliver2BrokerRoom(packet, conn, c)
 
 	} else {
 
@@ -117,13 +119,51 @@ func deliver2ConsumerRoom(c *thread.ConnectClient, conn net.Conn, packet *protoc
 	mq.PushRoomChannel <- pm
 }
 
+func deliver2BrokerRoom(packet *protocol.Packet, conn net.Conn, c *thread.ConnectClient) {
 
-func deliver2BrokerRoom(packet *protocol.Packet) {
+	defer func() {
+		zaplog.Logger.Errorf("DeliverRecover1 %s DropPacket %v", conn.RemoteAddr(), recover())
+	}()
+
 	cs := thread.GetRoomChannels(packet.Header.To)
 	if cs != nil {
-		for _, v := range cs {
-			clientName := v.(string)
 
+		deliver2BrokerRoomBatch(packet, cs,conn)
+		//for _, v := range cs {
+		//	clientName := v.(string)
+		//
+		//	cc := thread.GetChannel(clientName)
+		//
+		//	if cc != nil && cc.Channel != nil {
+		//		cc.Channel <- protocol.NewResponse(packet)
+		//
+		//	}
+		//}
+	}
+}
+
+func deliver2BrokerRoomBatch(packet *protocol.Packet, cs []interface{},conn net.Conn) {
+	iss := spiltList(cs, 100)
+
+	for _, v := range iss {
+
+		if v != nil {
+			go deliver2BrokerRoomBatchInner(v, packet,conn)
+		}
+
+	}
+
+}
+
+func deliver2BrokerRoomBatchInner(clients []interface{}, packet *protocol.Packet,conn net.Conn) {
+
+	defer func() {
+		zaplog.Logger.Errorf("DeliverRecover1 %s DropPacket %v", conn.RemoteAddr(), recover())
+	}()
+
+	if clients != nil {
+		for _, client := range clients {
+			clientName := client.(string)
 			cc := thread.GetChannel(clientName)
 
 			if cc != nil && cc.Channel != nil {
@@ -132,6 +172,22 @@ func deliver2BrokerRoom(packet *protocol.Packet) {
 			}
 		}
 	}
+}
+
+func spiltList(list []interface{}, size int) [][]interface{} {
+	lens := len(list)
+	mod := math.Ceil(float64(lens) / float64(size))
+	spiltList := make([][]interface{}, 0)
+	for i := 0; i < int(mod); i++ {
+		tmpList := make([]interface{}, 0, size)
+		if i == int(mod)-1 {
+			tmpList = list[i*size:]
+		} else {
+			tmpList = list[i*size : i*size+size]
+		}
+		spiltList = append(spiltList, tmpList)
+	}
+	return spiltList
 }
 
 func text(ctx context.Context, conn net.Conn, packet *protocol.Packet, c *thread.ConnectClient) (*protocol.Packet, error) {
