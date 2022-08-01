@@ -104,7 +104,7 @@ func read(conn net.Conn) {
 
 		if p.Header.Command == protocol.CommandContent && p.Header.Flow == protocol.FlowDeliver {
 			text := protocol.JsonContentText(p.Body)
-			service.AddUserClientMessage(context.Background(),conn.LocalAddr().String(),text.Content)
+			service.AddUserClientMessage(context.Background(), conn.LocalAddr().String(), text.Content)
 		}
 
 	}
@@ -239,6 +239,9 @@ func sendMsg(conn net.Conn) {
 			Type:      protocol.TypeContentText,
 			Target:    protocol.TargetRoom,
 			To:        "1",
+			From: protocol.UserInfo{
+				UserId: "1001",
+			},
 		}
 
 		body := protocol.MessageBodyContentText{

@@ -41,6 +41,23 @@ func TestStart1(t *testing.T) {
 
 }
 
+func TestStart11(t *testing.T) {
+	var wg sync.WaitGroup
+	wg.Add(1)
+	//go Start("send", "47.95.148.3")
+
+	for i := 0; i < 10; i++ {
+		for j := 0; j < 100; j++ {
+			go Start("Receiver", "47.95.148.3")
+		}
+		time.Sleep(time.Second * 5)
+
+		//go Start("Receiver", "127.0.0.1",strconv.Itoa(i))
+	}
+	wg.Wait()
+
+}
+
 func TestStart2(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)

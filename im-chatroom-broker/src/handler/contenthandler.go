@@ -128,34 +128,34 @@ func deliver2BrokerRoom(packet *protocol.Packet, conn net.Conn, c *thread.Connec
 	cs := thread.GetRoomChannels(packet.Header.To)
 	if cs != nil {
 
-		deliver2BrokerRoomBatch(packet, cs,conn)
-		//for _, v := range cs {
-		//	clientName := v.(string)
-		//
-		//	cc := thread.GetChannel(clientName)
-		//
-		//	if cc != nil && cc.Channel != nil {
-		//		cc.Channel <- protocol.NewResponse(packet)
-		//
-		//	}
-		//}
+		//deliver2BrokerRoomBatch(packet, cs,conn)
+		for _, v := range cs {
+			clientName := v.(string)
+
+			cc := thread.GetChannel(clientName)
+
+			if cc != nil && cc.Channel != nil {
+				cc.Channel <- protocol.NewResponse(packet)
+
+			}
+		}
 	}
 }
 
-func deliver2BrokerRoomBatch(packet *protocol.Packet, cs []interface{},conn net.Conn) {
+func deliver2BrokerRoomBatch(packet *protocol.Packet, cs []interface{}, conn net.Conn) {
 	iss := spiltList(cs, 100)
 
 	for _, v := range iss {
 
 		if v != nil {
-			go deliver2BrokerRoomBatchInner(v, packet,conn)
+			go deliver2BrokerRoomBatchInner(v, packet, conn)
 		}
 
 	}
 
 }
 
-func deliver2BrokerRoomBatchInner(clients []interface{}, packet *protocol.Packet,conn net.Conn) {
+func deliver2BrokerRoomBatchInner(clients []interface{}, packet *protocol.Packet, conn net.Conn) {
 
 	defer func() {
 		zaplog.Logger.Errorf("DeliverRecover1 %s DropPacket %v", conn.RemoteAddr(), recover())
