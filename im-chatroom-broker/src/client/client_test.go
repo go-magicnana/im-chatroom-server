@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"strconv"
 	"sync"
@@ -106,4 +107,31 @@ func TestSetUserAuth(t *testing.T) {
 	for i := 1000; i < 2000; i++ {
 		SetUserAuth(strconv.Itoa(i))
 	}
+}
+
+func TestServer(t *testing.T) {
+	var wg sync.WaitGroup
+	wg.Add(1)
+	for i := 0; i < 100; i++ {
+		go thread(i)
+	}
+	wg.Wait()
+}
+
+func thread(i int) {
+	c, _ := net.DialTimeout("tcp", "192.168.3.242:33121", 10*time.Second)
+	time.Sleep(time.Millisecond)
+
+	go func() {
+		c.Write([]byte("haha"))
+		time.Sleep(time.Second)
+	}()
+
+	go func() {
+
+		bs := make([]byte,1024)
+		n, _ := c.Read(bs)
+		fmt.Println(i, string(bs[0:n]))
+	}()
+
 }
