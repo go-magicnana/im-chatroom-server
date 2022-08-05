@@ -33,8 +33,8 @@ const (
 //	redis.Rdb.Expire(ctx, UserClients+userId, time.Minute)
 //}
 
-func GetUserAuth(ctx context.Context, token string) (*protocol.UserAuth, error) {
-	bs, err := redis.Rdb.Get(ctx, UserAuth+token).Bytes()
+func GetUserAuth(token string) (*protocol.UserAuth, error) {
+	bs, err := redis.Rdb.Get(context.Background(), UserAuth+token).Bytes()
 	if err != nil {
 		return nil, err
 	} else {
@@ -48,12 +48,12 @@ func GetUserAuth(ctx context.Context, token string) (*protocol.UserAuth, error) 
 	}
 }
 
-func DelUserAuth(ctx context.Context, token string) {
+func DelUserAuth(token string) {
 	//redis := redis.Rdb
 	//redis.Del(ctx, UserAuth+token)
 }
 
-func SetUserInfo(ctx context.Context, info protocol.UserInfo) string {
+func SetUserInfo(info protocol.UserInfo) string {
 	bs, e := json.Marshal(info)
 
 	if e != nil {
@@ -62,11 +62,11 @@ func SetUserInfo(ctx context.Context, info protocol.UserInfo) string {
 
 	json := string(bs)
 
-	return redis.Rdb.Set(ctx, UserInfo+info.UserId, json, time.Minute).Val()
+	return redis.Rdb.Set(context.Background(), UserInfo+info.UserId, json, time.Minute).Val()
 }
 
-func GetUserInfo(ctx context.Context, userId string) *protocol.UserInfo {
-	cmd := redis.Rdb.Get(ctx, UserInfo+userId)
+func GetUserInfo(userId string) *protocol.UserInfo {
+	cmd := redis.Rdb.Get(context.Background(), UserInfo+userId)
 
 	bs, err := cmd.Bytes()
 	if err != nil {

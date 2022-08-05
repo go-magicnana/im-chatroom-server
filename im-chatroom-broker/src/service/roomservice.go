@@ -1,25 +1,30 @@
 package service
 
+import (
+	"golang.org/x/net/context"
+	"im-chatroom-broker/redis"
+)
+
 const (
 	// hash
 	//RoomInfo string = "imchatroom:room.info:"
 	// set
-	//RoomClients string = "imchatroom:room.clients:"
+	RoomClients string = "imchatroom:room.clients:"
 	//RoomBlacks  string = "imchatroom:room.blacks:"
 	//RoomInstance  string = "imchatroom:room.instance"
 )
 
-//func SetRoomClients(ctx context.Context, roomId, clientName string) int64 {
-//	return redis.Rdb.SAdd(ctx, RoomClients+roomId, clientName).Val()
-//}
-//
-//func GetRoomClients(ctx context.Context, roomId string) []string {
-//	return redis.Rdb.SMembers(ctx, RoomClients+roomId).Val()
-//}
-//
-//func RemRoomClients(ctx context.Context, roomId, ClientName string) int64 {
-//	return redis.Rdb.SRem(ctx, RoomClients+roomId, ClientName).Val()
-//}
+func SetRoomClients(broker, roomId, clientName string) int64 {
+	return redis.Rdb.SAdd(context.Background(), RoomClients+broker+":"+roomId, clientName).Val()
+}
+
+func GetRoomClients(broker, roomId string) []string {
+	return redis.Rdb.SMembers(context.Background(), RoomClients+broker+":"+roomId).Val()
+}
+
+func RemRoomClients(broker, roomId, ClientName string) int64 {
+	return redis.Rdb.SRem(context.Background(), RoomClients+broker+":"+roomId, ClientName).Val()
+}
 
 //func GetRoomInstance(ctx context.Context) []string{
 //	return redis.Rdb.SMembers(ctx,RoomInstance).Val()

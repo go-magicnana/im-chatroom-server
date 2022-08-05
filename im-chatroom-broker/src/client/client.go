@@ -52,7 +52,7 @@ func Start(role, serverIp string) {
 
 	//
 	//
-	//go sendPing(conn)
+	go sendPing(conn)
 
 	if "send" == role {
 		sendMsg(conn)
@@ -69,7 +69,7 @@ func read(conn net.Conn) {
 	//}
 	//defer file.Close()
 
-	serializer := serializer.SingleJsonSerializer()
+	serializer := serializer.NewJsonSerializer()
 
 	for {
 
@@ -113,7 +113,7 @@ func read(conn net.Conn) {
 
 func write(conn net.Conn, p *protocol.Packet) error {
 
-	j := serializer.SingleJsonSerializer()
+	j := serializer.NewJsonSerializer()
 
 	bs, e := j.EncodePacket(p)
 	if bs == nil {

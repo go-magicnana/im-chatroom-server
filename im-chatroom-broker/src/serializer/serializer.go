@@ -1,9 +1,13 @@
 package serializer
 
 import (
+	"errors"
 	"im-chatroom-broker/protocol"
 	"net"
 )
+
+var ErrIncompletePacket = errors.New("incomplete packet")
+var ErrInvalidPacket = errors.New("invalid packet")
 
 const (
 	Version = byte(1)

@@ -1,13 +1,11 @@
 package handler
 
 import (
-	"golang.org/x/net/context"
+	"im-chatroom-broker/ctx"
 	err "im-chatroom-broker/error"
 	"im-chatroom-broker/protocol"
 	"im-chatroom-broker/service"
-	"im-chatroom-broker/thread"
 	"im-chatroom-broker/util"
-	"net"
 	"sync"
 )
 
@@ -25,46 +23,43 @@ func SingleSignalHandler() *SignalHandler {
 
 type SignalHandler struct{}
 
-func (s SignalHandler) Handle(ctx context.Context, conn net.Conn, packet *protocol.Packet, c *thread.ConnectClient) (*protocol.Packet, error) {
+func (s SignalHandler) Handle(c *ctx.Context, packet *protocol.Packet) (*protocol.Packet, error) {
 
 	ret := protocol.NewResponseError(packet, err.TypeNotAllow)
 
 	switch packet.Header.Type {
 	case protocol.TypeSignalPing:
-		//a := protocol.JsonSignalPing(packet.Body)
-		return ping(ctx, conn, packet, c)
+		return ping(c, packet)
 
 	case protocol.TypeSignalLogin:
 		a := protocol.JsonSignalLogin(packet.Body)
-		return login(ctx, conn, packet, a, c)
+		return login(c, packet, a)
 
 	case protocol.TypeSignalJoinRoom:
 		a := protocol.JsonSignalJoinRoom(packet.Body)
-		return joinRoom(ctx, conn, packet, a, c)
+		return joinRoom(c, packet, a)
 
 	case protocol.TypeSignalLeaveRoom:
 		a := protocol.JsonSignalLeaveRoom(packet.Body)
-		return leaveRoom(ctx, conn, packet, a, c)
+		return leaveRoom(c, packet, a)
 
 	case protocol.TypeSignalChangeRoom:
 		a := protocol.JsonSignalChangeRoom(packet.Body)
-		return changeRoom(ctx, conn, packet, a, c)
+		return changeRoom(c, packet, a)
 	}
 	return ret, nil
 }
 
-func ping(ctx context.Context, conn net.Conn, packet *protocol.Packet, c *thread.ConnectClient) (*protocol.Packet, error) {
-	//service.RefreshUserClient(ctx,c.UserId())
-	//service.RefreshUserInfo(ctx,c.UserId())
+func ping(c *ctx.Context, packet *protocol.Packet) (*protocol.Packet, error) {
 	return nil, nil
 }
 
-func login(ctx context.Context, conn net.Conn, packet *protocol.Packet, body *protocol.MessageBodySignalLogin, c *thread.ConnectClient) (*protocol.Packet, error) {
+func login(c *ctx.Context, packet *protocol.Packet, body *protocol.MessageBodySignalLogin) (*protocol.Packet, error) {
 
 	token := body.Token
 	//device := body.Device
 
-	user, e := service.GetUserAuth(ctx, token)
+	user, e := service.GetUserAuth(token)
 
 	if e != nil {
 		return protocol.NewResponseError(packet, err.Unauthorized), nil
@@ -80,6 +75,7 @@ func login(ctx context.Context, conn net.Conn, packet *protocol.Packet, body *pr
 	//}
 
 	c.UserId = user.UserId
+	ctx.SetContext(c.Conn.RemoteAddr().String(), c)
 	//service.SetUserClient(ctx, user.UserId, conn.RemoteAddr().String())
 
 	//devices := service.GetUserClients(ctx, user.UserId)
@@ -92,7 +88,7 @@ func login(ctx context.Context, conn net.Conn, packet *protocol.Packet, body *pr
 		Gender: user.Gender,
 		Role:   user.Role,
 	}
-	service.SetUserInfo(ctx, userInfo)
+	service.SetUserInfo(userInfo)
 
 	//userDevice := protocol.UserDevice{
 	//	ClientName: c.ClientName(),
@@ -113,12 +109,12 @@ func login(ctx context.Context, conn net.Conn, packet *protocol.Packet, body *pr
 	}
 	p := protocol.NewResponseOK(packet, loginUser)
 
-	service.DelUserAuth(ctx, token)
+	service.DelUserAuth(token)
 
 	return p, nil
 }
 
-func joinRoom(ctx context.Context, conn net.Conn, packet *protocol.Packet, body *protocol.MessageBodySignalJoinRoom, c *thread.ConnectClient) (*protocol.Packet, error) {
+func joinRoom(c *ctx.Context, packet *protocol.Packet, body *protocol.MessageBodySignalJoinRoom) (*protocol.Packet, error) {
 
 	if util.IsEmpty(body.RoomId) {
 		return protocol.NewResponseError(packet, err.InvalidRequest.Format("roomId")), nil
@@ -130,7 +126,8 @@ func joinRoom(ctx context.Context, conn net.Conn, packet *protocol.Packet, body 
 
 	c.RoomId = body.RoomId
 	c.UserId = body.UserId
-	thread.SetRoomChannels(body.RoomId, conn.RemoteAddr().String())
+
+	service.SetRoomClients(c.Broker,c.RoomId,c.ClientName)
 
 	//noticeJoinRoom(ctx, conn, packet.Header.MessageId, body.UserId, body.RoomId)
 
@@ -140,9 +137,11 @@ func joinRoom(ctx context.Context, conn net.Conn, packet *protocol.Packet, body 
 	return protocol.NewResponseOK(packet, body), nil
 }
 
-func leaveRoom(ctx context.Context, conn net.Conn, packet *protocol.Packet, a *protocol.MessageBodySignalLeaveRoom, c *thread.ConnectClient) (*protocol.Packet, error) {
+func leaveRoom(c *ctx.Context, packet *protocol.Packet, a *protocol.MessageBodySignalLeaveRoom) (*protocol.Packet, error) {
 
-	thread.RemRoomChannel(a.RoomId, conn.RemoteAddr().String())
+
+	service.RemRoomClients(c.Broker,c.RoomId,c.ClientName)
+
 
 	c.RoomId = ""
 	c.UserId = a.UserId
@@ -157,17 +156,19 @@ func leaveRoom(ctx context.Context, conn net.Conn, packet *protocol.Packet, a *p
 	return protocol.NewResponseOK(packet, nil), nil
 }
 
-func changeRoom(ctx context.Context, c net.Conn, packet *protocol.Packet, body *protocol.MessageBodySignalChangeRoom, cc *thread.ConnectClient) (*protocol.Packet, error) {
+func changeRoom(c *ctx.Context, packet *protocol.Packet, body *protocol.MessageBodySignalChangeRoom) (*protocol.Packet, error) {
 
 	if util.IsEmpty(body.NewRoomId) {
 		return protocol.NewResponseError(packet, err.InvalidRequest.Format("NewRoomId")), nil
 	}
 
-	thread.RemRoomChannel(body.OldRoomId, c.RemoteAddr().String())
-	thread.SetRoomChannels(body.NewRoomId, c.RemoteAddr().String())
+	service.RemRoomClients(c.Broker,c.RoomId,c.ClientName)
 
-	cc.RoomId = body.NewRoomId
-	cc.UserId = body.UserId
+	c.RoomId = body.NewRoomId
+	c.UserId = body.UserId
+
+	service.SetRoomClients(c.Broker,c.RoomId,c.ClientName)
+
 
 	//info, _ := service.GetUserDevice(ctx, c.ClientName())
 	//service.DelRoomUser(ctx, info.RoomId, c.ClientName())

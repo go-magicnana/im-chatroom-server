@@ -1,11 +1,9 @@
 package handler
 
 import (
-	"golang.org/x/net/context"
+	"im-chatroom-broker/ctx"
 	err "im-chatroom-broker/error"
 	"im-chatroom-broker/protocol"
-	"im-chatroom-broker/thread"
-	"net"
 	"sync"
 )
 
@@ -23,17 +21,17 @@ func CustomContentHandler() *CustomHandler {
 
 type CustomHandler struct{}
 
-func (d CustomHandler) Handle(ctx context.Context, conn net.Conn, packet *protocol.Packet, c *thread.ConnectClient) (*protocol.Packet, error) {
+func (d CustomHandler) Handle(c *ctx.Context, packet *protocol.Packet) (*protocol.Packet, error) {
 	ret := protocol.NewResponseError(packet, err.TypeNotAllow)
 
 	switch packet.Header.Type {
 	case protocol.TypeCustomNone:
-		return custom(ctx, conn, packet, c)
+		return custom(c, packet)
 	}
 	return ret, nil
 }
 
-func custom(ctx context.Context, conn net.Conn, packet *protocol.Packet, c *thread.ConnectClient) (*protocol.Packet, error) {
+func custom(c *ctx.Context, packet *protocol.Packet) (*protocol.Packet, error) {
 
-	return deliver(ctx, conn, packet, c)
+	return todeliver(c, packet)
 }
