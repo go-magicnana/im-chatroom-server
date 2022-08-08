@@ -131,11 +131,12 @@ func Start() {
 	server := &server{
 		serializer: serializer.NewJsonSerializer(),
 	}
-	op := gnet.WithMulticore(true)
+	op1 := gnet.WithMulticore(true)
+	op2 := gnet.WithNumEventLoop(50)
 
 	go startTask(brokerAddress, server)
 
-	if err := gnet.Run(server, addr, op); err != nil {
+	if err := gnet.Run(server, addr, op1, op2); err != nil {
 		util.Panic(err)
 	}
 

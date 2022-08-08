@@ -7,6 +7,7 @@ import (
 )
 
 var server = "192.168.3.242"
+//var server = "127.0.0.1"
 
 func TestRead(t *testing.T) {
 	var wg sync.WaitGroup
@@ -15,7 +16,7 @@ func TestRead(t *testing.T) {
 
 	banch := 0
 
-	for i := 0; i < 3000; i++ {
+	for i := 0; i < 2000; i++ {
 		go Start("Receiver", server, "dltq", "100", 10, i)
 		banch++
 
