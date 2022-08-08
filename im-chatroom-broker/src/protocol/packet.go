@@ -66,9 +66,9 @@ func (p Packet) ToString() string {
 }
 
 type PacketMessage struct {
-	Broker     string  `json:"broker"`
-	ClientName string  `json:"clientName"`
-	Packet     *Packet `json:"packet"`
+	Broker string  `json:"broker"`
+	Packet *Packet `json:"packet"`
+	Info   any     `json:"info"`
 }
 
 type MessageHeader struct {

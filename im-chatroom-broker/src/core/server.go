@@ -3,7 +3,7 @@ package core
 import (
 	"github.com/panjf2000/gnet/v2"
 	"github.com/panjf2000/gnet/v2/pkg/logging"
-	"golang.org/x/net/context"
+	"github.com/robfig/cron/v3"
 	"im-chatroom-broker/config"
 	"im-chatroom-broker/ctx"
 	err "im-chatroom-broker/error"
@@ -30,13 +30,16 @@ func (s *server) OnOpen(c gnet.Conn) (out []byte, action gnet.Action) {
 	}
 
 	c.SetContext(cc)
-	handler.Connections.Inc()
+	ctx.OpenContext(c.RemoteAddr().String(), cc)
 
 	return
 }
 
 func (s *server) OnClose(c gnet.Conn, err error) (action gnet.Action) {
-	handler.Connections.Dec()
+	cc := c.Context().(*ctx.Context)
+	service.RemRoomClients(cc.Broker, cc.RoomId, cc.ClientName)
+	ctx.RemContext(c.RemoteAddr().String())
+	cc = nil
 	return
 }
 
@@ -103,7 +106,7 @@ func process(c *ctx.Context, packet *protocol.Packet) *protocol.Packet {
 
 func getBrokerAddress() string {
 
-	addr := ":33121"
+	addr := ":" + config.OP.Port
 
 	var brokerAddress string
 	if util.IsNotEmpty(config.OP.Ip) {
@@ -122,14 +125,15 @@ func Start() {
 
 	ctx.BrokerAddress = brokerAddress
 
-	service.SetBrokerInstance(context.Background(), brokerAddress)
-	go service.AliveTask(context.Background(), brokerAddress)
+	service.SetBrokerInstance(brokerAddress)
 
-	addr := "tcp://:33121"
+	addr := "tcp://:" + config.OP.Port
 	server := &server{
 		serializer: serializer.NewJsonSerializer(),
 	}
 	op := gnet.WithMulticore(true)
+
+	go startTask(brokerAddress, server)
 
 	if err := gnet.Run(server, addr, op); err != nil {
 		util.Panic(err)
@@ -137,4 +141,16 @@ func Start() {
 
 	zaplog.Logger.Infof("Listen %s", brokerAddress)
 
+}
+
+func startTask(broker string, s *server) {
+	c := cron.New()
+
+	c.AddFunc("@every 1s", func() {
+		service.SetBrokerInstance(broker)
+		zaplog.Logger.Infof("Task Connections Size %v", ctx.CountContext())
+	})
+
+	c.Start()
+	zaplog.Logger.Infof("Task Running %s", broker)
 }

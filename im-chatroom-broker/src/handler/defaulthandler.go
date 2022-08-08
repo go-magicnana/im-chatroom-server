@@ -1,11 +1,10 @@
 package handler
 
 import (
-	"go.uber.org/atomic"
+	"fmt"
 	"im-chatroom-broker/ctx"
 	err "im-chatroom-broker/error"
 	"im-chatroom-broker/protocol"
-	"strconv"
 	"sync"
 )
 
@@ -20,8 +19,6 @@ func SingleDefaultHandler() *DefaultHandler {
 
 	return defaultHandler
 }
-
-var Connections *atomic.Int64 = atomic.NewInt64(0)
 
 type DefaultHandler struct{}
 
@@ -42,7 +39,9 @@ func heartbeat(c *ctx.Context, packet *protocol.Packet) (*protocol.Packet, error
 
 	if body.Password == protocol.TypeDefaultHeartBeatPassword {
 
-		return protocol.NewResponseOK(packet, "OK "+strconv.Itoa(int(Connections.Load()))), nil
+		size := ctx.CountContext()
+
+		return protocol.NewResponseOK(packet, "OK "+fmt.Sprintf("%d", size)), nil
 	} else {
 		return protocol.NewResponseOK(packet, "QUIT"), nil
 

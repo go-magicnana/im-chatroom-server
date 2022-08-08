@@ -30,7 +30,7 @@ func Heartbeat() {
 
 func queryRedisAndStartHeartBeat(ctx context.Context) {
 	for {
-		brokers := service.GetBrokerInstance(ctx)
+		brokers := service.GetBrokerInstances(ctx)
 
 		if brokers != nil && len(brokers) > 0 {
 
@@ -206,8 +206,12 @@ func close(c context.Context, cancel context.CancelFunc, broker string, conn net
 func clearBroker(ctx context.Context, broker string) {
 	zaplog.Logger.Infof("Heartbeat %s ClearBroker", broker)
 
+	roomList := service.GetRoomInstances(ctx)
+	for _, roomId := range roomList {
+		service.DelRoomClients(broker, roomId)
+	}
+
 	service.DelBrokerInstance(ctx, broker)
-	service.DelBrokerCapacityAll(ctx, broker)
 
 	brokers.Delete(broker)
 }
@@ -268,4 +272,3 @@ func write(conn net.Conn, p *protocol.Packet) error {
 	}
 
 }
-

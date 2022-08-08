@@ -10,6 +10,7 @@ import (
 	"im-chatroom-gateway/zaplog"
 	"math/rand"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -22,6 +23,8 @@ func CreateChatroom(c echo.Context) error {
 	zaplog.Logger.Debugf("%s %v", c.Request().RequestURI, nil)
 
 	id, _ := uuid.GenerateUUID()
+
+	id = strings.ReplaceAll(id, "_", "")
 
 	affected := service.SetRoomInstance(context.Background(), id)
 

@@ -10,8 +10,9 @@ import (
 	"github.com/apache/rocketmq-client-go/v2/producer"
 	"golang.org/x/net/context"
 	"im-chatroom-broker/config"
+	"im-chatroom-broker/deliver"
 	"im-chatroom-broker/protocol"
-	"im-chatroom-broker/thread"
+	"im-chatroom-broker/service"
 	"im-chatroom-broker/util"
 	"im-chatroom-broker/zaplog"
 	"strings"
@@ -28,28 +29,26 @@ const (
 var MyName = ""
 
 var _producer rocketmq.Producer
-var _consumer1 rocketmq.PushConsumer
-var _consumer2 rocketmq.PushConsumer
 
-var PushRoomChannel chan *protocol.PacketMessage
-var Push2OneChannel chan *protocol.PacketMessage
+//var _consumer1 rocketmq.PushConsumer
+var _consumer2 rocketmq.PushConsumer
 
 func init() {
 
-	//if util.IsNotEmpty(config.OP.Ip) {
-	//	MyName = broker2name(config.OP.Ip + ":" + config.OP.Port)
-	//
-	//} else {
-	//	ip := util.GetBrokerIp()
-	//	MyName = broker2name(ip + ":" + config.OP.Port)
-	//
-	//}
+	if util.IsNotEmpty(config.OP.Ip) {
+		MyName = broker2name(config.OP.Ip + ":" + config.OP.Port)
+
+	} else {
+		ip := util.GetBrokerIp()
+		MyName = broker2name(ip + ":" + config.OP.Port)
+
+	}
 	//
 	//PushRoomChannel = make(chan *protocol.PacketMessage, 500)
 	//Push2OneChannel = make(chan *protocol.PacketMessage, 1500)
-	//_producer = newProducer()
+	_producer = newProducer()
 	//_consumer1 = newConsumerRoom()
-	//_consumer2 = newConsumerOne()
+	_consumer2 = newConsumerOne()
 	//
 	//c, _ := context.WithCancel(context.Background())
 	//
@@ -73,95 +72,59 @@ func newProducer() rocketmq.Producer {
 	return p
 }
 
-func newConsumerRoom() rocketmq.PushConsumer {
-
-	c, _ := rocketmq.NewPushConsumer(
-		consumer.WithGroupName(RoomGroup),
-		consumer.WithConsumerModel(consumer.BroadCasting),
-		consumer.WithNsResolver(primitive.NewPassthroughResolver([]string{config.OP.RocketMQ.Address})),
-	)
-	err := c.Subscribe(RoomTopic, consumer.MessageSelector{},
-		func(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
-
-			for i := range msgs {
-
-				p := &protocol.PacketMessage{}
-				json.Unmarshal(msgs[i].Body, p)
-
-				if p.Broker == thread.BrokerAddress {
-					continue
-				}
-
-				zaplog.Logger.Debugf("CsumRoom %s %s C:%d T:%d F:%d %v %v", RoomTopic, p.Packet.Header.MessageId, p.Packet.Header.Command, p.Packet.Header.Type, p.Packet.Header.Flow, p.Packet.Body, msgs[i].MsgId)
-
-				if p.Packet.Header.Target == protocol.TargetRoom {
-
-					roomClients := thread.GetRoomChannels(p.Packet.Header.To)
-
-					for _, clientName := range roomClients {
-						cc := thread.GetChannel(clientName.(string))
-
-						if cc != nil && cc.Channel != nil {
-							cc.Channel <- protocol.NewResponse(p.Packet)
-						}
-					}
-
-				}
-
-			}
-			zaplog.Logger.Debugf("---------------------------------------------------------")
-
-			return consumer.ConsumeSuccess, nil
-		})
-
-	if err != nil {
-		util.Panic(err)
-	}
-	// Note: start after subscribe
-	err = c.Start()
-	if err != nil {
-		util.Panic(err)
-	}
-
-	zaplog.Logger.Infof("Init RocketMQ Consumer-Room %s", config.OP.RocketMQ.Address)
-
-	return c
-}
-
+//func newConsumerRoom() rocketmq.PushConsumer {
 //
-//func write2queue(queue *context2.Queue,packet *protocol.Packet){
-//	/*
+//	c, _ := rocketmq.NewPushConsumer(
+//		consumer.WithGroupName(RoomGroup),
+//		consumer.WithConsumerModel(consumer.BroadCasting),
+//		consumer.WithNsResolver(primitive.NewPassthroughResolver([]string{config.OP.RocketMQ.Address})),
+//	)
+//	err := c.Subscribe(RoomTopic, consumer.MessageSelector{},
+//		func(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
 //
-//	var next *list.Element
-//	for e := l.Front(); e != nil; e = next {
-//	    next = e.Next()
-//	    l.Remove(e)
+//			for i := range msgs {
+//
+//				p := &protocol.PacketMessage{}
+//				json.Unmarshal(msgs[i].Body, p)
+//
+//				if p.Broker == thread.BrokerAddress {
+//					continue
+//				}
+//
+//				zaplog.Logger.Debugf("CsumRoom %s %s C:%d T:%d F:%d %v %v", RoomTopic, p.Packet.Header.MessageId, p.Packet.Header.Command, p.Packet.Header.Type, p.Packet.Header.Flow, p.Packet.Body, msgs[i].MsgId)
+//
+//				if p.Packet.Header.Target == protocol.TargetRoom {
+//
+//					roomClients := thread.GetRoomChannels(p.Packet.Header.To)
+//
+//					for _, clientName := range roomClients {
+//						cc := thread.GetChannel(clientName.(string))
+//
+//						if cc != nil && cc.Channel != nil {
+//							cc.Channel <- protocol.NewResponse(p.Packet)
+//						}
+//					}
+//
+//				}
+//
+//			}
+//			zaplog.Logger.Debugf("---------------------------------------------------------")
+//
+//			return consumer.ConsumeSuccess, nil
+//		})
+//
+//	if err != nil {
+//		util.Panic(err)
+//	}
+//	// Note: start after subscribe
+//	err = c.Start()
+//	if err != nil {
+//		util.Panic(err)
 //	}
 //
-//	for {
-//	    e := l.Front()
-//	    if e == nil {
-//	            break
-//	    }
-//	    l.Remove(e)
-//	}
+//	zaplog.Logger.Infof("Init RocketMQ Consumer-Room %s", config.OP.RocketMQ.Address)
 //
-//	 */
-//
-//
-//	for {
-//		e := queue.Front()
-//		if e == nil {
-//			break
-//		}
-//
-//		c,b:=service.GetUserContext(e.(string))
-//		if !b || c==nil {
-//			continue
-//		}
-//
-//		serializer.SingleJsonSerializer().Write(c, packet)
-//	}
+//	return c
 //}
 
 func newConsumerOne() rocketmq.PushConsumer {
@@ -179,12 +142,7 @@ func newConsumerOne() rocketmq.PushConsumer {
 
 				zaplog.Logger.Debugf("ConsumeOne %s %s %v", OneTopic+MyName, msgs[i].MsgId, p)
 
-				c := thread.GetChannel(p.ClientName)
-
-				if c != nil && c.Channel != nil {
-					c.Channel <- protocol.NewResponse(p.Packet)
-
-				}
+				deliver.Deliver2Broker(p.Broker, p.Packet)
 
 			}
 			return consumer.ConsumeSuccess, nil
@@ -217,63 +175,46 @@ func createTopic(topicName string) {
 	}
 }
 
-func HashString(s string) int {
-	val := []byte(s)
-	var h int32
-
-	for idx := range val {
-		h = 31*h + int32(val[idx])
-	}
-
-	return int(h)
-}
-
-func sendSync(topic, key string, message []byte) (*primitive.SendResult, error) {
+func sendSync(topic string, message []byte) (*primitive.SendResult, error) {
 	msg := &primitive.Message{
 		Topic: topic,
 		Body:  message,
 	}
-	msg.WithProperty(primitive.PropertyShardingKey, key)
 	res, err := _producer.SendSync(context.Background(), msg)
 
 	return res, err
-}
-
-func SendSync2One(ctx context.Context) {
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case p := <-Push2OneChannel:
-			topic := OneTopic + broker2name(p.Broker)
-			msg, _ := json.Marshal(p)
-			_, err := sendSync(topic, p.ClientName, msg)
-			zaplog.Logger.Debugf("SendSync %s %s C:%d T:%d F:%d %v %v", topic, p.Packet.Header.MessageId, p.Packet.Header.Command, p.Packet.Header.Type, p.Packet.Header.Flow, p.Packet.Body, err)
-		default:
-			continue
-		}
-	}
-
-}
-
-func SendSync2Room(ctx context.Context) {
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case p := <-PushRoomChannel:
-			msg, _ := json.Marshal(p)
-			ret, _ := sendSync(RoomTopic, p.ClientName, msg)
-			zaplog.Logger.Debugf("SendSync %s %s C:%d T:%d F:%d %v %v", RoomTopic, p.Packet.Header.MessageId, p.Packet.Header.Command, p.Packet.Header.Type, p.Packet.Header.Flow, p.Packet.Body, ret.MsgID)
-		default:
-			continue
-		}
-	}
 }
 
 func broker2name(broker string) string {
 	broker = strings.ReplaceAll(broker, ".", "_")
 	broker = strings.ReplaceAll(broker, ":", "_")
 	return broker
+}
+
+func Deliver2MQ(localBroker string, packet *protocol.Packet) {
+
+	if packet.Header.Target == protocol.TargetRoom {
+		brokers := service.GetBrokerInstances()
+
+		for _, broker := range brokers {
+			if localBroker == broker {
+				continue
+			}
+
+			size := service.CardRoomClients(broker, packet.Header.To)
+			if size <= 0 {
+				continue
+			}
+
+			p := protocol.PacketMessage{
+				Broker: broker,
+				Packet: packet,
+			}
+
+			topic := OneTopic + broker2name(broker)
+			msg, _ := json.Marshal(p)
+			sendSync(topic, msg)
+
+		}
+	}
 }

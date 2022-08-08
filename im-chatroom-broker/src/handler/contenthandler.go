@@ -4,8 +4,8 @@ import (
 	"im-chatroom-broker/ctx"
 	"im-chatroom-broker/deliver"
 	err "im-chatroom-broker/error"
+	"im-chatroom-broker/mq"
 	"im-chatroom-broker/service"
-	"im-chatroom-broker/zaplog"
 	//"im-chatroom-broker/mq"
 	"im-chatroom-broker/protocol"
 	"im-chatroom-broker/util"
@@ -73,35 +73,10 @@ func todeliver(c *ctx.Context, packet *protocol.Packet) (*protocol.Packet, error
 	packet.Header.Code = err.OK.Code
 	packet.Header.Message = err.OK.Message
 
-	if packet.Header.Target == protocol.TargetRoom {
-		zaplog.Logger.Debugf("Deliver %s C:%d T:%d F:%d %v", packet.Header.MessageId, packet.Header.Command, packet.Header.Type, packet.Header.Flow, packet.Body)
+	//deliver2ConsumerRoom(c, conn, packet)
 
-		//deliver2ConsumerRoom(c, conn, packet)
-
-		go deliver.Write2BrokerRoom(c.Broker,packet)
-
-	} else {
-
-		//ret := service.GetUserClients(ctx, packet.Header.To)
-		//
-		//for _, v := range ret {
-		//
-		//	if v == c.ClientName() {
-		//		continue
-		//	}
-		//
-		//	msg := &protocol.PacketMessage{
-		//		ClientName: v,
-		//		Packet:  *packet,
-		//	}
-		//
-		//	broker, _ := service.GetUserDeviceBroker(ctx, v)
-		//
-		//	mq.SendSync2One(broker, msg)
-		//	//fmt.Println(msg,broker)
-		//}
-
-	}
+	go deliver.Deliver2Broker(c.Broker, packet)
+	go mq.Deliver2MQ(c.Broker, packet)
 
 	return protocol.NewResponseOK(packet, nil), nil
 }

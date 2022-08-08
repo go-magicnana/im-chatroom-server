@@ -21,9 +21,9 @@ help:
 	@echo "    linux  		: Build the linux binary of this project"
 	@echo "    darwin 		: Build the darwin binary of this project"
 
-all:clean resources windows linux darwin
+all:clean resources linux zip
 
-build:clean resources linux zip
+build:clean resources linux
 
 windows:
 	@cd src && GOOS=windows go build -o ../bin/${APP_NAME}-windows.${version} ${MAINCLASS}

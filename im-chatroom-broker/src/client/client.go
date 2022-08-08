@@ -23,7 +23,7 @@ import (
 
 var wg sync.WaitGroup
 
-func Start(role, serverIp string) {
+func Start(role, serverIp, token, roomId string, size, index int) {
 
 	wg.Add(1)
 
@@ -44,18 +44,18 @@ func Start(role, serverIp string) {
 
 	go read(conn)
 
-	SendLogin(conn)
+	SendLogin(conn, token, index)
 	time.Sleep(time.Second * 10)
 
-	sendJoinRoom(conn)
+	sendJoinRoom(conn, roomId, index)
 	time.Sleep(time.Second * 10)
 
 	//
 	//
-	go sendPing(conn)
+	//go sendPing(conn)
 
 	if "send" == role {
-		sendMsg(conn)
+		sendMsg(conn, roomId, size)
 	}
 	wg.Wait()
 }
@@ -100,11 +100,16 @@ func read(conn net.Conn) {
 			return
 		}
 
-		zaplog.Logger.Debugf("ReadOK %s %s C:%d T:%d F:%d %s", conn.RemoteAddr().String(), p.Header.MessageId, p.Header.Command, p.Header.Type, p.Header.Flow, p.Body)
+		zaplog.Logger.Debugf("ReadOK %s %s C:%d T:%d F:%d Code:%d Msg:%s %s", conn.LocalAddr().String(), p.Header.MessageId, p.Header.Command, p.Header.Type, p.Header.Flow, p.Header.Code, p.Header.Message, p.Body)
 
 		if p.Header.Command == protocol.CommandContent && p.Header.Flow == protocol.FlowDeliver {
 			text := protocol.JsonContentText(p.Body)
-			service.AddUserClientMessage(context.Background(), conn.LocalAddr().String(), text.Content)
+			num, e := strconv.Atoi(text.Content)
+
+			if e == nil {
+				service.AddUserClientMessage(context.Background(), conn.LocalAddr().String(), int64(num))
+			}
+
 		}
 
 	}
@@ -134,7 +139,9 @@ func write(conn net.Conn, p *protocol.Packet) error {
 	buffer.Write(bs)
 	_, err := conn.Write(buffer.Bytes())
 
-	zaplog.Logger.Debugf("WriteOK %s %s C:%d T:%d F:%d %s", conn.RemoteAddr().String(), p.Header.MessageId, p.Header.Command, p.Header.Type, p.Header.Flow, p.Body)
+	if p.Header.Type != 2101 {
+		zaplog.Logger.Debugf("WriteOK %s %s C:%d T:%d F:%d %s", conn.LocalAddr().String(), p.Header.MessageId, p.Header.Command, p.Header.Type, p.Header.Flow, p.Body)
+	}
 
 	if err != nil {
 		return errors.New("write response error +" + err.Error())
@@ -144,19 +151,19 @@ func write(conn net.Conn, p *protocol.Packet) error {
 
 }
 
-func SendLogin(conn net.Conn) {
+func SendLogin(conn net.Conn, token string, index int) {
 
 	//SetUserAuth(i)
 
 	header := protocol.MessageHeader{
-		MessageId: "LoginMessageId-" + randCreator(8),
+		MessageId: "LoginMessageId-" + fmt.Sprintf("%d", index),
 		Command:   protocol.CommandSignal,
 		Flow:      protocol.FlowUp,
 		Type:      protocol.TypeSignalLogin,
 	}
 
 	body := protocol.MessageBodySignalLogin{
-		Token:  "abcd",
+		Token:  token,
 		Device: "MAC",
 		//UserId: "1001",
 		//Name:   "张三丰",
@@ -171,18 +178,18 @@ func SendLogin(conn net.Conn) {
 
 }
 
-func sendJoinRoom(conn net.Conn) {
+func sendJoinRoom(conn net.Conn, roomId string, index int) {
 
 	header := protocol.MessageHeader{
-		MessageId: "JoinRoomMessageId-" + randCreator(8),
+		MessageId: "JoinRoomMessageId-" + fmt.Sprintf("%d", index),
 		Command:   protocol.CommandSignal,
 		Flow:      protocol.FlowUp,
 		Type:      protocol.TypeSignalJoinRoom,
 	}
 
 	body := protocol.MessageBodySignalJoinRoom{
-		RoomId: "1",
-		UserId: "1001",
+		RoomId: roomId,
+		UserId: "1006",
 	}
 
 	packet := protocol.Packet{
@@ -229,23 +236,23 @@ func sendPing(conn net.Conn) {
 
 }
 
-func sendMsg(conn net.Conn) {
-	for i := 0; i < 100; i++ {
+func sendMsg(conn net.Conn, roomId string, size int) {
+	for i := 0; i < size; i++ {
 
 		header := protocol.MessageHeader{
-			MessageId: "ContentMessageId-" + randCreator(8),
+			MessageId: "ContentMessageId-" + fmt.Sprintf("%d", i),
 			Command:   protocol.CommandContent,
 			Flow:      protocol.FlowUp,
 			Type:      protocol.TypeContentText,
 			Target:    protocol.TargetRoom,
-			To:        "1",
+			To:        roomId,
 			From: protocol.UserInfo{
 				UserId: "1001",
 			},
 		}
 
 		body := protocol.MessageBodyContentText{
-			Content: strconv.Itoa(i) + "\n",
+			Content: strconv.Itoa(i),
 		}
 
 		packet := protocol.Packet{

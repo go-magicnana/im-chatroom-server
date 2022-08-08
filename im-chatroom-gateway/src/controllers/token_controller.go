@@ -36,9 +36,9 @@ func GetToken(c echo.Context) error {
 		return write(c, http.StatusOK, NewApiResultError(err))
 	}
 
-	//u.Token = buildToken(u.UserId)
+	u.Token = buildToken(u.UserId)
 
-	u.Token = randCreator22(4)
+	//u.Token = randCreator22(4)
 
 	if err := SetUserAuth(*u); err != nil {
 		return write(c, http.StatusOK, NewApiResultError(err))
@@ -69,7 +69,7 @@ func SetUserAuth(u domains.UserInfo) error {
 		return apierror.CouldNotBeSeries.Format(err.Error())
 	}
 
-	result := redis.Rdb.Set(context.Background(), userTokenKey+u.Token, data, time.Minute*30)
+	result := redis.Rdb.Set(context.Background(), userTokenKey+u.Token, data, -1)
 	if result == nil {
 		return apierror.StorageResponseNil
 	}

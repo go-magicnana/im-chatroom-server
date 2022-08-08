@@ -80,3 +80,7 @@ func RemContext(clientName string) {
 func RangeContext(f func(key, value any) bool) {
 	conn.Range(f)
 }
+
+func CountContext() int32{
+	return dirtyCount.Load()+connCount.Load()
+}

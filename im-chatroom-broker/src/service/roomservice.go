@@ -26,6 +26,10 @@ func RemRoomClients(broker, roomId, ClientName string) int64 {
 	return redis.Rdb.SRem(context.Background(), RoomClients+broker+":"+roomId, ClientName).Val()
 }
 
+func CardRoomClients(broker,roomId string) int64{
+	return redis.Rdb.SCard(context.Background(),RoomClients+broker+":"+roomId).Val()
+}
+
 //func GetRoomInstance(ctx context.Context) []string{
 //	return redis.Rdb.SMembers(ctx,RoomInstance).Val()
 //}
