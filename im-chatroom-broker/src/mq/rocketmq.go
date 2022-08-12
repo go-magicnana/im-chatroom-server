@@ -142,7 +142,7 @@ func newConsumerOne() rocketmq.PushConsumer {
 
 				zaplog.Logger.Debugf("ConsumeOne %s %s %v", OneTopic+MyName, msgs[i].MsgId, p)
 
-				deliver.Deliver2Broker(p.Broker, p.Packet)
+				deliver.Deliver2Worker(p.Broker, p.Packet)
 
 			}
 			return consumer.ConsumeSuccess, nil

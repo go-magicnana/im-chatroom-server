@@ -21,7 +21,9 @@ require (
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
+	github.com/enriquebris/goconcurrentqueue v0.6.3 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
+	github.com/gaigepr/lazylist v0.0.0-20150424175537-71a4c2383ad3 // indirect
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect

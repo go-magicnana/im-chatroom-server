@@ -23,7 +23,13 @@ import (
 
 var wg sync.WaitGroup
 
-func Start(role, serverIp, token, roomId string, size, index int) {
+type userInClient struct {
+	token  string
+	userId string
+	roomId string
+}
+
+func Start(role, serverIp string, size, index int, user *userInClient) {
 
 	wg.Add(1)
 
@@ -44,10 +50,10 @@ func Start(role, serverIp, token, roomId string, size, index int) {
 
 	go read(conn)
 
-	SendLogin(conn, token, index)
+	SendLogin(conn, user.token, index)
 	time.Sleep(time.Second * 10)
 
-	sendJoinRoom(conn, roomId, index)
+	sendJoinRoom(conn, user, index)
 	time.Sleep(time.Second * 10)
 
 	//
@@ -55,7 +61,7 @@ func Start(role, serverIp, token, roomId string, size, index int) {
 	//go sendPing(conn)
 
 	if "send" == role {
-		sendMsg(conn, roomId, size)
+		sendMsg(conn, user, size)
 	}
 	wg.Wait()
 }
@@ -178,7 +184,7 @@ func SendLogin(conn net.Conn, token string, index int) {
 
 }
 
-func sendJoinRoom(conn net.Conn, roomId string, index int) {
+func sendJoinRoom(conn net.Conn, user *userInClient, index int) {
 
 	header := protocol.MessageHeader{
 		MessageId: "JoinRoomMessageId-" + fmt.Sprintf("%d", index),
@@ -188,8 +194,8 @@ func sendJoinRoom(conn net.Conn, roomId string, index int) {
 	}
 
 	body := protocol.MessageBodySignalJoinRoom{
-		RoomId: roomId,
-		UserId: "1006",
+		RoomId: user.roomId,
+		UserId: user.userId,
 	}
 
 	packet := protocol.Packet{
@@ -236,7 +242,7 @@ func sendPing(conn net.Conn) {
 
 }
 
-func sendMsg(conn net.Conn, roomId string, size int) {
+func sendMsg(conn net.Conn, user *userInClient, size int) {
 	for i := 0; i < size; i++ {
 
 		header := protocol.MessageHeader{
@@ -245,9 +251,9 @@ func sendMsg(conn net.Conn, roomId string, size int) {
 			Flow:      protocol.FlowUp,
 			Type:      protocol.TypeContentText,
 			Target:    protocol.TargetRoom,
-			To:        roomId,
+			To:        user.roomId,
 			From: protocol.UserInfo{
-				UserId: "1001",
+				UserId: user.userId,
 			},
 		}
 

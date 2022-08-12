@@ -1,7 +1,7 @@
 package deliver
 
 import (
-	"im-chatroom-broker/ctx"
+	"im-chatroom-broker/protocol"
 	"im-chatroom-broker/zaplog"
 	"sync"
 )
@@ -9,7 +9,7 @@ import (
 type pool struct {
 	workers   int
 	maxTasks  int
-	taskQueue chan *ctx.Context
+	taskQueue chan *protocol.PacketMessage
 
 	mu     sync.Mutex
 	closed bool
@@ -20,7 +20,7 @@ func newPool(w int, t int) *pool {
 	return &pool{
 		workers:   w,
 		maxTasks:  t,
-		taskQueue: make(chan *ctx.Context, t),
+		taskQueue: make(chan *protocol.PacketMessage, t),
 		done:      make(chan struct{}),
 	}
 }
@@ -33,15 +33,15 @@ func (p *pool) Close() {
 	p.mu.Unlock()
 }
 
-func (p *pool) addTask(conn *ctx.Context) {
+func (p *pool) addTask(packet *protocol.PacketMessage) {
 	p.mu.Lock()
 	if p.closed {
 		p.mu.Unlock()
 		return
 	}
-	p.mu.Unlock()
 
-	p.taskQueue <- conn
+	p.taskQueue <- packet
+	p.mu.Unlock()
 }
 
 func (p *pool) start() {
@@ -57,13 +57,11 @@ func (p *pool) startWorker() {
 		select {
 		case <-p.done:
 			return
-		case conn := <-p.taskQueue:
-			if conn != nil {
-				//buf, ok := conn.Queue.Dequeue()
-				//if ok {
-				//	b := buf.([]byte)
-				//	conn.Conn.AsyncWrite(b, nil)
-				//}
+		case pp := <-p.taskQueue:
+			if pp != nil {
+
+				Deliver2Broker(pp.Broker,pp.Packet)
+
 			}
 		}
 	}

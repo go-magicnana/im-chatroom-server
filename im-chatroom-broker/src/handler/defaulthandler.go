@@ -39,7 +39,7 @@ func heartbeat(c *ctx.Context, packet *protocol.Packet) (*protocol.Packet, error
 
 	if body.Password == protocol.TypeDefaultHeartBeatPassword {
 
-		size := ctx.CountContext()
+		size := ctx.ConnCount()
 
 		return protocol.NewResponseOK(packet, "OK "+fmt.Sprintf("%d", size)), nil
 	} else {

@@ -32,18 +32,25 @@ func (s *server) OnOpen(c gnet.Conn) (out []byte, action gnet.Action) {
 	c.SetContext(cc)
 	ctx.OpenContext(c.RemoteAddr().String(), cc)
 
+	zaplog.Logger.Debugf("Connection open %s", c.RemoteAddr().String())
+
 	return
 }
 
 func (s *server) OnClose(c gnet.Conn, err error) (action gnet.Action) {
+
+	zaplog.Logger.Debugf("Connection close %s %v", c.RemoteAddr().String(), err)
+
 	cc := c.Context().(*ctx.Context)
 	service.RemRoomClients(cc.Broker, cc.RoomId, cc.ClientName)
 	ctx.RemContext(c.RemoteAddr().String())
 	cc = nil
+
 	return
 }
 
 func (s *server) OnTraffic(c gnet.Conn) (action gnet.Action) {
+
 	cc := c.Context().(*ctx.Context)
 	var packets [][]byte
 	for {
@@ -121,11 +128,14 @@ func Start() {
 
 	zaplog.InitLogger()
 
+	zaplog.Logger.Infof("Start ...")
+
 	brokerAddress := getBrokerAddress()
 
 	ctx.BrokerAddress = brokerAddress
 
 	service.SetBrokerInstance(brokerAddress)
+	zaplog.Logger.Infof("Start broker address %s", brokerAddress)
 
 	addr := "tcp://:" + config.OP.Port
 	server := &server{
@@ -134,24 +144,33 @@ func Start() {
 	op1 := gnet.WithMulticore(true)
 	op2 := gnet.WithNumEventLoop(50)
 
-	go startTask(brokerAddress, server)
+	go startTask(brokerAddress)
+	zaplog.Logger.Infof("Start scheduler start... %s", brokerAddress)
 
 	if err := gnet.Run(server, addr, op1, op2); err != nil {
 		util.Panic(err)
 	}
 
-	zaplog.Logger.Infof("Listen %s", brokerAddress)
+	zaplog.Logger.Infof("Start Listen %s", brokerAddress)
 
 }
 
-func startTask(broker string, s *server) {
+func startTask(broker string) {
 	c := cron.New()
 
 	c.AddFunc("@every 1s", func() {
 		service.SetBrokerInstance(broker)
-		zaplog.Logger.Infof("Task Connections Size %v", ctx.CountContext())
+		zaplog.Logger.Infof("Probe context size %d", ctx.ConnCount())
+
 	})
 
+	//c.AddFunc("@every 1s", func() {
+	//	ctx.RangeContext(func(key, value any) bool {
+	//		cc := value.(*ctx.Context)
+	//		zaplog.Logger.Infof("Probe context list %s %s-%p", key, cc.UserId, cc.Conn)
+	//		return true
+	//	})
+	//})
+
 	c.Start()
-	zaplog.Logger.Infof("Task Running %s", broker)
 }

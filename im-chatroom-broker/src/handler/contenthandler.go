@@ -6,6 +6,8 @@ import (
 	err "im-chatroom-broker/error"
 	"im-chatroom-broker/mq"
 	"im-chatroom-broker/service"
+	"im-chatroom-broker/zaplog"
+
 	//"im-chatroom-broker/mq"
 	"im-chatroom-broker/protocol"
 	"im-chatroom-broker/util"
@@ -33,6 +35,9 @@ TypeContentReply = 4103
 */
 
 func (d ContentHandler) Handle(c *ctx.Context, packet *protocol.Packet) (*protocol.Packet, error) {
+
+	zaplog.Logger.Debugf("Handler content %s", c.ClientName)
+
 	ret := protocol.NewResponseError(packet, err.TypeNotAllow)
 
 	switch packet.Header.Type {
@@ -59,6 +64,8 @@ func (d ContentHandler) Handle(c *ctx.Context, packet *protocol.Packet) (*protoc
 		return reply(c, packet, a)
 
 	}
+	zaplog.Logger.Debugf("Handler content %s", c.ClientName)
+
 	return ret, nil
 }
 
@@ -75,7 +82,7 @@ func todeliver(c *ctx.Context, packet *protocol.Packet) (*protocol.Packet, error
 
 	//deliver2ConsumerRoom(c, conn, packet)
 
-	go deliver.Deliver2Broker(c.Broker, packet)
+	deliver.Deliver2Worker(c.Broker, packet)
 	go mq.Deliver2MQ(c.Broker, packet)
 
 	return protocol.NewResponseOK(packet, nil), nil

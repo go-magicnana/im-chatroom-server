@@ -6,6 +6,7 @@ import (
 	"im-chatroom-broker/protocol"
 	"im-chatroom-broker/service"
 	"im-chatroom-broker/util"
+	"im-chatroom-broker/zaplog"
 	"sync"
 )
 
@@ -56,6 +57,8 @@ func ping(c *ctx.Context, packet *protocol.Packet) (*protocol.Packet, error) {
 
 func login(c *ctx.Context, packet *protocol.Packet, body *protocol.MessageBodySignalLogin) (*protocol.Packet, error) {
 
+	zaplog.Logger.Debugf("Handler login %s %s", c.ClientName, body.Token)
+
 	token := body.Token
 	//device := body.Device
 
@@ -75,7 +78,6 @@ func login(c *ctx.Context, packet *protocol.Packet, body *protocol.MessageBodySi
 	//}
 
 	c.UserId = user.UserId
-	ctx.SetContext(c.Conn.RemoteAddr().String(), c)
 	//service.SetUserClient(ctx, user.UserId, conn.RemoteAddr().String())
 
 	//devices := service.GetUserClients(ctx, user.UserId)
@@ -111,10 +113,14 @@ func login(c *ctx.Context, packet *protocol.Packet, body *protocol.MessageBodySi
 
 	service.DelUserAuth(token)
 
+	zaplog.Logger.Debugf("Handler login %s %s %s", c.ClientName, body.Token, user.UserId)
+
 	return p, nil
 }
 
 func joinRoom(c *ctx.Context, packet *protocol.Packet, body *protocol.MessageBodySignalJoinRoom) (*protocol.Packet, error) {
+
+	zaplog.Logger.Debugf("Handler join %s %s %s", c.ClientName, body.UserId, body.RoomId)
 
 	if util.IsEmpty(body.RoomId) {
 		return protocol.NewResponseError(packet, err.InvalidRequest.Format("roomId")), nil
@@ -127,21 +133,24 @@ func joinRoom(c *ctx.Context, packet *protocol.Packet, body *protocol.MessageBod
 	c.RoomId = body.RoomId
 	c.UserId = body.UserId
 
-	service.SetRoomClients(c.Broker,c.RoomId,c.ClientName)
+	service.SetRoomClients(c.Broker, c.RoomId, c.ClientName)
 
 	//noticeJoinRoom(ctx, conn, packet.Header.MessageId, body.UserId, body.RoomId)
 
 	//body.RoomBlocked = service.GetRoomBlocked(ctx, body.RoomId)
 	//body.Blocked = service.GetRoomMemberBlocked(ctx, body.RoomId, body.UserId)
 
+	zaplog.Logger.Debugf("Handler join %s %s %s", c.ClientName, body.UserId, body.RoomId)
+
 	return protocol.NewResponseOK(packet, body), nil
 }
 
 func leaveRoom(c *ctx.Context, packet *protocol.Packet, a *protocol.MessageBodySignalLeaveRoom) (*protocol.Packet, error) {
 
+	zaplog.Logger.Debugf("Handler leave %s %s %s", c.ClientName, a.UserId, a.RoomId)
 
-	service.RemRoomClients(c.Broker,c.RoomId,c.ClientName)
 
+	service.RemRoomClients(c.Broker, c.RoomId, c.ClientName)
 
 	c.RoomId = ""
 	c.UserId = a.UserId
@@ -153,22 +162,25 @@ func leaveRoom(c *ctx.Context, packet *protocol.Packet, a *protocol.MessageBodyS
 
 	//noticeLeaveRoom(ctx, conn, packet.Header.MessageId, a.UserId, a.RoomId)
 
+	zaplog.Logger.Debugf("Handler leave %s %s %s", c.ClientName, a.UserId, a.RoomId)
+
 	return protocol.NewResponseOK(packet, nil), nil
 }
 
 func changeRoom(c *ctx.Context, packet *protocol.Packet, body *protocol.MessageBodySignalChangeRoom) (*protocol.Packet, error) {
 
+	zaplog.Logger.Debugf("Handler leave %s %s %s %s", c.ClientName, body.UserId, body.OldRoomId,body.NewRoomId)
+
 	if util.IsEmpty(body.NewRoomId) {
 		return protocol.NewResponseError(packet, err.InvalidRequest.Format("NewRoomId")), nil
 	}
 
-	service.RemRoomClients(c.Broker,c.RoomId,c.ClientName)
+	service.RemRoomClients(c.Broker, c.RoomId, c.ClientName)
 
 	c.RoomId = body.NewRoomId
 	c.UserId = body.UserId
 
-	service.SetRoomClients(c.Broker,c.RoomId,c.ClientName)
-
+	service.SetRoomClients(c.Broker, c.RoomId, c.ClientName)
 
 	//info, _ := service.GetUserDevice(ctx, c.ClientName())
 	//service.DelRoomUser(ctx, info.RoomId, c.ClientName())
@@ -181,6 +193,8 @@ func changeRoom(c *ctx.Context, packet *protocol.Packet, body *protocol.MessageB
 
 	//body.RoomBlocked = service.GetRoomBlocked(ctx, body.NewRoomId)
 	//body.Blocked = service.GetRoomMemberBlocked(ctx, body.OldRoomId, body.NewRoomId)
+
+	zaplog.Logger.Debugf("Handler leave %s %s %s %s", c.ClientName, body.UserId, body.OldRoomId,body.NewRoomId)
 
 	return protocol.NewResponseOK(packet, body), nil
 }
