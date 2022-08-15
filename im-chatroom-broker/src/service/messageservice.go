@@ -13,3 +13,7 @@ func AddUserClientMessage(ctx context.Context, clientName string, num int64) int
 	ret := redis.Rdb.HIncrBy(ctx, UserClientMessage, clientName, num).Val()
 	return ret
 }
+
+func CardMessage(ctx context.Context) int64{
+	return redis.Rdb.HLen(ctx,UserClientMessage).Val()
+}

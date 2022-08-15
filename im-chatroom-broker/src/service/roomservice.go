@@ -10,9 +10,15 @@ const (
 	//RoomInfo string = "imchatroom:room.info:"
 	// set
 	RoomClients string = "imchatroom:room.clients:"
+	RoomBrokers string = "imchatroom:room.brokers:"
 	//RoomBlacks  string = "imchatroom:room.blacks:"
 	//RoomInstance  string = "imchatroom:room.instance"
 )
+
+
+
+
+
 
 func SetRoomClients(broker, roomId, clientName string) int64 {
 	return redis.Rdb.SAdd(context.Background(), RoomClients+broker+":"+roomId, clientName).Val()
@@ -28,6 +34,19 @@ func RemRoomClients(broker, roomId, ClientName string) int64 {
 
 func CardRoomClients(broker,roomId string) int64{
 	return redis.Rdb.SCard(context.Background(),RoomClients+broker+":"+roomId).Val()
+}
+
+
+func SetRoomBrokers(broker,roomId string) int64{
+	return redis.Rdb.SAdd(context.Background(),RoomBrokers+roomId,broker).Val()
+}
+
+func GetRoomBrokers(roomId string) []string{
+	return redis.Rdb.SMembers(context.Background(),RoomBrokers+roomId).Val()
+}
+
+func RemRoomBrokers(broker,roomId string) int64{
+	return redis.Rdb.SRem(context.Background(),RoomBrokers+roomId).Val()
 }
 
 //func GetRoomInstance(ctx context.Context) []string{

@@ -20,6 +20,9 @@ func init() {
 
 func Deliver2Broker(broker string, packet *protocol.Packet) {
 
+	//mq.Deliver2MQ(broker,packet)
+
+
 	zaplog.Logger.Debugf("Worker deliver %s %d %d %d %d %s", broker,packet.Header.Command,packet.Header.Type,packet.Header.Target,packet.Header.Flow,packet.Header.To)
 
 	if packet.Header.Target == protocol.TargetRoom {
@@ -42,10 +45,13 @@ func Deliver2Broker(broker string, packet *protocol.Packet) {
 }
 
 func Deliver2Worker(broker string,packet *protocol.Packet){
-	_worker.addTask(&protocol.PacketMessage{
-		Broker: broker,
-		Packet: packet,
-	})
-	zaplog.Logger.Debugf("Worker addTask %s %d %d %d %d %s", broker,packet.Header.Command,packet.Header.Type,packet.Header.Target,packet.Header.Flow,packet.Header.To)
+
+	if ctx.BrokerAddress == broker {
+		_worker.addTask(&protocol.PacketMessage{
+			Broker: broker,
+			Packet: packet,
+		})
+		zaplog.Logger.Debugf("Worker addTask %s %d %d %d %d %s", broker,packet.Header.Command,packet.Header.Type,packet.Header.Target,packet.Header.Flow,packet.Header.To)
+	}
 
 }

@@ -1,6 +1,9 @@
 package client
 
 import (
+	"fmt"
+	"golang.org/x/net/context"
+	"im-chatroom-broker/service"
 	"sync"
 	"testing"
 	"time"
@@ -46,6 +49,10 @@ func TestWrite(t *testing.T) {
 
 	wg.Wait()
 
+}
+
+func TestCard(t *testing.T){
+	fmt.Println(service.CardMessage(context.Background()))
 }
 
 func TestReadMulti(t *testing.T) {
