@@ -52,6 +52,8 @@ func (s SignalHandler) Handle(c *ctx.Context, packet *protocol.Packet) (*protoco
 }
 
 func ping(c *ctx.Context, packet *protocol.Packet) (*protocol.Packet, error) {
+	service.RefreshUserClient(c.UserId)
+	service.RefreshUserInfo(c.UserId)
 	return nil, nil
 }
 
@@ -91,6 +93,8 @@ func login(c *ctx.Context, packet *protocol.Packet, body *protocol.MessageBodySi
 		Role:   user.Role,
 	}
 	service.SetUserInfo(userInfo)
+
+	service.SetUserClient(c.UserId, c.ClientName)
 
 	//userDevice := protocol.UserDevice{
 	//	ClientName: c.ClientName(),
@@ -135,7 +139,7 @@ func joinRoom(c *ctx.Context, packet *protocol.Packet, body *protocol.MessageBod
 
 	service.SetRoomClients(c.Broker, c.RoomId, c.ClientName)
 
-	//noticeJoinRoom(ctx, conn, packet.Header.MessageId, body.UserId, body.RoomId)
+	noticeJoinRoom(packet.Header.MessageId, body.UserId, body.RoomId)
 
 	//body.RoomBlocked = service.GetRoomBlocked(ctx, body.RoomId)
 	//body.Blocked = service.GetRoomMemberBlocked(ctx, body.RoomId, body.UserId)
@@ -149,7 +153,6 @@ func leaveRoom(c *ctx.Context, packet *protocol.Packet, a *protocol.MessageBodyS
 
 	zaplog.Logger.Debugf("Handler leave %s %s %s", c.ClientName, a.UserId, a.RoomId)
 
-
 	service.RemRoomClients(c.Broker, c.RoomId, c.ClientName)
 
 	c.RoomId = ""
@@ -160,7 +163,7 @@ func leaveRoom(c *ctx.Context, packet *protocol.Packet, a *protocol.MessageBodyS
 	//
 	//service.DelRoomUser(ctx, userDevice.RoomId, c.ClientName())
 
-	//noticeLeaveRoom(ctx, conn, packet.Header.MessageId, a.UserId, a.RoomId)
+	noticeLeaveRoom(packet.Header.MessageId, a.UserId, a.RoomId)
 
 	zaplog.Logger.Debugf("Handler leave %s %s %s", c.ClientName, a.UserId, a.RoomId)
 
@@ -169,7 +172,7 @@ func leaveRoom(c *ctx.Context, packet *protocol.Packet, a *protocol.MessageBodyS
 
 func changeRoom(c *ctx.Context, packet *protocol.Packet, body *protocol.MessageBodySignalChangeRoom) (*protocol.Packet, error) {
 
-	zaplog.Logger.Debugf("Handler leave %s %s %s %s", c.ClientName, body.UserId, body.OldRoomId,body.NewRoomId)
+	zaplog.Logger.Debugf("Handler leave %s %s %s %s", c.ClientName, body.UserId, body.OldRoomId, body.NewRoomId)
 
 	if util.IsEmpty(body.NewRoomId) {
 		return protocol.NewResponseError(packet, err.InvalidRequest.Format("NewRoomId")), nil
@@ -188,13 +191,13 @@ func changeRoom(c *ctx.Context, packet *protocol.Packet, body *protocol.MessageB
 	//
 	//service.SetUserDevice2InRoom(ctx, c.ClientName(), body.RoomId)
 
-	//noticeLeaveRoom(ctx, c, packet.Header.MessageId, body.UserId, body.OldRoomId)
-	//noticeJoinRoom(ctx, c, packet.Header.MessageId, body.UserId, body.NewRoomId)
+	noticeLeaveRoom(packet.Header.MessageId, body.UserId, body.OldRoomId)
+	noticeJoinRoom(packet.Header.MessageId, body.UserId, body.NewRoomId)
 
 	//body.RoomBlocked = service.GetRoomBlocked(ctx, body.NewRoomId)
 	//body.Blocked = service.GetRoomMemberBlocked(ctx, body.OldRoomId, body.NewRoomId)
 
-	zaplog.Logger.Debugf("Handler leave %s %s %s %s", c.ClientName, body.UserId, body.OldRoomId,body.NewRoomId)
+	zaplog.Logger.Debugf("Handler leave %s %s %s %s", c.ClientName, body.UserId, body.OldRoomId, body.NewRoomId)
 
 	return protocol.NewResponseOK(packet, body), nil
 }

@@ -12,7 +12,6 @@ import (
 	"im-chatroom-broker/config"
 	"im-chatroom-broker/deliver"
 	"im-chatroom-broker/protocol"
-	"im-chatroom-broker/service"
 	"im-chatroom-broker/util"
 	"im-chatroom-broker/zaplog"
 	"strings"
@@ -137,12 +136,12 @@ func newConsumerOne() rocketmq.PushConsumer {
 		func(ctx context.Context, msgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
 
 			for i := range msgs {
-				p := &protocol.PacketMessage{}
+				p := &protocol.Packet{}
 				json.Unmarshal(msgs[i].Body, p)
 
 				zaplog.Logger.Debugf("ConsumeOne %s %s %v", OneTopic+MyName, msgs[i].MsgId, p)
 
-				deliver.Deliver2Worker(p.Broker, p.Packet)
+				deliver.Deliver2Worker(p)
 
 			}
 			return consumer.ConsumeSuccess, nil
@@ -191,30 +190,10 @@ func broker2name(broker string) string {
 	return broker
 }
 
-func Deliver2MQ(localBroker string, packet *protocol.Packet) {
+func Deliver2MQ(broker string, packet *protocol.Packet) {
 
-	if packet.Header.Target == protocol.TargetRoom {
-		brokers := service.GetBrokerInstances()
+	topic := OneTopic + broker2name(broker)
+	msg, _ := json.Marshal(packet)
+	sendSync(topic, msg)
 
-		for _, broker := range brokers {
-			if localBroker == broker {
-				continue
-			}
-
-			size := service.CardRoomClients(broker, packet.Header.To)
-			if size <= 0 {
-				continue
-			}
-
-			p := protocol.PacketMessage{
-				Broker: broker,
-				Packet: packet,
-			}
-
-			topic := OneTopic + broker2name(broker)
-			msg, _ := json.Marshal(p)
-			sendSync(topic, msg)
-
-		}
-	}
 }

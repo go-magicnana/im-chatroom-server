@@ -9,7 +9,7 @@ import (
 type pool struct {
 	workers   int
 	maxTasks  int
-	taskQueue chan *protocol.PacketMessage
+	taskQueue chan *protocol.Packet
 
 	mu     sync.Mutex
 	closed bool
@@ -20,7 +20,7 @@ func newPool(w int, t int) *pool {
 	return &pool{
 		workers:   w,
 		maxTasks:  t,
-		taskQueue: make(chan *protocol.PacketMessage, t),
+		taskQueue: make(chan *protocol.Packet, t),
 		done:      make(chan struct{}),
 	}
 }
@@ -33,7 +33,7 @@ func (p *pool) Close() {
 	p.mu.Unlock()
 }
 
-func (p *pool) addTask(packet *protocol.PacketMessage) {
+func (p *pool) addTask(packet *protocol.Packet) {
 	p.mu.Lock()
 	if p.closed {
 		p.mu.Unlock()
@@ -60,7 +60,7 @@ func (p *pool) startWorker() {
 		case pp := <-p.taskQueue:
 			if pp != nil {
 
-				Deliver2Broker(pp.Broker,pp.Packet)
+				deliver(pp)
 
 			}
 		}

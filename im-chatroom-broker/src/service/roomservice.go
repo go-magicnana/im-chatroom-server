@@ -1,8 +1,8 @@
 package service
 
 import (
-	"golang.org/x/net/context"
-	"im-chatroom-broker/redis"
+	mapset "github.com/deckarep/golang-set"
+	"sync"
 )
 
 const (
@@ -10,44 +10,96 @@ const (
 	//RoomInfo string = "imchatroom:room.info:"
 	// set
 	RoomClients string = "imchatroom:room.clients:"
-	RoomBrokers string = "imchatroom:room.brokers:"
 	//RoomBlacks  string = "imchatroom:room.blacks:"
 	//RoomInstance  string = "imchatroom:room.instance"
 )
 
-
-
-
-
+var rooms sync.Map
+var lock sync.Mutex
 
 func SetRoomClients(broker, roomId, clientName string) int64 {
-	return redis.Rdb.SAdd(context.Background(), RoomClients+broker+":"+roomId, clientName).Val()
+	//return redis.Rdb.SAdd(context.Background(), RoomClients+broker+":"+roomId, clientName).Val()
+
+	lock.Lock()
+	set, _ := rooms.Load(roomId)
+
+	if set == nil {
+		set = mapset.NewThreadUnsafeSet()
+		rooms.Store(roomId, set)
+		SetBrokerRoom(broker, roomId)
+	}
+
+	set.(mapset.Set).Add(clientName)
+	lock.Unlock()
+	return 1
+
 }
 
-func GetRoomClients(broker, roomId string) []string {
-	return redis.Rdb.SMembers(context.Background(), RoomClients+broker+":"+roomId).Val()
+func GetRoomClients(roomId string) []interface{} {
+	//return redis.Rdb.SMembers(context.Background(), RoomClients+broker+":"+roomId).Val()
+
+	v, _ := rooms.Load(roomId)
+
+	if v == nil {
+		return nil
+	}
+
+	return v.(mapset.Set).ToSlice()
+
 }
 
 func RemRoomClients(broker, roomId, ClientName string) int64 {
-	return redis.Rdb.SRem(context.Background(), RoomClients+broker+":"+roomId, ClientName).Val()
+	//return redis.Rdb.SRem(context.Background(), RoomClients+broker+":"+roomId, ClientName).Val()
+	lock.Lock()
+	v, _ := rooms.Load(roomId)
+	if v == nil {
+		lock.Unlock()
+		return 0
+	}
+
+	v.(mapset.Set).Remove(ClientName)
+	if v.(mapset.Set).Cardinality() == 0 {
+		RemBrokerRoom(broker, roomId)
+		v = nil
+	}
+	lock.Unlock()
+	return 1
 }
 
-func CardRoomClients(broker,roomId string) int64{
-	return redis.Rdb.SCard(context.Background(),RoomClients+broker+":"+roomId).Val()
+func CardRoomClients(roomId string) int {
+	//return redis.Rdb.SCard(context.Background(), RoomClients+broker+":"+roomId).Val()
+	v, _ := rooms.Load(roomId)
+	if v == nil {
+		return 0
+	}
+
+	return v.(mapset.Set).Cardinality()
 }
 
+func RangeRoomClients(roomId string, f func(interface{}) bool) {
+	v, _ := rooms.Load(roomId)
+	if v == nil {
 
-func SetRoomBrokers(broker,roomId string) int64{
-	return redis.Rdb.SAdd(context.Background(),RoomBrokers+roomId,broker).Val()
+	} else {
+		v.(mapset.Set).Each(f)
+	}
 }
 
-func GetRoomBrokers(roomId string) []string{
-	return redis.Rdb.SMembers(context.Background(),RoomBrokers+roomId).Val()
-}
+//func SetRoomClients(broker, roomId, clientName string) int64 {
+//	return redis.Rdb.SAdd(context.Background(), RoomClients+broker+":"+roomId, clientName).Val()
+//}
 
-func RemRoomBrokers(broker,roomId string) int64{
-	return redis.Rdb.SRem(context.Background(),RoomBrokers+roomId).Val()
-}
+//func GetRoomClients(broker, roomId string) []string {
+//	return redis.Rdb.SMembers(context.Background(), RoomClients+broker+":"+roomId).Val()
+//}
+
+//func RemRoomClients(broker, roomId, ClientName string) int64 {
+//	return redis.Rdb.SRem(context.Background(), RoomClients+broker+":"+roomId, ClientName).Val()
+//}
+
+//func CardRoomClients(broker, roomId string) int64 {
+//	return redis.Rdb.SCard(context.Background(), RoomClients+broker+":"+roomId).Val()
+//}
 
 //func GetRoomInstance(ctx context.Context) []string{
 //	return redis.Rdb.SMembers(ctx,RoomInstance).Val()

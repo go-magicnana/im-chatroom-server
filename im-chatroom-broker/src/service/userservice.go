@@ -15,23 +15,21 @@ const (
 	UserClients string = "imchatroom:user.clients:"
 )
 
-//func SetUserClient(ctx context.Context, userId string, clientName string) int64 {
-//	return redis.Rdb.SAdd(ctx, UserClients+userId, clientName).Val()
-//}
-//
-//func GetUserClients(ctx context.Context, userId string) []string {
-//	return redis.Rdb.SMembers(ctx, UserClients+userId).Val()
-//
-//}
-//
-//func RemUserClient(ctx context.Context, userId, clientName string) int64 {
-//	return redis.Rdb.SRem(ctx, UserClients+userId, clientName).Val()
-//
-//}
+func SetUserClient(userId string, clientName string) int64 {
+	return redis.Rdb.SAdd(context.Background(), UserClients+userId, clientName).Val()
+}
+func GetUserClients(userId string) []string {
+	return redis.Rdb.SMembers(context.Background(), UserClients+userId).Val()
 
-//func RefreshUserClient(ctx context.Context, userId string) {
-//	redis.Rdb.Expire(ctx, UserClients+userId, time.Minute)
-//}
+}
+func RemUserClient(userId, clientName string) int64 {
+	return redis.Rdb.SRem(context.Background(), UserClients+userId, clientName).Val()
+
+}
+
+func RefreshUserClient(userId string) {
+	redis.Rdb.Expire(context.Background(), UserClients+userId, time.Minute*30)
+}
 
 func GetUserAuth(token string) (*protocol.UserAuth, error) {
 	bs, err := redis.Rdb.Get(context.Background(), UserAuth+token).Bytes()
@@ -82,8 +80,8 @@ func GetUserInfo(userId string) *protocol.UserInfo {
 	return user
 }
 
-func RefreshUserInfo(ctx context.Context, userId string) {
-	redis.Rdb.Expire(ctx, UserInfo+userId, time.Minute)
+func RefreshUserInfo(userId string) {
+	redis.Rdb.Expire(context.Background(), UserInfo+userId, time.Minute*30)
 }
 
 //func SetUserAlive(ctx context.Context, userId, clientName string) {

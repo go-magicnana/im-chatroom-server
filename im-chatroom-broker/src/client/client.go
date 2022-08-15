@@ -58,7 +58,7 @@ func Start(role, serverIp string, size, index int, user *userInClient) {
 
 	//
 	//
-	//go sendPing(conn)
+	go sendPing(conn)
 
 	if "send" == role {
 		sendMsg(conn, user, size)
@@ -237,7 +237,7 @@ func sendPing(conn net.Conn) {
 
 	for {
 		write(conn, &packet)
-		time.Sleep(time.Second * 10)
+		time.Sleep(time.Minute*10)
 	}
 
 }

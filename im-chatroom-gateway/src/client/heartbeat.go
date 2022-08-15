@@ -17,6 +17,8 @@ import (
 )
 
 var brokers sync.Map
+var lock sync.Mutex
+
 
 func Heartbeat() {
 
@@ -46,20 +48,25 @@ func queryRedisAndStartHeartBeat(ctx context.Context) {
 
 func doHeartbeat(c context.Context, cancel context.CancelFunc, broker string) {
 
-	if broker == "" {
-		clearBroker(c, broker)
-		return
+	if lock.TryLock() {
+
+		defer lock.Unlock()
+
+		if broker == "" {
+			clearBroker(c, broker)
+			return
+		}
+
+		v, b := brokers.Load(broker)
+
+		if v == "OK" || b {
+			return
+		}
+
+		zaplog.Logger.Infof("Heartbeat %s Start", broker)
+		brokers.Store(broker, "OK")
+		connect(c, cancel, broker)
 	}
-
-	v, b := brokers.Load(broker)
-
-	if v == "OK" || b {
-		return
-	}
-
-	zaplog.Logger.Infof("Heartbeat %s Start", broker)
-	brokers.Store(broker, "OK")
-	connect(c, cancel, broker)
 
 }
 
@@ -206,12 +213,13 @@ func close(c context.Context, cancel context.CancelFunc, broker string, conn net
 func clearBroker(ctx context.Context, broker string) {
 	zaplog.Logger.Infof("Heartbeat %s ClearBroker", broker)
 
-	roomList := service.GetRoomInstances(ctx)
-	for _, roomId := range roomList {
-		service.DelRoomClients(broker, roomId)
-	}
+	//roomList := service.GetRoomInstances(ctx)
+	//for _, roomId := range roomList {
+	//	service.DelRoomClients(broker, roomId)
+	//}
 
 	service.DelBrokerInstance(ctx, broker)
+	service.DelBrokerRooms(ctx, broker)
 
 	brokers.Delete(broker)
 }

@@ -32,7 +32,7 @@ func TestRead(t *testing.T) {
 		banch++
 
 		if banch>=20 {
-			time.Sleep(time.Second)
+			time.Sleep(time.Second*3)
 			banch = 0
 		}
 	}
@@ -45,7 +45,7 @@ func TestWrite(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	//go Start("send", "127.0.0.1","dltq","100",50)
-	go Start("send", server, 100, 0,user)
+	go Start("send", server, 50, 0,user)
 
 	wg.Wait()
 

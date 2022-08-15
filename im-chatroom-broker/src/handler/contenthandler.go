@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"fmt"
 	"im-chatroom-broker/ctx"
 	"im-chatroom-broker/deliver"
 	err "im-chatroom-broker/error"
+	"im-chatroom-broker/mq"
 	"im-chatroom-broker/service"
 	"im-chatroom-broker/zaplog"
 
@@ -81,8 +83,8 @@ func todeliver(c *ctx.Context, packet *protocol.Packet) (*protocol.Packet, error
 
 	//deliver2ConsumerRoom(c, conn, packet)
 
-	deliver.Deliver2Worker(c.Broker, packet)
-	//go mq.Deliver2MQ(c.Broker, packet)
+	deliver.Deliver2Worker(packet)
+	Deliver2AnotherBroker(packet)
 
 	return protocol.NewResponseOK(packet, nil), nil
 }
@@ -118,4 +120,26 @@ func reply(c *ctx.Context, packet *protocol.Packet, body *protocol.MessageBodyCo
 
 	return todeliver(c, packet)
 
+}
+
+func Deliver2AnotherBroker(packet *protocol.Packet) {
+	if packet.Header.Target == protocol.TargetRoom {
+
+		brokers := service.GetBrokerInstances()
+		if brokers != nil {
+			for _, broker := range brokers {
+				if broker == ctx.BrokerAddress {
+					continue
+				} else {
+
+					exist := service.GetBrokerRoomExist(broker, packet.Header.To)
+					if exist {
+						mq.Deliver2MQ(broker, packet)
+					}
+				}
+			}
+		}
+	} else {
+		fmt.Println("没写呢")
+	}
 }

@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"github.com/panjf2000/gnet/v2"
 	"github.com/panjf2000/gnet/v2/pkg/logging"
 	"github.com/robfig/cron/v3"
@@ -43,6 +44,7 @@ func (s *server) OnClose(c gnet.Conn, err error) (action gnet.Action) {
 
 	cc := c.Context().(*ctx.Context)
 	service.RemRoomClients(cc.Broker, cc.RoomId, cc.ClientName)
+	service.RemUserClient(cc.UserId, cc.ClientName)
 	ctx.RemContext(c.RemoteAddr().String())
 	cc = nil
 
@@ -164,13 +166,12 @@ func startTask(broker string) {
 
 	})
 
-	//c.AddFunc("@every 1s", func() {
-	//	ctx.RangeContext(func(key, value any) bool {
-	//		cc := value.(*ctx.Context)
-	//		zaplog.Logger.Infof("Probe context list %s %s-%p", key, cc.UserId, cc.Conn)
-	//		return true
-	//	})
-	//})
+	c.AddFunc("@every 1m", func() {
+		service.RangeRoomClients("100", func(i interface{}) bool {
+			fmt.Println("-------------- ", i)
+			return true
+		})
+	})
 
 	c.Start()
 }

@@ -7,6 +7,8 @@ import (
 
 const (
 	BrokerInstance string = "imchatroom:broker.instance"
+	BrokerRooms    string = "imchatroom:broker.rooms:"
+
 )
 
 func GetBrokerInstances(ctx context.Context) []string {
@@ -19,3 +21,6 @@ func DelBrokerInstance(ctx context.Context, broker string) {
 	redis.SRem(ctx, BrokerInstance, broker)
 }
 
+func DelBrokerRooms(ctx context.Context,broker string){
+	redis.Rdb.Del(ctx,BrokerRooms+broker)
+}
