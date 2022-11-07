@@ -5,6 +5,8 @@ import (
 	"github.com/panjf2000/gnet/v2"
 	"github.com/panjf2000/gnet/v2/pkg/logging"
 	"github.com/robfig/cron/v3"
+	"golang.org/x/net/context"
+	"golang.org/x/time/rate"
 	"im-chatroom-broker/config"
 	"im-chatroom-broker/ctx"
 	err "im-chatroom-broker/error"
@@ -14,14 +16,23 @@ import (
 	"im-chatroom-broker/service"
 	"im-chatroom-broker/util"
 	"im-chatroom-broker/zaplog"
+	"time"
 )
 
 type server struct {
 	gnet.BuiltinEventEngine
-	serializer *serializer.JsonSerializer
+	serializer    *serializer.JsonSerializer
+	acceptLimiter *rate.Limiter
 }
 
 func (s *server) OnOpen(c gnet.Conn) (out []byte, action gnet.Action) {
+
+	ccttxx, _ := context.WithTimeout(context.Background(), time.Second*1)
+	err := s.acceptLimiter.Wait(ccttxx)
+	if err != nil {
+		zaplog.Logger.Debugf("Connection open overrate %d", s.acceptLimiter.Burst())
+		c.Close()
+	}
 
 	cc := &ctx.Context{
 		Conn:       c,
@@ -139,9 +150,12 @@ func Start() {
 	service.SetBrokerInstance(brokerAddress)
 	zaplog.Logger.Infof("Start broker address %s", brokerAddress)
 
+	rate.NewLimiter(50, 50)
+
 	addr := "tcp://:" + config.OP.Port
 	server := &server{
-		serializer: serializer.NewJsonSerializer(),
+		serializer:    serializer.NewJsonSerializer(),
+		acceptLimiter: rate.NewLimiter(50, 50),
 	}
 	op1 := gnet.WithMulticore(true)
 	op2 := gnet.WithNumEventLoop(50)

@@ -10,7 +10,6 @@ import (
 	"github.com/apache/rocketmq-client-go/v2/producer"
 	"golang.org/x/net/context"
 	"im-chatroom-broker/config"
-	"im-chatroom-broker/deliver"
 	"im-chatroom-broker/protocol"
 	"im-chatroom-broker/util"
 	"im-chatroom-broker/zaplog"
@@ -141,7 +140,7 @@ func newConsumerOne() rocketmq.PushConsumer {
 
 				zaplog.Logger.Debugf("ConsumeOne %s %s %v", OneTopic+MyName, msgs[i].MsgId, p)
 
-				deliver.Deliver2Worker(p)
+				Deliver2Worker(false, p)
 
 			}
 			return consumer.ConsumeSuccess, nil

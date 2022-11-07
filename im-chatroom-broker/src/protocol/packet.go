@@ -60,6 +60,11 @@ type Packet struct {
 	Body   any           `json:"body"`
 }
 
+type PacketDeliver struct {
+	Packet *Packet
+	ToMQ bool
+}
+
 func (p Packet) ToString() string {
 	bs, _ := json.Marshal(p)
 	return string(bs)

@@ -1,4 +1,4 @@
-package deliver
+package mq
 
 import (
 	"im-chatroom-broker/protocol"
@@ -9,7 +9,7 @@ import (
 type pool struct {
 	workers   int
 	maxTasks  int
-	taskQueue chan *protocol.Packet
+	taskQueue chan *protocol.PacketDeliver
 
 	mu     sync.Mutex
 	closed bool
@@ -20,7 +20,7 @@ func newPool(w int, t int) *pool {
 	return &pool{
 		workers:   w,
 		maxTasks:  t,
-		taskQueue: make(chan *protocol.Packet, t),
+		taskQueue: make(chan *protocol.PacketDeliver, t),
 		done:      make(chan struct{}),
 	}
 }
@@ -33,7 +33,7 @@ func (p *pool) Close() {
 	p.mu.Unlock()
 }
 
-func (p *pool) addTask(packet *protocol.Packet) {
+func (p *pool) addTask(packet *protocol.PacketDeliver) {
 	p.mu.Lock()
 	if p.closed {
 		p.mu.Unlock()
@@ -60,7 +60,7 @@ func (p *pool) startWorker() {
 		case pp := <-p.taskQueue:
 			if pp != nil {
 
-				deliver(pp)
+				deliver(pp.ToMQ,pp.Packet)
 
 			}
 		}

@@ -1,9 +1,9 @@
 package handler
 
 import (
-	"fmt"
+	"golang.org/x/net/context"
+	"golang.org/x/time/rate"
 	"im-chatroom-broker/ctx"
-	"im-chatroom-broker/deliver"
 	err "im-chatroom-broker/error"
 	"im-chatroom-broker/mq"
 	"im-chatroom-broker/service"
@@ -19,9 +19,12 @@ var onceContentHandler sync.Once
 
 var contentHandler *ContentHandler
 
+var _limit *rate.Limiter
+
 func SingleContentHandler() *ContentHandler {
 	onceContentHandler.Do(func() {
 		contentHandler = &ContentHandler{}
+		_limit = rate.NewLimiter(100,100)
 	})
 
 	return contentHandler
@@ -77,14 +80,15 @@ func todeliver(c *ctx.Context, packet *protocol.Packet) (*protocol.Packet, error
 		packet.Header.From = *user
 	}
 
+	if packet.Header.Target == protocol.TargetRoom {
+		_limit.Wait(context.Background())
+	}
+
 	packet.Header.Flow = protocol.FlowDeliver
 	packet.Header.Code = err.OK.Code
 	packet.Header.Message = err.OK.Message
 
-	//deliver2ConsumerRoom(c, conn, packet)
-
-	deliver.Deliver2Worker(packet)
-	Deliver2AnotherBroker(packet)
+	mq.Deliver2Worker(true, packet)
 
 	return protocol.NewResponseOK(packet, nil), nil
 }
@@ -120,26 +124,4 @@ func reply(c *ctx.Context, packet *protocol.Packet, body *protocol.MessageBodyCo
 
 	return todeliver(c, packet)
 
-}
-
-func Deliver2AnotherBroker(packet *protocol.Packet) {
-	if packet.Header.Target == protocol.TargetRoom {
-
-		brokers := service.GetBrokerInstances()
-		if brokers != nil {
-			for _, broker := range brokers {
-				if broker == ctx.BrokerAddress {
-					continue
-				} else {
-
-					exist := service.GetBrokerRoomExist(broker, packet.Header.To)
-					if exist {
-						mq.Deliver2MQ(broker, packet)
-					}
-				}
-			}
-		}
-	} else {
-		fmt.Println("没写呢")
-	}
 }
