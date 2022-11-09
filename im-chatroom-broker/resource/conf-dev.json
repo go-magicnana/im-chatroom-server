@@ -2,10 +2,10 @@
   "ip": "",
   "port": "33121",
   "rocketmq": {
-    "address" :"192.168.3.242:9876"
+    "address" :"127.0.0.1:9876"
   },
   "redis": {
-    "address":"192.168.3.242:6379",
+    "address":"127.0.0.1:6379",
     "password":"Bjjctp-redis",
     "db":1
   }
